@@ -11,5 +11,13 @@ app = Flask(
 def index():
     return render_template("index.html")
 
+@app.route("/trading")
+def trading():
+    return render_template("trading.html")
+
+@app.route("/billetera")
+def billetera():
+    return render_template("billetera.html")
+
 if __name__ == "__main__":
     app.run(debug=True)
