@@ -1,7 +1,9 @@
 import requests
+from guardar_datos_cotizaciones import guardar_datos_cotizaciones
+
+URL = "https://api.coingecko.com/api/v3/coins/markets"
 
 def obtener_datos_criptos_coingecko():
-    url = "https://api.coingecko.com/api/v3/coins/markets"
     params = {
         "vs_currency": "usd",
         "order": "market_cap_desc",
@@ -11,8 +13,10 @@ def obtener_datos_criptos_coingecko():
         "price_change_percentage": "1h,24h,7d"
     }
 
-    r = requests.get(url, params=params)
+    r = requests.get(URL, params=params)
+    print(f"Estado de la respuesta: {r.status_code}")
     if r.status_code != 200:
+        print("❌ Error al obtener datos de CoinGecko")
         return {"error": "No se pudo obtener los datos"}
 
     datos = r.json()
@@ -23,6 +27,7 @@ def obtener_datos_criptos_coingecko():
             "id": i,
             "nombre": cripto.get("name"),
             "ticker": cripto.get("symbol").upper(),
+            "logo": cripto.get("image"),
             "precio_usd": cripto.get("current_price"),
             "1h_%": cripto.get("price_change_percentage_1h_in_currency"),
             "24h_%": cripto.get("price_change_percentage_24h_in_currency"),
@@ -31,7 +36,7 @@ def obtener_datos_criptos_coingecko():
             "volumen_24h": cripto.get("total_volume"),
             "circulating_supply": cripto.get("circulating_supply")
         })
-    
-    # print(resultado)
 
+    print(f"💡 Total de criptos procesadas: {len(resultado)}")
+    guardar_datos_cotizaciones(resultado)
     return resultado
