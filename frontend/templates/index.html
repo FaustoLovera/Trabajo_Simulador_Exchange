@@ -1,13 +1,49 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Consulta de Precio</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Exchange</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
 </head>
-<body>
-  <h1>Precio de Bitcoin</h1>
+<body class="bg-dark text-white">
+
+  <!-- Navbar estilo Binance con Bootstrap -->
+  <nav class="navbar navbar-expand-lg bg-black shadow">
+    <div class="container-fluid">
+      <a class="navbar-brand text-warning" href="#">Simulador Exchange</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon bg-light"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link text-white" href="index.html">Cotizaciones</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-white" href="trading.html">Trading</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-white" href="billetera.html">Billetera</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Contenedor principal -->
+  <main class="container mt-4">
+    <div class="row">
+      <div class="col-12">
+        <div class="p-4 bg-secondary border border-light rounded shadow text-center">
+          <h5 class="text-warning">Aquí se mostrará la tabla de cotizaciones</h5>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
   
 
-  <script src="/static/js/funciones.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
 </body>
 </html>
