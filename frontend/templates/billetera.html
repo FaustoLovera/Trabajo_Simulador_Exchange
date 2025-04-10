@@ -8,7 +8,31 @@
 
 </head>
     <body class="bg-dark text-white">
-
+      <nav class="navbar navbar-expand-lg bg-black shadow">
+        <div class="container-fluid">
+          <a class="navbar-brand text-warning d-flex align-items-center gap-2" href="{{ url_for('index') }}">
+            <img src="{{ url_for('static', filename='img/logo_BlocX.png') }}" alt="Logo" width="40" height="40">
+            <span>BlocX</span>
+          </a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon bg-light"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+              <li class="nav-item">
+                <a class="nav-link text-white" href="{{ url_for('index') }}">Cotizaciones</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link text-white" href="{{ url_for('trading') }}">Trading</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link text-white" href="{{ url_for('billetera') }}">Billetera</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+      
         <main class="container my-4">
             <!-- Primer row -->
             <div class="row mb-4">
