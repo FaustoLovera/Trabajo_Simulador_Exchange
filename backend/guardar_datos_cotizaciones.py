@@ -15,7 +15,7 @@ def guardar_datos_cotizaciones(data):
         print("✅ Datos guardados correctamente")
     except Exception as e:
         print("❌ Error al guardar el archivo:", e)
-        
+
 def cargar_datos_cotizaciones():
     if not os.path.exists(RUTA_COTIZACIONES):
         return []

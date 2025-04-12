@@ -2,44 +2,74 @@
 <html lang="en">
 
 <html lang="en">
+
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>BlocX Trading</title>
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
-	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet"
-		integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlocX Trading</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
 </head>
 
 <body class="bg-dark text-white">
 
-	
-	<nav class="navbar navbar-expand-lg bg-black shadow">
-		<div class="container-fluid">
-			<a class="navbar-brand text-warning d-flex align-items-center gap-2" href="{{ url_for('index') }}">
-				<img src="{{ url_for('static', filename='img/logo_BlocX.png') }}" alt="Logo" width="40" height="40">
-				<span>BlocX</span>
-			</a>
-			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-				<span class="navbar-toggler-icon bg-light"></span>
-			</button>
-			<div class="collapse navbar-collapse" id="navbarNav">
-				<ul class="navbar-nav ms-auto">
-					<li class="nav-item">
-						<a class="nav-link text-white" href="{{ url_for('index') }}">Cotizaciones</a>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link text-white" href="{{ url_for('trading') }}">Trading</a>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link text-white" href="{{ url_for('billetera') }}">Billetera</a>
-					</li>
-				</ul>
-			</div>
-		</div>
-	</nav>
 
+    <nav class="navbar navbar-expand-lg bg-black shadow">
+        <div class="container-fluid">
+            <a class="navbar-brand text-warning d-flex align-items-center gap-2" href="{{ url_for('index') }}">
+                <img src="{{ url_for('static', filename='img/logo_BlocX.png') }}" alt="Logo" width="40" height="40">
+                <span>BlocX</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon bg-light"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('index') }}">Cotizaciones</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('trading') }}">Trading</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('billetera') }}">Billetera</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
+    <div class="container mt-4">
+        <div class="row">
+            <!-- Gráfico de velas -->
+            <div class="col-md-7 mb-3">
+                <div class="bg-secondary p-v3 rounded">
+                    <h5>Gráfico de Velas</h5>
+                    <!-- Aquí irá el gráfico -->
+                </div>
+            </div>
+            <!-- Sección de trading -->
+            <div class="col-md-5 mb-3">
+                <div class="bg-secondary p-3 rounded">
+                    <h5>Sección de Trading</h5>
+                    <!-- Aquí irá la sección de trading -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-4">
+        <div class="row">
+            <!-- Historial de transacciones -->
+            <div class="col-12">
+                <div class="bg-secondary p-3 rounded">
+                    <h5>Historial de Transacciones</h5>
+                    <!-- Aquí irá el historial -->
+                </div>
+            </div>
+        </div>
+    </div>
 
 </body>
 
