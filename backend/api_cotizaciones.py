@@ -20,22 +20,27 @@ def obtener_datos_criptos_coingecko():
         return {"error": "No se pudo obtener los datos"}
 
     datos = r.json()
+    print(f"💡 Datos obtenidos: {datos}")  # Para depurar los datos
     resultado = []
 
     for i, cripto in enumerate(datos, start=1):
-        resultado.append({
-            "id": i,
-            "nombre": cripto.get("name"),
-            "ticker": cripto.get("symbol").upper(),
-            "logo": cripto.get("image"),
-            "precio_usd": cripto.get("current_price"),
-            "1h_%": cripto.get("price_change_percentage_1h_in_currency"),
-            "24h_%": cripto.get("price_change_percentage_24h_in_currency"),
-            "7d_%": cripto.get("price_change_percentage_7d_in_currency"),
-            "market_cap": cripto.get("market_cap"),
-            "volumen_24h": cripto.get("total_volume"),
-            "circulating_supply": cripto.get("circulating_supply")
-        })
+        # Verificar si cripto es un diccionario antes de acceder a sus claves
+        if isinstance(cripto, dict):
+            resultado.append({
+                "id": i,
+                "nombre": cripto.get("name"),
+                "ticker": cripto.get("symbol").upper(),
+                "logo": cripto.get("image"),
+                "precio_usd": cripto.get("current_price"),
+                "1h_%": cripto.get("price_change_percentage_1h_in_currency"),
+                "24h_%": cripto.get("price_change_percentage_24h_in_currency"),
+                "7d_%": cripto.get("price_change_percentage_7d_in_currency"),
+                "market_cap": cripto.get("market_cap"),
+                "volumen_24h": cripto.get("total_volume"),
+                "circulating_supply": cripto.get("circulating_supply")
+            })
+        else:
+            print(f"Advertencia: El dato para la cripto en la posición {i} no es un diccionario. Valor recibido: {cripto}")
 
     print(f"💡 Total de criptos procesadas: {len(resultado)}")
     guardar_datos_cotizaciones(resultado)

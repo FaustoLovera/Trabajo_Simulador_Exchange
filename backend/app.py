@@ -1,12 +1,15 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request, redirect, url_for, flash
 from api_cotizaciones import obtener_datos_criptos_coingecko
 from tabla_cotizaciones import obtener_tabla_criptos
+from compra_y_venta import comprar_cripto, vender_cripto, estado_actual
 
 app = Flask(
     __name__,
     static_folder='../frontend/static',
     template_folder='../frontend/templates'
 )
+
+app.secret_key = "clave_segura_para_flash"
 
 @app.route("/")
 def index():
@@ -23,13 +26,36 @@ def actualizar():
 def datos_tabla():
     return jsonify(obtener_tabla_criptos())
 
-@app.route("/trading")
+@app.route("/trading", methods=["GET", "POST"])
 def trading():
-    return render_template("trading.html")
+    criptos = obtener_datos_criptos_coingecko()
+
+    if request.method == "POST":
+        ticker = request.form["ticker"]
+        accion = request.form["accion"]
+        monto = float(request.form["monto"])  # Cambio: usamos "monto" en ambos casos
+
+        if accion == "comprar":
+            exito, mensaje = comprar_cripto(ticker, monto)
+        elif accion == "vender":
+            exito, mensaje = vender_cripto(ticker, monto)  # Enviamos el monto_usd
+        else:
+            exito, mensaje = False, "Acción inválida."
+
+        flash(mensaje, "success" if exito else "danger")
+        return redirect(url_for("trading"))
+
+    return render_template("trading.html", criptos=criptos)
+
+@app.route('/estado')
+def estado():
+    return jsonify(estado_actual())
+
 
 @app.route("/billetera")
 def billetera():
-    return render_template("billetera.html")
+    estado = estado_actual()
+    return render_template("billetera.html", estado=estado)
 
 if __name__ == "__main__":
     app.run(debug=True)
