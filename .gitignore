@@ -1,3 +1,9 @@
+# ARCHIVOS PROPIOS NUESTROS
+/datos/datos_cotizaciones.json
+/datos/datos_velas.json
+/datos/billetera.json
+/datos/historial_operaciones.json
+
 # Python
 __pycache__/
 backend/__pycache__/
