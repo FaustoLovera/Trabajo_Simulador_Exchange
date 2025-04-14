@@ -29,23 +29,25 @@ def datos_tabla():
 @app.route("/trading", methods=["GET", "POST"])
 def trading():
     criptos = obtener_datos_criptos_coingecko()
+    estado = estado_actual()  # <-- obtenemos el saldo y cartera actual
 
     if request.method == "POST":
         ticker = request.form["ticker"]
         accion = request.form["accion"]
-        monto = float(request.form["monto"])  # Cambio: usamos "monto" en ambos casos
+        monto = float(request.form["monto"])
 
         if accion == "comprar":
             exito, mensaje = comprar_cripto(ticker, monto)
         elif accion == "vender":
-            exito, mensaje = vender_cripto(ticker, monto)  # Enviamos el monto_usd
+            exito, mensaje = vender_cripto(ticker, monto)
         else:
             exito, mensaje = False, "Acción inválida."
 
         flash(mensaje, "success" if exito else "danger")
         return redirect(url_for("trading"))
 
-    return render_template("trading.html", criptos=criptos)
+    return render_template("trading.html", criptos=criptos, estado=estado)
+
 
 @app.route('/estado')
 def estado():

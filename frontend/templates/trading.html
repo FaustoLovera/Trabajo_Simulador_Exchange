@@ -40,8 +40,8 @@
 			<h2 class="text-warning">Trading de Criptomonedas</h2>
 		
 			<!-- Mostrar saldo -->
-			<div class="alert alert-info mt-4" role="alert">
-				<strong>Saldo actual:</strong> $<span id="saldo-usd">Cargando...</span>
+			<div class="alert alert-info mt-3">
+				<strong>Saldo actual:</strong> ${{ estado.saldo_usd | round(2) }}
 			</div>
 		
 			<!-- Mensajes Flash -->
@@ -74,21 +74,6 @@
 				</div>
 			</form>
 		</div>
-	
-		<script>
-			async function actualizarSaldo() {
-				try {
-					const response = await fetch('/estado');
-					const data = await response.json();
-					document.getElementById('saldo-usd').textContent = data.saldo_usd.toFixed(2);
-				} catch (error) {
-					console.error('Error al obtener el saldo:', error);
-				}
-			}
 		
-			// Actualizar saldo al cargar y cada 5 segundos
-			actualizarSaldo();
-			setInterval(actualizarSaldo, 5000);
-		</script>
 	</body>
 </html>
