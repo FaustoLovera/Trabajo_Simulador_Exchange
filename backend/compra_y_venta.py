@@ -1,75 +1,73 @@
+import os
+import json
 from api_cotizaciones import obtener_datos_criptos_coingecko
 
-# Estado ficticio del sistema
-saldo_usd = 10000.0
-cartera = {}
+BILLETERA_PATH = os.path.join(os.getcwd(), 'datos', 'billetera.json')
 
-def obtener_cripto_por_ticker(ticker):
-    datos_criptos = obtener_datos_criptos_coingecko()
+def cargar_billetera():
+    try:
+        with open(BILLETERA_PATH, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {"saldo_usd": "ERROR"}
 
-    # Verificamos que sea una lista
-    if not isinstance(datos_criptos, list):
-        print("❌ Se recibió un formato inválido desde CoinGecko.")
-        return None
+def guardar_billetera(billetera):
+    with open(BILLETERA_PATH, 'w') as f:
+        json.dump(billetera, f, indent=4)
 
+def obtener_estado():
+    billetera = cargar_billetera()
+    estado = {
+        "saldo_usd": billetera.get("saldo_usd"),
+        "criptos": {k: v for k, v in billetera.items() if k != "saldo_usd"}  # Eliminar "saldo_usd" de las criptos
+    }
+    return estado
+
+def obtener_precio(ticker, datos_criptos):
+    """Obtiene el precio de una criptomoneda a partir de la lista de datos recibidos de la API"""
     for cripto in datos_criptos:
-        if cripto['ticker'].upper() == ticker.upper():
-            return cripto
-
+        if cripto["ticker"].lower() == ticker.lower():  # Se usa .lower() para hacer una comparación insensible al caso
+            return cripto["precio_usd"]
     return None
 
 def comprar_cripto(ticker, monto_usd):
-    global saldo_usd, cartera
-    cripto = obtener_cripto_por_ticker(ticker)
+    billetera = cargar_billetera()
+    datos_criptos = obtener_datos_criptos_coingecko()
 
-    if not cripto:
-        return {"error": "Cripto no encontrada"}
+    precio = obtener_precio(ticker, datos_criptos)
+    if precio is None:
+        return False, f"❌ No se encontró el ticker {ticker}"
 
-    if monto_usd > saldo_usd:
-        return {"error": "Fondos insuficientes"}
+    if monto_usd > billetera["saldo_usd"]:
+        return False, "❌ Saldo insuficiente"
 
-    cantidad = monto_usd / cripto["precio_usd"]
-    cartera[ticker.upper()] = cartera.get(ticker.upper(), 0) + cantidad
-    saldo_usd -= monto_usd
-    
-    print(cartera)
-    print (saldo_usd)
+    cantidad = monto_usd / precio
+    billetera["saldo_usd"] -= monto_usd
+    billetera[ticker] = billetera.get(ticker, 0) + cantidad
 
-    return {
-        True, f"✅ Compraste {cantidad:.6f} {ticker.upper()} por ${monto_usd:.2f}"
-    }
+    guardar_billetera(billetera)
+    return True, f"✅ Compra exitosa: {cantidad:.6f} {ticker} por ${monto_usd:.2f}"
 
 
-def vender_cripto(ticker, monto_usd):
-    global saldo_usd, cartera
-    ticker = ticker.upper()
+def vender_cripto(ticker, cantidad_a_vender):
+    billetera = cargar_billetera()
+    datos_criptos = obtener_datos_criptos_coingecko()
 
-    cripto = obtener_cripto_por_ticker(ticker)
-    if not cripto:
-        return False, "Cripto no encontrada"
+    precio = obtener_precio(ticker, datos_criptos)
+    if precio is None:
+        return False, f"❌ No se encontró el ticker {ticker}"
 
-    cantidad_disponible = cartera.get(ticker, 0)
-    precio = cripto["precio_usd"]
-    cantidad_a_vender = monto_usd / precio
+    cantidad_actual = billetera.get(ticker, 0)
 
-    if cantidad_disponible < cantidad_a_vender:
-        return False, "No tenés suficiente cantidad para vender"
+    if cantidad_actual < cantidad_a_vender:
+        return False, f"❌ No tenés suficiente {ticker} para vender (disponible: {cantidad_actual:.6f})"
 
-    cartera[ticker] -= cantidad_a_vender
-    if cartera[ticker] <= 0:
-        del cartera[ticker]
+    monto_usd = cantidad_a_vender * precio
+    billetera["saldo_usd"] += monto_usd
+    billetera[ticker] -= cantidad_a_vender
 
-    saldo_usd += monto_usd
+    if billetera[ticker] <= 0:
+        billetera.pop(ticker)
 
-    print(cartera)
-    print (saldo_usd)
-
-    return True, f"✅ Vendiste {cantidad_a_vender:.6f} {ticker} por ${monto_usd:.2f}"
-
-
-
-def estado_actual():
-    return {
-        "saldo_usd": saldo_usd,
-        "cartera": cartera
-    }
+    guardar_billetera(billetera)
+    return True, f"✅ Venta exitosa: {cantidad_a_vender:.6f} {ticker} por ${monto_usd:.2f}"
