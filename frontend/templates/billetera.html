@@ -47,7 +47,7 @@
         <!-- Columna de USDT disponibles -->
         <div class="col-12">
           <div class="bg-transparent border border-secondary bg-opacity-25 p-4 rounded shadow text-center">
-            <h5 class=" mb-0">USDT disponibles: <span id="saldo-usd">cargando...</span></h5>
+            <h5 class=" mb-0">USDT disponibles: <span id="saldo-usd">{{ estado.saldo_usd | round(2) }}</span></h5>
           </div>
         </div>
       </div>
@@ -75,22 +75,7 @@
           <!-- Vacía por ahora -->
         </div>
       </div>
-    </main>
-    <script>
-			async function actualizarSaldo() {
-				try {
-					const response = await fetch('/estado');
-					const data = await response.json();
-					document.getElementById('saldo-usd').textContent = data.saldo_usd.toFixed(2);
-				} catch (error) {
-					console.error('Error al obtener el saldo:', error);
-				}
-			}
-		
-			// Actualizar saldo al cargar y cada 5 segundos
-			actualizarSaldo();
-			setInterval(actualizarSaldo, 5000);
-		</script>
+    </main>		
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
   </body>
 </html>
