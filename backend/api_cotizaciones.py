@@ -20,11 +20,11 @@ def obtener_datos_criptos_coingecko():
         return {"error": "No se pudo obtener los datos"}
 
     datos = r.json()
-    print(f"💡 Datos obtenidos: {datos}")  # Para depurar los datos
+    # print(f"💡 Datos obtenidos: {datos}")
     resultado = []
 
     for i, cripto in enumerate(datos, start=1):
-        # Verificar si cripto es un diccionario antes de acceder a sus claves
+        
         if isinstance(cripto, dict):
             resultado.append({
                 "id": i,

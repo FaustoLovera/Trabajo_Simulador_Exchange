@@ -1,8 +1,30 @@
-import os
+from flask import request, redirect, url_for, render_template, flash
 import json
-from api_cotizaciones import obtener_datos_criptos_coingecko
+import os
 
+COTIZACIONES_PATH = os.path.join(os.getcwd(), 'datos', 'datos_cotizaciones.json')
 BILLETERA_PATH = os.path.join(os.getcwd(), 'datos', 'billetera.json')
+
+def cargar_datos_cotizaciones():
+    try:
+        with open(COTIZACIONES_PATH, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print("❌ No se encontró el archivo de cotizaciones locales.")
+        return []
+    
+
+def procesar_operacion_trading(formulario, datos_cotizaciones):
+    ticker = formulario["ticker"]
+    accion = formulario["accion"]
+    monto = float(formulario["monto"])
+
+    if accion == "comprar":
+        return comprar_cripto(ticker, monto, datos_cotizaciones)
+    elif accion == "vender":
+        return vender_cripto(ticker, monto, datos_cotizaciones)
+    else:
+        return False, "❌ Acción inválida."
 
 def cargar_billetera():
     try:
@@ -17,43 +39,46 @@ def guardar_billetera(billetera):
 
 def obtener_estado():
     billetera = cargar_billetera()
+    criptos_sin_usdt = {}
+    for clave, valor in billetera.items():
+        if clave != "USDT":
+            criptos_sin_usdt[clave] = valor
+
     estado = {
-        "saldo_usd": billetera.get("saldo_usd"),
-        "criptos": {k: v for k, v in billetera.items() if k != "saldo_usd"}  # Eliminar "saldo_usd" de las criptos
+        "USDT": billetera.get("USDT"),
+        "criptos": criptos_sin_usdt
     }
     return estado
 
 def obtener_precio(ticker, datos_criptos):
-    """Obtiene el precio de una criptomoneda a partir de la lista de datos recibidos de la API"""
     for cripto in datos_criptos:
-        if cripto["ticker"].lower() == ticker.lower():  # Se usa .lower() para hacer una comparación insensible al caso
+        if cripto["ticker"].lower() == ticker.lower():
             return cripto["precio_usd"]
     return None
 
-def comprar_cripto(ticker, monto_usd):
+def comprar_cripto(ticker, monto_usd, datos_criptos):
     billetera = cargar_billetera()
-    datos_criptos = obtener_datos_criptos_coingecko()
-
     precio = obtener_precio(ticker, datos_criptos)
+
     if precio is None:
         return False, f"❌ No se encontró el ticker {ticker}"
 
-    if monto_usd > billetera["saldo_usd"]:
+    if monto_usd > billetera["USDT"]:
         return False, "❌ Saldo insuficiente"
 
+    billetera["USDT"] -= monto_usd
+
     cantidad = monto_usd / precio
-    billetera["saldo_usd"] -= monto_usd
     billetera[ticker] = billetera.get(ticker, 0) + cantidad
 
     guardar_billetera(billetera)
-    return True, f"✅ Compra exitosa: {cantidad:.6f} {ticker} por ${monto_usd:.2f}"
+    return True, f"✅ Compra exitosa: {cantidad:.6f} {ticker} por {monto_usd:.2f} USDT"
 
 
-def vender_cripto(ticker, cantidad_a_vender):
+def vender_cripto(ticker, cantidad_a_vender, datos_criptos):
     billetera = cargar_billetera()
-    datos_criptos = obtener_datos_criptos_coingecko()
-
     precio = obtener_precio(ticker, datos_criptos)
+
     if precio is None:
         return False, f"❌ No se encontró el ticker {ticker}"
 
@@ -63,7 +88,7 @@ def vender_cripto(ticker, cantidad_a_vender):
         return False, f"❌ No tenés suficiente {ticker} para vender (disponible: {cantidad_actual:.6f})"
 
     monto_usd = cantidad_a_vender * precio
-    billetera["saldo_usd"] += monto_usd
+    billetera["USDT"] += monto_usd
     billetera[ticker] -= cantidad_a_vender
 
     if billetera[ticker] <= 0:
@@ -71,3 +96,14 @@ def vender_cripto(ticker, cantidad_a_vender):
 
     guardar_billetera(billetera)
     return True, f"✅ Venta exitosa: {cantidad_a_vender:.6f} {ticker} por ${monto_usd:.2f}"
+
+def vista_trading():
+    criptos = cargar_datos_cotizaciones()
+    estado = obtener_estado()
+
+    if request.method == "POST":
+        exito, mensaje = procesar_operacion_trading(request.form, criptos)
+        flash(mensaje, "success" if exito else "danger")
+        return redirect(url_for("trading"))
+
+    return render_template("trading.html", criptos=criptos, estado=estado)

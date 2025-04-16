@@ -1,7 +1,7 @@
 from flask import Flask, render_template, jsonify, request, redirect, url_for, flash
 from api_cotizaciones import obtener_datos_criptos_coingecko
 from tabla_cotizaciones import obtener_tabla_criptos
-from compra_y_venta import comprar_cripto, vender_cripto, cargar_billetera, obtener_estado
+from compra_y_venta import cargar_billetera, obtener_estado, cargar_datos_cotizaciones, procesar_operacion_trading, vista_trading
 
 app = Flask(
     __name__,
@@ -31,25 +31,7 @@ def datos_tabla():
 
 @app.route("/trading", methods=["GET", "POST"])
 def trading():
-    criptos = obtener_datos_criptos_coingecko()
-    estado = obtener_estado()  # Obtener el estado actual
-
-    if request.method == "POST":
-        ticker = request.form["ticker"]
-        accion = request.form["accion"]
-        monto = float(request.form["monto"])
-
-        if accion == "comprar":
-            exito, mensaje = comprar_cripto(ticker, monto)
-        elif accion == "vender":
-            exito, mensaje = vender_cripto(ticker, monto)
-        else:
-            exito, mensaje = False, "Acción inválida."
-
-        flash(mensaje, "success" if exito else "danger")
-        return redirect(url_for("trading"))
-
-    return render_template("trading.html", criptos=criptos, estado=estado)  # Pasamos el estado a la plantilla
+    return vista_trading()
 
 @app.route('/estado')
 def estado():
