@@ -1,7 +1,7 @@
-from flask import Flask, render_template, jsonify, request, redirect, url_for, flash
+from flask import Flask, render_template, jsonify
 from api_cotizaciones import obtener_datos_criptos_coingecko
 from tabla_cotizaciones import obtener_tabla_criptos
-from compra_y_venta import cargar_billetera, obtener_estado, cargar_datos_cotizaciones, procesar_operacion_trading, vista_trading
+from compra_y_venta import cargar_billetera, trading as vista_trading
 
 app = Flask(
     __name__,

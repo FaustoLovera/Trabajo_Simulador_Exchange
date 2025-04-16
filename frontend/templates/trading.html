@@ -54,7 +54,7 @@
 
 
 				<div class="alert alert-info mt-3">
-					<strong>Saldo actual:</strong> USDT {{ estado.USDT | default(0.0) | round(2) }}
+					<strong>Saldo actual:</strong> USDT {{ estado["USDT"] | default(0.0) | round(2) }}
 				</div>
 
 				<!-- Mensajes Flash -->
