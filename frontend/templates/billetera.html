@@ -1,81 +1,87 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BlocX</title>
-    <link rel="icon" href="{{ url_for('static', filename='img/logo_BlocX.png') }}" type="image/x-icon"/>
+    <link rel="icon" href="{{ url_for('static', filename='img/logo_BlocX.png') }}" type="image/x-icon" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet"
-      integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
-  </head>
-      
-  <body class="bg-dark text-white">
+        integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+</head>
+
+<body class="bg-dark text-white">
 
     <nav class="navbar navbar-expand-lg bg-black shadow">
-			<div class="container-fluid">
-				<a class="navbar-brand text-warning d-flex align-items-center gap-2" href="{{ url_for('index') }}">
-					<img src="{{ url_for('static', filename='img/logo_BlocX.png') }}" alt="Logo" width="40" height="40">
-					<span>BlocX</span>
-				</a>
-				<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-					<span class="navbar-toggler-icon bg-light"></span>
-				</button>
-				<div class="collapse navbar-collapse" id="navbarNav">
-					<ul class="navbar-nav ms-auto">
-						<li class="nav-item">
-							<a class="nav-link text-white" href="{{ url_for('index') }}">Cotizaciones</a>
-						</li>
-						<li class="nav-item">
-							<a class="nav-link text-white" href="{{ url_for('trading') }}">Trading</a>
-						</li>
-						<li class="nav-item">
-							<a class="nav-link text-white" href="{{ url_for('billetera') }}">Billetera</a>
-						</li>
-					</ul>
-				</div>
-			</div>
-		</nav>
-  
-  <main class="container my-4">
+        <div class="container-fluid">
+            <a class="navbar-brand text-warning d-flex align-items-center gap-2" href="{{ url_for('index') }}">
+                <img src="{{ url_for('static', filename='img/logo_BlocX.png') }}" alt="Logo" width="40" height="40">
+                <span>BlocX</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon bg-light"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('index') }}">Cotizaciones</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('trading') }}">Trading</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('billetera') }}">Billetera</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
-    <div class="d-flex justify-content-center">
-      <h2 class="text-warning mb-3">Billetera</h2>
-    </div>
-      <!-- Primer row -->
-      <div class="row">
-        <!-- Columna de USDT disponibles -->
-        <div class="col-12">
-          <div class="bg-transparent border border-secondary bg-opacity-25 p-4 rounded shadow text-center">
-            <h5 class=" mb-0">USDT disponibles: <span id="saldo-usd">{{ estado.saldo_usd | round(2) }}</span></h5>
-          </div>
+    <main class="container my-4">
+
+        <div class="d-flex justify-content-center">
+            <h2 class="text-warning mb-3">Billetera</h2>
         </div>
-      </div>
-    
-      <!-- Segundo row -->
-      <div class="row">
-        <!-- Columna con la tabla -->
-        <div class="col-12">
-          <div class="table-responsive">
-            <table class="table table-dark table-bordered text-center align-middle mb-0">
-              <thead class="table-secondary">
-                <tr>
-                  <th style="font-weight: normal;" class="bg-transparent text-white">Criptomoneda</th>
-                  <th style="font-weight: normal;" class="bg-transparent text-white">Cantidad en USDT</th>
-                  <th style="font-weight: normal;" class="bg-transparent text-white">% del portafolio</th>
-                  <th style="font-weight: normal;" class="bg-transparent text-white">Ganancia/Pérdida</th>
-                </tr>
-              </thead>
-            </table>
-          </div>
+        <!-- Primer row -->
+        <div class="row">
+            <!-- Columna de USDT disponibles -->
+            <div class="col-12">
+                <div class="bg-transparent border border-secondary bg-opacity-25 p-4 rounded shadow text-center">
+                    <h5 class="mb-0">USDT disponibles: <span id="saldo-usd">{{ estado["USDT"] | default(0.0) | round(2)
+                            }}</span>
+                    </h5>
+                </div>
+            </div>
         </div>
-      
-        <!-- Columna vacía -->
-        <div class="col-4">
-          <!-- Vacía por ahora -->
+
+        <!-- Segundo row -->
+        <div class="row">
+            <!-- Columna con la tabla -->
+            <div class="col-12">
+                <div class="table-responsive">
+                    <table class="table table-dark table-bordered text-center align-middle mb-0">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th style="font-weight: normal;" class="bg-transparent text-white">Criptomoneda</th>
+                                <th style="font-weight: normal;" class="bg-transparent text-white">Cantidad en USDT</th>
+                                <th style="font-weight: normal;" class="bg-transparent text-white">% del portafolio</th>
+                                <th style="font-weight: normal;" class="bg-transparent text-white">Ganancia/Pérdida</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Columna vacía -->
+            <div class="col-4">
+                <!-- Vacía por ahora -->
+            </div>
         </div>
-      </div>
-    </main>		
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
-  </body>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq"
+        crossorigin="anonymous"></script>
+</body>
+
 </html>
