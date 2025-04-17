@@ -69,7 +69,8 @@ def obtener_velas_binance():
             "open": float(vela[1]),
             "high": float(vela[2]),
             "low": float(vela[3]),
-            "close": float(vela[4])
+            "close": float(vela[4]),
+            "volume": float(vela[5])
         })
 
     print(f"💡 Total de velas procesadas: {len(resultado)}")

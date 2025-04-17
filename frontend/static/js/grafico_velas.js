@@ -7,15 +7,7 @@ document.addEventListener('DOMContentLoaded', function () {
         width: chartContainer.clientWidth,
         height: 400,
 
-        // COLORES CLASICOS
-
-        // layout: {
-        //     backgroundColor: '#6c757d',
-        //     textColor: '#ffffff',
-        // },
-
         layout: {
-    
             textColor: '#0f0f0f', // negro
         },
         grid: {
@@ -27,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
             ticksVisible: true,
             scaleMargins: {
                 top: 0.1,
-                bottom: 0.1,
+                bottom: 0.3,
             },
         },
         timeScale: {
@@ -52,11 +44,12 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             const parsedData = data.map((item) => ({
-                time: item.time, // UNIX timestamp en segundos
+                time: item.time,
                 open: Number(item.open),
                 high: Number(item.high),
                 low: Number(item.low),
                 close: Number(item.close),
+                volume: Number(item.volume),
             }));
 
             console.log('Datos recibidos para el gráfico:', parsedData);
@@ -65,16 +58,28 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.log(`Vela ${i + 1}:`, vela);
             });
 
-            // Añadimos una vela artificial para testeo visual
-            parsedData.push({
-                time: Math.floor(Date.now() / 1000),
-                open: 100,
-                high: 120,
-                low: 90,
-                close: 110,
+            candleSeries.setData(parsedData);
+
+            const volumeSeries = chart.addHistogramSeries({
+                color: '#26a69a',
+                priceFormat: {
+                    type: 'volume',
+                },
+                priceScaleId: '',
+                scaleMargins: {
+                    top: 0.8,
+                    bottom: 0,
+                },
             });
 
-            candleSeries.setData(parsedData);
+            const volumeData = parsedData.map(vela => ({
+                time: vela.time,
+                value: vela.volume,
+                color: vela.close > vela.open ? '#26a69a' : '#ef5350',
+            }));
+
+            volumeSeries.setData(volumeData);
+
             chart.timeScale().fitContent();
         })
         .catch((error) => {
