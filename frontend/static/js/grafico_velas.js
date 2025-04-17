@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const chart = window.LightweightCharts.createChart(chartContainer, {
         width: chartContainer.clientWidth,
-        height: 400,
+        height: 500,
 
         layout: {
             textColor: '#0f0f0f', // negro
@@ -19,7 +19,8 @@ document.addEventListener('DOMContentLoaded', function () {
             ticksVisible: true,
             scaleMargins: {
                 top: 0.1,
-                bottom: 0.3,
+                bottom: 0.2,
+                right: 0.5
             },
         },
         timeScale: {
@@ -34,6 +35,12 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     const candleSeries = chart.addCandlestickSeries();
+    candleSeries.priceScale().applyOptions({
+        scaleMargins: {
+            top: 0.1,
+            bottom: 0.1,
+        },
+    });
 
     fetch('/api/velas')
         .then((response) => response.json())
@@ -61,24 +68,37 @@ document.addEventListener('DOMContentLoaded', function () {
             candleSeries.setData(parsedData);
 
             const volumeSeries = chart.addHistogramSeries({
-                color: '#26a69a',
                 priceFormat: {
                     type: 'volume',
                 },
                 priceScaleId: '',
+            });
+            volumeSeries.priceScale().applyOptions({
                 scaleMargins: {
                     top: 0.8,
                     bottom: 0,
                 },
             });
 
-            const volumeData = parsedData.map(vela => ({
+            const volumeData = parsedData.map((vela) => ({
                 time: vela.time,
                 value: vela.volume,
                 color: vela.close > vela.open ? '#26a69a' : '#ef5350',
             }));
 
             volumeSeries.setData(volumeData);
+
+            // Agregar evento para mostrar/ocultar el volumen
+            const volumeCheckbox = document.getElementById('toggleVolume');
+            if (volumeCheckbox) {
+                volumeCheckbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        volumeSeries.setData(volumeData);
+                    } else {
+                        volumeSeries.setData([]);
+                    }
+                });
+            }
 
             chart.timeScale().fitContent();
         })

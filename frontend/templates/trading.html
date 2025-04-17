@@ -6,7 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>BlocX - Trading</title>
 	<link rel="icon" href="{{ url_for('static', filename='img/logo_BlocX.png') }}" type="image/x-icon" />
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/styles_trading.css') }}">
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet"
 		integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
 </head>
@@ -45,13 +45,18 @@
 
 				<h3 class="text-light">Gráfico velas</h3>
 
-				<div class="p-3 rounded">
-					<div id="chart" style="height: 400px; width: 100%; max-width: 100%; min-width: 300px; border: 1px solid white;"></div>
+				<div class="form-check form-switch mb-2">
+					<input class="form-check-input" type="checkbox" id="toggleVolume" checked>
+					<label class="form-check-label text-light" for="toggleVolume">Mostrar volumen</label>
+				</div>
+
+				<div class="py-3">
+					<div id="chart"></div>
 				</div>
 			</div>
 
 			<!-- TRADING -->
-			<div class="col-md-5">
+			<div class="col-md-5 p-4">
 				<h2 class="text-warning">Trading</h2>
 
 
