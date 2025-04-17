@@ -1,6 +1,6 @@
 import json
 from flask import Flask, render_template, jsonify
-from api_cotizaciones import obtener_datos_criptos_coingecko
+from api_cotizaciones import obtener_datos_criptos_coingecko, obtener_velas_binance
 from tabla_cotizaciones import obtener_tabla_criptos
 from compra_y_venta import cargar_billetera, trading as vista_trading
 
@@ -32,6 +32,7 @@ def datos_tabla():
 
 @app.route("/trading", methods=["GET", "POST"])
 def trading():
+    obtener_velas_binance()
     return vista_trading()
 
 @app.route('/estado')

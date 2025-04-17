@@ -1,39 +1,57 @@
-console.log("🟢 Script grafico_velas.js cargado");
+console.log('🟢 Script grafico_velas.js cargado');
 
-document.addEventListener("DOMContentLoaded", function () {
-    const chartContainer = document.getElementById("chart");
+document.addEventListener('DOMContentLoaded', function () {
+    const chartContainer = document.getElementById('chart');
 
     const chart = window.LightweightCharts.createChart(chartContainer, {
         width: chartContainer.clientWidth,
         height: 400,
+
+        // COLORES CLASICOS
+
+        // layout: {
+        //     backgroundColor: '#6c757d',
+        //     textColor: '#ffffff',
+        // },
+
         layout: {
-            backgroundColor: '#6c757d',
-            textColor: '#ffffff',
+    
+            textColor: '#0f0f0f', // negro
         },
         grid: {
             vertLines: { color: '#444' },
             horLines: { color: '#444' },
         },
         priceScale: {
-            borderColor: '#cccccc',
+            borderColor: '#ffffff',
+            ticksVisible: true,
+            scaleMargins: {
+                top: 0.1,
+                bottom: 0.1,
+            },
         },
         timeScale: {
-            borderColor: '#cccccc',
+            borderColor: '#ffffff',
             timeVisible: true,
+            secondsVisible: false,
+            ticksVisible: true,
+        },
+        crosshair: {
+            mode: LightweightCharts.CrosshairMode.Normal,
         },
     });
 
     const candleSeries = chart.addCandlestickSeries();
 
-    fetch("/api/velas")
-        .then(response => response.json())
-        .then(data => {
+    fetch('/api/velas')
+        .then((response) => response.json())
+        .then((data) => {
             if (data.error) {
-                console.error("Error del backend:", data.error);
+                console.error('Error del backend:', data.error);
                 return;
             }
 
-            const parsedData = data.map(item => ({
+            const parsedData = data.map((item) => ({
                 time: item.time, // UNIX timestamp en segundos
                 open: Number(item.open),
                 high: Number(item.high),
@@ -41,7 +59,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 close: Number(item.close),
             }));
 
-            console.log("Datos recibidos para el gráfico:", parsedData);
+            console.log('Datos recibidos para el gráfico:', parsedData);
 
             parsedData.forEach((vela, i) => {
                 console.log(`Vela ${i + 1}:`, vela);
@@ -59,8 +77,8 @@ document.addEventListener("DOMContentLoaded", function () {
             candleSeries.setData(parsedData);
             chart.timeScale().fitContent();
         })
-        .catch(error => {
-            console.error("Error al obtener datos:", error);
+        .catch((error) => {
+            console.error('Error al obtener datos:', error);
         });
 
     new ResizeObserver(() => {

@@ -43,22 +43,29 @@ table thead th {
     text-transform: uppercase;
 }
 
-td, th {
+td,
+th {
     white-space: nowrap;
 }
 
 /* PRECIO */
-table td:nth-child(3), table th:nth-child(3) {
+table td:nth-child(3),
+table th:nth-child(3) {
     min-width: 100px;
     font-weight: bold;
 }
-table td:nth-child(4), table th:nth-child(4),
-table td:nth-child(5), table th:nth-child(5),
-table td:nth-child(6), table th:nth-child(6) {
+table td:nth-child(4),
+table th:nth-child(4),
+table td:nth-child(5),
+table th:nth-child(5),
+table td:nth-child(6),
+table th:nth-child(6) {
     min-width: 80px; /* 1H, 24H, 7D */
 }
-table td:nth-child(8), table th:nth-child(8),
-table td:nth-child(9), table th:nth-child(9) {
+table td:nth-child(8),
+table th:nth-child(8),
+table td:nth-child(9),
+table th:nth-child(9) {
     min-width: 100px; /* VOLUME, SUPPLY */
 }
 
@@ -72,13 +79,13 @@ table th:nth-child(2) {
 }
 
 .positivo {
-	color: var(--color-verde);
-	font-weight: 500;
+    color: var(--color-verde);
+    font-weight: 500;
 }
 
 .negativo {
-	color: var(--color-rojo);
-	font-weight: 500;
+    color: var(--color-rojo);
+    font-weight: 500;
 }
 
 .flecha-verde,
@@ -89,13 +96,13 @@ table th:nth-child(2) {
 }
 
 .flecha-verde {
-	color: var(--color-verde);
-	margin-right: 4px;
+    color: var(--color-verde);
+    margin-right: 4px;
 }
 
 .flecha-roja {
-	color: var(--color-rojo);
-	margin-right: 4px;
+    color: var(--color-rojo);
+    margin-right: 4px;
 }
 
 /* GRAFICO VELAS */
@@ -103,4 +110,5 @@ table th:nth-child(2) {
 #chart {
     display: block;
     overflow: hidden;
-  }
+    background-color: #000000 !important; 
+}
