@@ -97,3 +97,10 @@ table th:nth-child(2) {
 	color: var(--color-rojo);
 	margin-right: 4px;
 }
+
+/* GRAFICO VELAS */
+
+#chart {
+    display: block;
+    overflow: hidden;
+  }

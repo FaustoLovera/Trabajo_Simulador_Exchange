@@ -1,3 +1,4 @@
+import json
 from flask import Flask, render_template, jsonify
 from api_cotizaciones import obtener_datos_criptos_coingecko
 from tabla_cotizaciones import obtener_tabla_criptos
@@ -41,6 +42,16 @@ def estado():
 def billetera():
     estado = estado_actual()
     return render_template("billetera.html", estado=estado)
+
+@app.route("/api/velas")
+def obtener_datos_velas():
+    try:
+        with open("datos/datos_velas.json", "r") as archivo:
+            datos = json.load(archivo)
+        return jsonify(datos)
+    except Exception as e:
+        print("❌ Error leyendo datos_velas.json:", e)
+        return jsonify({"error": "No se pudo leer el archivo"}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
