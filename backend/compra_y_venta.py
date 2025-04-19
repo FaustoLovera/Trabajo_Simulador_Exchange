@@ -1,75 +1,113 @@
-from api_cotizaciones import obtener_datos_criptos_coingecko
+from flask import request, redirect, url_for, render_template, flash
+import json
+import os
 
-# Estado ficticio del sistema
-saldo_usd = 10000.0
-cartera = {}
+COTIZACIONES_PATH = "./datos/datos_cotizaciones.json"
+BILLETERA_PATH = "./datos/billetera.json"
 
-def obtener_cripto_por_ticker(ticker):
-    datos_criptos = obtener_datos_criptos_coingecko()
+def cargar_datos_cotizaciones():
+    try:
+        with open(COTIZACIONES_PATH, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print("❌ No se encontró el archivo de cotizaciones locales.")
+        return []
 
-    # Verificamos que sea una lista
-    if not isinstance(datos_criptos, list):
-        print("❌ Se recibió un formato inválido desde CoinGecko.")
+def obtener_precio(ticker):
+    try:
+        with open(COTIZACIONES_PATH, 'r') as f:
+            datos_criptos = json.load(f)
+    except FileNotFoundError:
         return None
 
     for cripto in datos_criptos:
-        if cripto['ticker'].upper() == ticker.upper():
-            return cripto
-
+        if cripto["ticker"].lower() == ticker.lower():
+            return cripto["precio_usd"]
     return None
 
+def procesar_operacion_trading(formulario):
+    ticker = formulario["ticker"]
+    accion = formulario["accion"]
+    monto = float(formulario["monto"])
+
+    if accion == "comprar":
+        return comprar_cripto(ticker, monto)
+    elif accion == "vender":
+        return vender_cripto(ticker, monto)
+    else:
+        return False, "❌ Acción inválida."
+
+def cargar_billetera():
+    try:
+        with open(BILLETERA_PATH, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {"USDT": 0}
+
+def guardar_billetera(billetera):
+    with open(BILLETERA_PATH, 'w') as f:
+        json.dump(billetera, f, indent=4)
+
+def obtener_estado():
+    return cargar_billetera()
+
 def comprar_cripto(ticker, monto_usd):
-    global saldo_usd, cartera
-    cripto = obtener_cripto_por_ticker(ticker)
+    billetera = cargar_billetera()
+    precio = obtener_precio(ticker)
 
-    if not cripto:
-        return {"error": "Cripto no encontrada"}
+    if precio is None:
+        return False, f"❌ No se encontró el ticker {ticker}"
 
-    if monto_usd > saldo_usd:
-        return {"error": "Fondos insuficientes"}
+    if monto_usd > billetera["USDT"]:
+        return False, "❌ Saldo insuficiente"
 
-    cantidad = monto_usd / cripto["precio_usd"]
-    cartera[ticker.upper()] = cartera.get(ticker.upper(), 0) + cantidad
-    saldo_usd -= monto_usd
-    
-    print(cartera)
-    print (saldo_usd)
+    billetera["USDT"] -= monto_usd
 
-    return {
-        True, f"✅ Compraste {cantidad:.6f} {ticker.upper()} por ${monto_usd:.2f}"
-    }
+    cantidad = monto_usd / precio
+    if ticker in billetera:
+        billetera[ticker] += cantidad
+    else:
+        billetera[ticker] = cantidad
 
+    guardar_billetera(billetera)
+    return True, f"✅ Compra exitosa: {cantidad:.6f} {ticker} por {monto_usd:.2f} USDT"
 
-def vender_cripto(ticker, monto_usd):
-    global saldo_usd, cartera
-    ticker = ticker.upper()
+def vender_cripto(ticker, cantidad_a_vender):
+    billetera = cargar_billetera()
+    precio = obtener_precio(ticker)
 
-    cripto = obtener_cripto_por_ticker(ticker)
-    if not cripto:
-        return False, "Cripto no encontrada"
+    if precio is None:
+        return False, f"❌ No se encontró el ticker {ticker}"
 
-    cantidad_disponible = cartera.get(ticker, 0)
-    precio = cripto["precio_usd"]
-    cantidad_a_vender = monto_usd / precio
+    if ticker in billetera:
+        cantidad_actual = billetera[ticker]
+    else:
+        cantidad_actual = 0
 
-    if cantidad_disponible < cantidad_a_vender:
-        return False, "No tenés suficiente cantidad para vender"
+    if cantidad_actual < cantidad_a_vender:
+        return False, f"❌ No tenés suficiente {ticker} para vender (disponible: {cantidad_actual:.6f})"
 
-    cartera[ticker] -= cantidad_a_vender
-    if cartera[ticker] <= 0:
-        del cartera[ticker]
+    monto_usd = cantidad_a_vender * precio
+    if "USDT" in billetera:
+        billetera["USDT"] += monto_usd
+    else:
+        billetera["USDT"] = monto_usd
+    billetera[ticker] -= cantidad_a_vender
 
-    saldo_usd += monto_usd
+    if billetera[ticker] <= 0:
+        billetera.pop(ticker)
 
-    print(cartera)
-    print (saldo_usd)
+    guardar_billetera(billetera)
+    return True, f"✅ Venta exitosa: {cantidad_a_vender:.6f} {ticker} por ${monto_usd:.2f}"
 
-    return True, f"✅ Vendiste {cantidad_a_vender:.6f} {ticker} por ${monto_usd:.2f}"
+def trading():
+    criptos = cargar_datos_cotizaciones()   # Esto devuelve una lista de diccionarios desde el json de cotizaciones
+    estado = obtener_estado()               # Esto devuelve un diccionario del valor de USDT y demás criptos que estén en billetera
 
+    print(estado)
+    if request.method == "POST":
+        exito, mensaje = procesar_operacion_trading(request.form) # Es lo que trae Flask desde el formulario de trading.html. ALGO ASI: request.form = { "ticker": "BTC", "monto": "5000", "accion": "comprar"}
+        flash(mensaje, "success" if exito else "danger")
+        return redirect(url_for("trading"))
 
-
-def estado_actual():
-    return {
-        "saldo_usd": saldo_usd,
-        "cartera": cartera
-    }
+    return render_template("trading.html", criptos=criptos, estado=estado)

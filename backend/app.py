@@ -1,7 +1,10 @@
-from flask import Flask, render_template, jsonify, request, redirect, url_for, flash
-from api_cotizaciones import obtener_datos_criptos_coingecko
+import json
+from flask import Flask, render_template, jsonify
+from api_cotizaciones import obtener_datos_criptos_coingecko, obtener_velas_binance
 from tabla_cotizaciones import obtener_tabla_criptos
-from compra_y_venta import comprar_cripto, vender_cripto, estado_actual
+from compra_y_venta import cargar_billetera, trading as vista_trading
+import os
+from billetera import estado_actual_completo
 
 app = Flask(
     __name__,
@@ -10,6 +13,9 @@ app = Flask(
 )
 
 app.secret_key = "clave_segura_para_flash"
+
+def estado_actual():
+    return cargar_billetera()
 
 @app.route("/")
 def index():
@@ -28,36 +34,32 @@ def datos_tabla():
 
 @app.route("/trading", methods=["GET", "POST"])
 def trading():
-    criptos = obtener_datos_criptos_coingecko()
-    estado = estado_actual()  # <-- obtenemos el saldo y cartera actual
-
-    if request.method == "POST":
-        ticker = request.form["ticker"]
-        accion = request.form["accion"]
-        monto = float(request.form["monto"])
-
-        if accion == "comprar":
-            exito, mensaje = comprar_cripto(ticker, monto)
-        elif accion == "vender":
-            exito, mensaje = vender_cripto(ticker, monto)
-        else:
-            exito, mensaje = False, "Acción inválida."
-
-        flash(mensaje, "success" if exito else "danger")
-        return redirect(url_for("trading"))
-
-    return render_template("trading.html", criptos=criptos, estado=estado)
-
+    obtener_velas_binance()
+    return vista_trading()
 
 @app.route('/estado')
 def estado():
     return jsonify(estado_actual())
 
-
 @app.route("/billetera")
 def billetera():
     estado = estado_actual()
     return render_template("billetera.html", estado=estado)
+
+@app.route("/api/billetera")
+def api_billetera():
+    estado = estado_actual_completo()
+    return jsonify(estado)
+
+@app.route("/api/velas")
+def obtener_datos_velas():
+    try:
+        with open("datos/datos_velas.json", "r") as archivo:
+            datos = json.load(archivo)
+        return jsonify(datos)
+    except Exception as e:
+        print("❌ Error leyendo datos_velas.json:", e)
+        return jsonify({"error": "No se pudo leer el archivo"}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)

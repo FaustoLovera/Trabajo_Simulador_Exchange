@@ -1,5 +1,5 @@
 import requests
-from guardar_datos_cotizaciones import guardar_datos_cotizaciones
+from guardar_datos_cotizaciones import guardar_datos_cotizaciones, guardar_datos_velas
 
 URL = "https://api.coingecko.com/api/v3/coins/markets"
 
@@ -20,11 +20,11 @@ def obtener_datos_criptos_coingecko():
         return {"error": "No se pudo obtener los datos"}
 
     datos = r.json()
-    print(f"💡 Datos obtenidos: {datos}")  # Para depurar los datos
+    # print(f"💡 Datos obtenidos: {datos}")
     resultado = []
 
     for i, cripto in enumerate(datos, start=1):
-        # Verificar si cripto es un diccionario antes de acceder a sus claves
+        
         if isinstance(cripto, dict):
             resultado.append({
                 "id": i,
@@ -44,4 +44,35 @@ def obtener_datos_criptos_coingecko():
 
     print(f"💡 Total de criptos procesadas: {len(resultado)}")
     guardar_datos_cotizaciones(resultado)
+    return resultado
+
+def obtener_velas_binance():
+    url = "https://api.binance.com/api/v3/klines"
+    params = {
+        "symbol": "BTCUSDT",
+        "interval": "1d",
+        "limit": 350
+    }
+
+    r = requests.get(url, params=params)
+    print(f"Estado de la respuesta Binance: {r.status_code}")
+    if r.status_code != 200:
+        print("❌ Error al obtener datos de Binance")
+        return {"error": "No se pudo obtener los datos"}
+
+    datos = r.json()
+    resultado = []
+
+    for vela in datos:
+        resultado.append({
+            "time": int(vela[0] / 1000),  # timestamp en segundos
+            "open": float(vela[1]),
+            "high": float(vela[2]),
+            "low": float(vela[3]),
+            "close": float(vela[4]),
+            "volume": float(vela[5])
+        })
+
+    print(f"💡 Total de velas procesadas: {len(resultado)}")
+    guardar_datos_velas(resultado)
     return resultado
