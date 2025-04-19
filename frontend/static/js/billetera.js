@@ -1,28 +1,43 @@
-fetch("/api/billetera")
-  .then((response) => response.json())
-  .then((data) => {
-    const tabla = document.getElementById("tabla-billetera");
+document.addEventListener("DOMContentLoaded", async () => {
+    try {
+        const res = await fetch("/api/billetera");
+        const datos = await res.json();
 
-    let saldoUSD = 0;
+        const tbody = document.getElementById("tabla-billetera");
+        const saldoElement = document.getElementById("saldo-usd");
 
-    for (let moneda in data) {
-      const cantidad = data[moneda].cantidad;
-      const porcentaje = data[moneda].porcentaje;
+        let totalUSD = 0;
 
-      if (moneda === "USDT") {
-        saldoUSD = cantidad;
-      }
+        // Calcular total para porcentaje
+        for (let cripto of datos) {
+            const valorUSD = cripto.cantidad * cripto.precio_usd;
+            if (valorUSD > 0.00001) {
+                totalUSD += valorUSD;
+            }
+        }
 
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${moneda}</td>
-        <td>${cantidad.toFixed(8)}</td>
-        <td>${porcentaje.toFixed(4)}%</td>
-        <td>--</td>
-      `;
-      tabla.appendChild(tr);
+        // Mostrar en la tabla
+        for (let cripto of datos) {
+            const valorUSD = cripto.cantidad * cripto.precio_usd;
+
+            // Ignorar las que tienen 0
+            if (valorUSD < 0.00001) continue;
+
+            const porcentaje = ((valorUSD / totalUSD) * 100).toFixed(2);
+
+            const fila = `
+                <tr>
+                    <td>${cripto.ticker}</td>             <!-- Criptomoneda -->
+                    <td>${cripto.cantidad.toFixed(8)}</td> <!-- Cantidad -->
+                    <td>${valorUSD.toFixed(2)} USDT</td>  <!-- Valor en USDT -->
+                    <td>${porcentaje}%</td>              <!-- % del total -->
+                </tr>
+            `;
+            tbody.innerHTML += fila;
+        }
+
+        saldoElement.textContent = `${totalUSD.toFixed(2)} USDT`;
+    } catch (error) {
+        console.error("Error al cargar la billetera:", error);
     }
-
-    document.getElementById("saldo-usd").innerText = saldoUSD.toFixed(2);
-  })
-  .catch((error) => console.log("Error al cargar los datos:", error));
+});

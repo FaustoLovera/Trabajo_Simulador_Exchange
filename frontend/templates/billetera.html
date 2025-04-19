@@ -1,18 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BlocX</title>
-    <link rel="icon" href="{{ url_for('static', filename='img/logo_BlocX.png') }}" type="image/x-icon" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>BlocX - Billetera</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-
 <body class="bg-dark text-white">
-
     <nav class="navbar navbar-expand-lg bg-black shadow">
         <div class="container-fluid">
             <a class="navbar-brand text-warning d-flex align-items-center gap-2" href="{{ url_for('index') }}">
@@ -39,37 +34,28 @@
     </nav>
 
     <main class="container my-4">
-
-        <div class="d-flex justify-content-center">
-            <h2 class="text-warning mb-3">Billetera</h2>
+        <div class="text-center">
+            <h2 class="text-warning mb-4">Billetera</h2>
         </div>
 
-        <div class="row">
-            <div class="col-12">
-                <div class="table-responsive">
-                    <table class="table table-dark table-bordered text-center align-middle mb-0">
-                        <thead class="table-secondary">
-                            <tr>
-                                <th style="font-weight: normal;" class="bg-transparent text-white">Criptomoneda</th>
-                                <th style="font-weight: normal;" class="bg-transparent text-white">Cantidad</th>
-                                <th style="font-weight: normal;" class="bg-transparent text-white">Porcentaje</th>
-                                <th style="font-weight: normal;" class="bg-transparent text-white">Ganancia/Pérdida</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabla-billetera">
-                            <!-- Las filas se llenarán dinámicamente con JavaScript -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        <div class="table-responsive mt-4">
+            <table class="table table-dark table-bordered text-center align-middle">
+                <thead class="table-secondary">
+                    <tr>
+                        <th class="bg-transparent text-white">Criptomoneda</th>
+                        <th class="bg-transparent text-white">Cantidad</th>
+                        <th class="bg-transparent text-white">Valor en USDT</th>
+                        <th class="bg-transparent text-white">% del Total</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-billetera">
+                    <!-- Filas dinámicas -->
+                </tbody>
+            </table>
         </div>
     </main>
 
-    
     <script src="{{ url_for('static', filename='js/billetera.js') }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq"
-        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>
