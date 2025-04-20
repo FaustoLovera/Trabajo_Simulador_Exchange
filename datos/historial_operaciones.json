@@ -1,1 +1,30 @@
-[]
+[
+    {
+        "tipo": "compra",
+        "ticker": "BTC",
+        "cantidad": 0.0001174191275758821,
+        "monto_usdt": 10.0,
+        "precio_unitario": 85165
+    },
+    {
+        "tipo": "compra",
+        "ticker": "USDT",
+        "cantidad": 10.00003000009,
+        "monto_usdt": 10.0,
+        "precio_unitario": 0.999997
+    },
+    {
+        "tipo": "compra",
+        "ticker": "ETH",
+        "cantidad": 0.006282156790069167,
+        "monto_usdt": 10.0,
+        "precio_unitario": 1591.81
+    },
+    {
+        "tipo": "compra",
+        "ticker": "TRX",
+        "cantidad": 81.20871044628247,
+        "monto_usdt": 20.0,
+        "precio_unitario": 0.246279
+    }
+]

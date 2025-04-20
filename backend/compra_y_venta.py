@@ -70,6 +70,7 @@ def comprar_cripto(ticker, monto_usd):
         billetera[ticker] = cantidad
 
     guardar_billetera(billetera)
+    guardar_en_historial("compra", ticker, cantidad, monto_usd, precio)
     return True, f"✅ Compra exitosa: {cantidad:.6f} {ticker} por {monto_usd:.2f} USDT"
 
 def vender_cripto(ticker, cantidad_a_vender):
@@ -98,6 +99,7 @@ def vender_cripto(ticker, cantidad_a_vender):
         billetera.pop(ticker)
 
     guardar_billetera(billetera)
+    guardar_en_historial("venta", ticker, cantidad_a_vender, monto_usd, precio)
     return True, f"✅ Venta exitosa: {cantidad_a_vender:.6f} {ticker} por ${monto_usd:.2f}"
 
 def trading():
@@ -111,3 +113,27 @@ def trading():
         return redirect(url_for("trading"))
 
     return render_template("trading.html", criptos=criptos, estado=estado)
+
+HISTORIAL_PATH = "./datos/historial_operaciones.json"
+
+def guardar_en_historial(tipo, ticker, cantidad, monto_usdt, precio_unitario):
+    operacion = {
+        "tipo": tipo,
+        "ticker": ticker,
+        "cantidad": cantidad,
+        "monto_usdt": monto_usdt,
+        "precio_unitario": precio_unitario
+    }
+
+    # Leer historial existente o iniciar una lista nueva
+    if os.path.exists(HISTORIAL_PATH):
+        with open(HISTORIAL_PATH, "r") as f:
+            historial = json.load(f)
+    else:
+        historial = []
+
+    historial.append(operacion)
+
+    # Guardar el historial actualizado
+    with open(HISTORIAL_PATH, "w") as f:
+        json.dump(historial, f, indent=4)
