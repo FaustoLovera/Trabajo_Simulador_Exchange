@@ -3,6 +3,7 @@
 /datos/datos_velas.json
 /datos/billetera.json
 /datos/historial_operaciones.json
+__pycache__/
 
 # Python
 __pycache__/
@@ -104,3 +105,8 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
+datos/billetera.json
+datos/datos_cotizaciones.json
+datos/datos_velas.json
+*.pyc
+__pycache__/
