@@ -26,5 +26,19 @@
         "cantidad": 81.20871044628247,
         "monto_usdt": 20.0,
         "precio_unitario": 0.246279
+    },
+    {
+        "tipo": "venta",
+        "ticker": "TRX",
+        "cantidad": 81.0,
+        "monto_usdt": 19.949166,
+        "precio_unitario": 0.246286
+    },
+    {
+        "tipo": "venta",
+        "ticker": "TRX",
+        "cantidad": 0.2,
+        "monto_usdt": 0.049214400000000005,
+        "precio_unitario": 0.246072
     }
 ]

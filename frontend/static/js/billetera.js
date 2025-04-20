@@ -1,43 +1,32 @@
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("DOMContentLoaded", async function () {
+    const tabla = document.getElementById("tabla-billetera");
+
     try {
-        const res = await fetch("/api/billetera");
-        const datos = await res.json();
+        const response = await fetch("/api/billetera");
+        const datos = await response.json();
 
-        const tbody = document.getElementById("tabla-billetera");
-        const saldoElement = document.getElementById("saldo-usd");
+        datos.forEach((cripto) => {
+            const fila = document.createElement("tr");
 
-        let totalUSD = 0;
-
-        // Calcular total para porcentaje
-        for (let cripto of datos) {
-            const valorUSD = cripto.cantidad * cripto.precio_usd;
-            if (valorUSD > 0.00001) {
-                totalUSD += valorUSD;
-            }
-        }
-
-        // Mostrar en la tabla
-        for (let cripto of datos) {
-            const valorUSD = cripto.cantidad * cripto.precio_usd;
-
-            // Ignorar las que tienen 0
-            if (valorUSD < 0.00001) continue;
-
-            const porcentaje = ((valorUSD / totalUSD) * 100).toFixed(2);
-
-            const fila = `
-                <tr>
-                    <td>${cripto.ticker}</td>             <!-- Criptomoneda -->
-                    <td>${cripto.cantidad.toFixed(8)}</td> <!-- Cantidad -->
-                    <td>${valorUSD.toFixed(2)} USDT</td>  <!-- Valor en USDT -->
-                    <td>${porcentaje}%</td>              <!-- % del total -->
-                </tr>
+            fila.innerHTML = `
+                <td>${cripto.ticker}</td>
+                <td>${cripto.cantidad.toFixed(6)}</td>
+                <td>$${cripto.precio_actual.toFixed(2)}</td>
+                <td>$${cripto.valor_usdt.toFixed(2)}</td>
+                <td style="color: ${cripto.ganancia_perdida >= 0 ? 'green' : 'red'};">
+                    $${cripto.ganancia_perdida.toFixed(2)}
+                </td>
+                <td style="color: ${cripto.porcentaje_ganancia >= 0 ? 'green' : 'red'};">
+                    ${cripto.porcentaje_ganancia.toFixed(2)}%
+                </td>
+                <td>${cripto.porcentaje.toFixed(2)}%</td>
             `;
-            tbody.innerHTML += fila;
-        }
 
-        saldoElement.textContent = `${totalUSD.toFixed(2)} USDT`;
+            tabla.appendChild(fila);
+        });
     } catch (error) {
-        console.error("Error al cargar la billetera:", error);
+        console.error("Error al cargar los datos de la billetera:", error);
     }
 });
+
+

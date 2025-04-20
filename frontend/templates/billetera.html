@@ -41,17 +41,21 @@
         <div class="table-responsive mt-4">
             <table class="table table-dark table-bordered text-center align-middle">
                 <thead class="table-secondary">
-                    <tr>
-                        <th class="bg-transparent text-white">Criptomoneda</th>
-                        <th class="bg-transparent text-white">Cantidad</th>
-                        <th class="bg-transparent text-white">Valor en USDT</th>
-                        <th class="bg-transparent text-white">% del Total</th>
+                    <tr class="table-dark">
+                        <th>Nombre</th>
+                        <th>Cantidad</th>
+                        <th>Precio Actual</th>
+                        <th>Valor USDT</th>
+                        <th>G&P (USDT)</th>
+                        <th>G&P (%)</th>
+                        <th>% Billetera</th>
                     </tr>
                 </thead>
                 <tbody id="tabla-billetera">
-                    <!-- Filas dinámicas -->
+                    <!-- Las filas se insertan con JS -->
                 </tbody>
             </table>
+            
         </div>
     </main>
 
@@ -59,3 +63,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
+
+
+
