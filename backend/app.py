@@ -37,6 +37,18 @@ def trading():
     obtener_velas_binance()
     return vista_trading()
 
+@app.route("/api/historial")
+def api_historial():
+    try:
+        with open("datos/historial_operaciones.json", "r") as f:
+            historial = json.load(f)
+        return jsonify(historial)
+    except Exception as e:
+        print("Error al cargar historial:", e)
+        return jsonify({"error": "No se pudo cargar el historial"}), 500
+
+
+
 @app.route('/estado')
 def estado():
     return jsonify(estado_actual())

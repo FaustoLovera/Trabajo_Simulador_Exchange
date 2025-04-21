@@ -2,43 +2,36 @@
     {
         "tipo": "compra",
         "ticker": "BTC",
-        "cantidad": 0.0001174191275758821,
-        "monto_usdt": 10.0,
-        "precio_unitario": 85165
+        "cantidad": 0.0011469994494402642,
+        "monto_usdt": 100.0,
+        "precio_unitario": 87184
     },
     {
         "tipo": "compra",
-        "ticker": "USDT",
-        "cantidad": 10.00003000009,
+        "ticker": "BTC",
+        "cantidad": 0.00011468547508458054,
         "monto_usdt": 10.0,
-        "precio_unitario": 0.999997
+        "precio_unitario": 87195
     },
     {
         "tipo": "compra",
-        "ticker": "ETH",
-        "cantidad": 0.006282156790069167,
+        "ticker": "BTC",
+        "cantidad": 0.00011462106276649397,
         "monto_usdt": 10.0,
-        "precio_unitario": 1591.81
+        "precio_unitario": 87244
     },
     {
         "tipo": "compra",
-        "ticker": "TRX",
-        "cantidad": 81.20871044628247,
-        "monto_usdt": 20.0,
-        "precio_unitario": 0.246279
+        "ticker": "BTC",
+        "cantidad": 0.00011462106276649397,
+        "monto_usdt": 10.0,
+        "precio_unitario": 87244
     },
     {
         "tipo": "venta",
-        "ticker": "TRX",
-        "cantidad": 81.0,
-        "monto_usdt": 19.949166,
-        "precio_unitario": 0.246286
-    },
-    {
-        "tipo": "venta",
-        "ticker": "TRX",
-        "cantidad": 0.2,
-        "monto_usdt": 0.049214400000000005,
-        "precio_unitario": 0.246072
+        "ticker": "BTC",
+        "cantidad": 0.001,
+        "monto_usdt": 87.244,
+        "precio_unitario": 87244
     }
 ]

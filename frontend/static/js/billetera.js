@@ -1,32 +1,65 @@
-document.addEventListener("DOMContentLoaded", async function () {
-    const tabla = document.getElementById("tabla-billetera");
+document.addEventListener("DOMContentLoaded", function () {
+    // Billetera
+    const tablaBilletera = document.getElementById("tabla-billetera");
+    if (tablaBilletera) {
+        fetch("/api/billetera")
+            .then(response => response.json())
+            .then(datos => {
+                if (!Array.isArray(datos)) {
+                    console.error("Los datos de la billetera no son un array:", datos);
+                    return;
+                }
 
-    try {
-        const response = await fetch("/api/billetera");
-        const datos = await response.json();
+                datos.forEach((cripto) => {
+                    const fila = document.createElement("tr");
 
-        datos.forEach((cripto) => {
-            const fila = document.createElement("tr");
+                    fila.innerHTML = `
+                        <td>${cripto.ticker}</td>
+                        <td>${cripto.cantidad.toFixed(6)}</td>
+                        <td>$${cripto.precio_actual.toFixed(2)}</td>
+                        <td>$${cripto.valor_usdt.toFixed(2)}</td>
+                        <td style="color: ${cripto.ganancia_perdida >= 0 ? 'green' : 'red'};">
+                            $${cripto.ganancia_perdida.toFixed(2)}
+                        </td>
+                        <td style="color: ${cripto.porcentaje_ganancia >= 0 ? 'green' : 'red'};">
+                            ${cripto.porcentaje_ganancia.toFixed(2)}%
+                        </td>
+                        <td>${cripto.porcentaje.toFixed(2)}%</td>
+                    `;
 
-            fila.innerHTML = `
-                <td>${cripto.ticker}</td>
-                <td>${cripto.cantidad.toFixed(6)}</td>
-                <td>$${cripto.precio_actual.toFixed(2)}</td>
-                <td>$${cripto.valor_usdt.toFixed(2)}</td>
-                <td style="color: ${cripto.ganancia_perdida >= 0 ? 'green' : 'red'};">
-                    $${cripto.ganancia_perdida.toFixed(2)}
-                </td>
-                <td style="color: ${cripto.porcentaje_ganancia >= 0 ? 'green' : 'red'};">
-                    ${cripto.porcentaje_ganancia.toFixed(2)}%
-                </td>
-                <td>${cripto.porcentaje.toFixed(2)}%</td>
-            `;
+                    tablaBilletera.appendChild(fila);
+                });
+            })
+            .catch(error => {
+                console.error("Error al cargar los datos de la billetera:", error);
+            });
+    }
 
-            tabla.appendChild(fila);
-        });
-    } catch (error) {
-        console.error("Error al cargar los datos de la billetera:", error);
+    // Historial
+    const tablaHistorial = document.getElementById("tabla-historial");
+    if (tablaHistorial) {
+        fetch("/api/historial")
+            .then(res => res.json())
+            .then(historial => {
+                if (!Array.isArray(historial)) {
+                    console.error("El historial no es un array:", historial);
+                    return;
+                }
+
+                historial.forEach(item => {
+                    const fila = document.createElement("tr");
+                    fila.innerHTML = `
+                        <td style="color: ${item.tipo === 'compra' ? 'green' : 'red'}">${item.tipo}</td>
+                        <td>${item.ticker}</td>
+                        <td>${item.cantidad.toFixed(8)}</td>
+                        <td>$${item.monto_usdt.toFixed(2)}</td>
+                        <td>$${item.precio_unitario.toFixed(6)}</td>
+                    `;
+                    tablaHistorial.appendChild(fila);
+                });
+            })
+            .catch(error => {
+                console.error("Error al cargar el historial:", error);
+            });
     }
 });
-
-
