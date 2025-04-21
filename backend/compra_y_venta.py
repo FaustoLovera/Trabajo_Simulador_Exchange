@@ -48,8 +48,8 @@ def guardar_billetera(billetera):
     with open(BILLETERA_PATH, 'w') as f:
         json.dump(billetera, f, indent=4)
 
-def obtener_estado():
-    return cargar_billetera()
+obtener_estado = lambda: cargar_billetera()
+
 
 def comprar_cripto(ticker, monto_usd):
     billetera = cargar_billetera()

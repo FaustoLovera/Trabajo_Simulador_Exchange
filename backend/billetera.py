@@ -17,9 +17,7 @@ def cargar_historial():
     except FileNotFoundError:
         return []
 
-def cargar_datos_billetera():
-    with open(BILLETERA_PATH, "r") as f:
-        return json.load(f)
+cargar_datos_billetera = lambda: json.load(open(BILLETERA_PATH, "r"))
 
 def estado_actual_completo():
     billetera = cargar_datos_billetera()

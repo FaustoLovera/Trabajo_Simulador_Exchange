@@ -40,5 +40,19 @@
         "cantidad": 0.2,
         "monto_usdt": 0.049214400000000005,
         "precio_unitario": 0.246072
+    },
+    {
+        "tipo": "compra",
+        "ticker": "LEO",
+        "cantidad": 2.1881838074398248,
+        "monto_usdt": 20.0,
+        "precio_unitario": 9.14
+    },
+    {
+        "tipo": "venta",
+        "ticker": "LEO",
+        "cantidad": 2.188183,
+        "monto_usdt": 19.99999262,
+        "precio_unitario": 9.14
     }
 ]
