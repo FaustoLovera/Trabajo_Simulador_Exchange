@@ -33,5 +33,26 @@
         "cantidad": 0.001,
         "monto_usdt": 87.244,
         "precio_unitario": 87244
+    },
+    {
+        "tipo": "venta",
+        "ticker": "BTC",
+        "cantidad": 0.0004,
+        "monto_usdt": 35.036,
+        "precio_unitario": 87590
+    },
+    {
+        "tipo": "compra",
+        "ticker": "BTC",
+        "cantidad": 0.00011416828405069072,
+        "monto_usdt": 10.0,
+        "precio_unitario": 87590
+    },
+    {
+        "tipo": "compra",
+        "ticker": "DOGE",
+        "cantidad": 6.274824775518144,
+        "monto_usdt": 1.0,
+        "precio_unitario": 0.159367
     }
 ]
