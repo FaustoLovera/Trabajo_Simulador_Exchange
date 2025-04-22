@@ -3,6 +3,7 @@ from guardar_datos_cotizaciones import guardar_datos_cotizaciones, guardar_datos
 
 URL = "https://api.coingecko.com/api/v3/coins/markets"
 
+
 def obtener_datos_criptos_coingecko():
     params = {
         "vs_currency": "usd",
@@ -10,7 +11,7 @@ def obtener_datos_criptos_coingecko():
         "per_page": 50,
         "page": 1,
         "sparkline": "false",
-        "price_change_percentage": "1h,24h,7d"
+        "price_change_percentage": "1h,24h,7d",
     }
 
     r = requests.get(URL, params=params)
@@ -22,37 +23,34 @@ def obtener_datos_criptos_coingecko():
     datos = r.json()
     # print(f"💡 Datos obtenidos: {datos}")
     resultado = []
+    indice = 1
 
-    for i, cripto in enumerate(datos, start=1):
-        
-        if isinstance(cripto, dict):
-            resultado.append({
-                "id": i,
-                "nombre": cripto.get("name"),
-                "ticker": cripto.get("symbol").upper(),
-                "logo": cripto.get("image"),
-                "precio_usd": cripto.get("current_price"),
-                "1h_%": cripto.get("price_change_percentage_1h_in_currency"),
-                "24h_%": cripto.get("price_change_percentage_24h_in_currency"),
-                "7d_%": cripto.get("price_change_percentage_7d_in_currency"),
-                "market_cap": cripto.get("market_cap"),
-                "volumen_24h": cripto.get("total_volume"),
-                "circulating_supply": cripto.get("circulating_supply")
-            })
-        else:
-            print(f"Advertencia: El dato para la cripto en la posición {i} no es un diccionario. Valor recibido: {cripto}")
+    for cripto in datos:
+        fila = {}
+        fila["id"] = indice
+        fila["nombre"] = cripto.get("name")
+        fila["ticker"] = cripto.get("symbol").upper()
+        fila["logo"] = cripto.get("image")
+        fila["precio_usd"] = cripto.get("current_price")
+        fila["1h_%"] = cripto.get("price_change_percentage_1h_in_currency")
+        fila["24h_%"] = cripto.get("price_change_percentage_24h_in_currency")
+        fila["7d_%"] = cripto.get("price_change_percentage_7d_in_currency")
+        fila["market_cap"] = cripto.get("market_cap")
+        fila["volumen_24h"] = cripto.get("total_volume")
+        fila["circulating_supply"] = cripto.get("circulating_supply")
+
+        resultado.append(fila)
+
+        indice = indice + 1
 
     print(f"💡 Total de criptos procesadas: {len(resultado)}")
     guardar_datos_cotizaciones(resultado)
     return resultado
 
+
 def obtener_velas_binance():
     url = "https://api.binance.com/api/v3/klines"
-    params = {
-        "symbol": "BTCUSDT",
-        "interval": "1d",
-        "limit": 350
-    }
+    params = {"symbol": "BTCUSDT", "interval": "1d", "limit": 350}
 
     r = requests.get(url, params=params)
     print(f"Estado de la respuesta Binance: {r.status_code}")
@@ -64,14 +62,16 @@ def obtener_velas_binance():
     resultado = []
 
     for vela in datos:
-        resultado.append({
-            "time": int(vela[0] / 1000),  # timestamp en segundos
-            "open": float(vela[1]),
-            "high": float(vela[2]),
-            "low": float(vela[3]),
-            "close": float(vela[4]),
-            "volume": float(vela[5])
-        })
+        resultado.append(
+            {
+                "time": int(vela[0] / 1000),  # timestamp en segundos
+                "open": float(vela[1]),
+                "high": float(vela[2]),
+                "low": float(vela[3]),
+                "close": float(vela[4]),
+                "volume": float(vela[5]),
+            }
+        )
 
     print(f"💡 Total de velas procesadas: {len(resultado)}")
     guardar_datos_velas(resultado)
