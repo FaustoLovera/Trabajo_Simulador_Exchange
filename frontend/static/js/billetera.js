@@ -5,17 +5,13 @@ document.addEventListener("DOMContentLoaded", function () {
         fetch("/api/billetera")
             .then(response => response.json())
             .then(datos => {
-                if (!Array.isArray(datos)) {
-                    console.error("Los datos de la billetera no son un array:", datos);
-                    return;
-                }
-
                 datos.forEach((cripto) => {
+                    const decimalesCantidad = cripto.ticker === "USDT" ? 2 : 6;
                     const fila = document.createElement("tr");
 
                     fila.innerHTML = `
                         <td>${cripto.ticker}</td>
-                        <td>${cripto.cantidad.toFixed(6)}</td>
+                        <td>${cripto.cantidad.toFixed(decimalesCantidad)}</td>
                         <td>$${cripto.precio_actual.toFixed(2)}</td>
                         <td>$${cripto.valor_usdt.toFixed(2)}</td>
                         <td style="color: ${cripto.ganancia_perdida >= 0 ? 'green' : 'red'};">
@@ -41,11 +37,6 @@ document.addEventListener("DOMContentLoaded", function () {
         fetch("/api/historial")
             .then(res => res.json())
             .then(historial => {
-                if (!Array.isArray(historial)) {
-                    console.error("El historial no es un array:", historial);
-                    return;
-                }
-
                 historial.forEach(item => {
                     const fila = document.createElement("tr");
                     fila.innerHTML = `
