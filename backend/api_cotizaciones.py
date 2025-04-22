@@ -1,10 +1,18 @@
+import logging
 import requests
 from guardar_datos_cotizaciones import guardar_datos_cotizaciones, guardar_datos_velas
+from typing import Dict, List
 
 URL = "https://api.coingecko.com/api/v3/coins/markets"
 
 
-def obtener_datos_criptos_coingecko():
+def obtener_datos_criptos_coingecko() -> List[Dict]:
+    """
+    Obtiene los datos de criptomonedas desde la API de CoinGecko.
+    
+    Returns:
+        List[Dict]: Lista de diccionarios con los datos de cada criptomoneda
+    """
     params = {
         "vs_currency": "usd",
         "order": "market_cap_desc",
@@ -14,11 +22,14 @@ def obtener_datos_criptos_coingecko():
         "price_change_percentage": "1h,24h,7d",
     }
 
-    r = requests.get(URL, params=params)
-    print(f"Estado de la respuesta: {r.status_code}")
-    if r.status_code != 200:
-        print("❌ Error al obtener datos de CoinGecko")
+    try:
+        r = requests.get(URL, params=params)
+        r.raise_for_status()  # Lanzará una excepción para códigos de error HTTP
+    except requests.exceptions.RequestException as e:
+        logging.error(f"❌ Error al obtener datos de CoinGecko: {str(e)}")
         return {"error": "No se pudo obtener los datos"}
+
+    logging.info(f"✅ Estado de la respuesta: {r.status_code}")
 
     datos = r.json()
     # print(f"💡 Datos obtenidos: {datos}")
@@ -48,15 +59,24 @@ def obtener_datos_criptos_coingecko():
     return resultado
 
 
-def obtener_velas_binance():
+def obtener_velas_binance() -> List[Dict]:
+    """
+    Obtiene los datos de velas (Klines) desde la API de Binance.
+    
+    Returns:
+        List[Dict]: Lista de diccionarios con los datos de cada vela
+    """
     url = "https://api.binance.com/api/v3/klines"
     params = {"symbol": "BTCUSDT", "interval": "1d", "limit": 350}
 
-    r = requests.get(url, params=params)
-    print(f"Estado de la respuesta Binance: {r.status_code}")
-    if r.status_code != 200:
-        print("❌ Error al obtener datos de Binance")
+    try:
+        r = requests.get(url, params=params)
+        r.raise_for_status()  # Lanzará una excepción para códigos de error HTTP
+    except requests.exceptions.RequestException as e:
+        logging.error(f"❌ Error al obtener datos de Binance: {str(e)}")
         return {"error": "No se pudo obtener los datos"}
+
+    logging.info(f"✅ Estado de la respuesta Binance: {r.status_code}")
 
     datos = r.json()
     resultado = []
