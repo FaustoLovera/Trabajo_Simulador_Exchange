@@ -29,16 +29,9 @@
     },
     {
         "tipo": "venta",
-        "ticker": "TRX",
-        "cantidad": 81.0,
-        "monto_usdt": 19.949166,
-        "precio_unitario": 0.246286
-    },
-    {
-        "tipo": "venta",
-        "ticker": "TRX",
-        "cantidad": 0.2,
-        "monto_usdt": 0.049214400000000005,
-        "precio_unitario": 0.246072
+        "ticker": "BTC",
+        "cantidad": 0.001,
+        "monto_usdt": 87.244,
+        "precio_unitario": 87244
     }
 ]
