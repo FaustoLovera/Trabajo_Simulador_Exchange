@@ -3,7 +3,7 @@
 /datos/datos_velas.json
 /datos/billetera.json
 /datos/historial_operaciones.json
-__pycache__/
+
 
 # Python
 __pycache__/
@@ -109,4 +109,6 @@ datos/billetera.json
 datos/datos_cotizaciones.json
 datos/datos_velas.json
 *.pyc
-__pycache__/
+# D2 files
+*.d2
+diagrama.png

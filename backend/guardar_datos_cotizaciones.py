@@ -4,6 +4,7 @@ import os
 RUTA_COTIZACIONES = "./datos/datos_cotizaciones.json"
 RUTA_VELAS = "./datos/datos_velas.json"
 
+
 def guardar_datos_cotizaciones(data):
     os.makedirs(os.path.dirname(RUTA_COTIZACIONES), exist_ok=True)
     print("💾 Guardando datos en datos_cotizaciones.json...")
@@ -16,6 +17,7 @@ def guardar_datos_cotizaciones(data):
         print("✅ Datos guardados correctamente")
     except Exception as e:
         print("❌ Error al guardar el archivo:", e)
+
 
 def cargar_datos_cotizaciones():
     if not os.path.exists(RUTA_COTIZACIONES):

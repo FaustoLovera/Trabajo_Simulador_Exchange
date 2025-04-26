@@ -11,9 +11,9 @@ def obtener_tabla_criptos():
             cripto["id"],
             f"<img src='{cripto['logo']}' width='20' class='logo-cripto'> <span class='nombre-cripto'>{cripto['nombre']}</span> <span class='ticker-cripto'>({cripto['ticker']})</span>",
             envolver_variacion_coloreada(cripto["precio_usd"], con_signo_dolar=True),
-            envolver_variacion_coloreada(cripto['1h_%']),
-            envolver_variacion_coloreada(cripto['24h_%']),
-            envolver_variacion_coloreada(cripto['7d_%']),
+            envolver_variacion_coloreada(cripto["1h_%"]),
+            envolver_variacion_coloreada(cripto["24h_%"]),
+            envolver_variacion_coloreada(cripto["7d_%"]),
             formatear_numero(cripto["market_cap"]),
             formatear_numero(cripto["volumen_24h"]),
             formatear_numero(cripto["circulating_supply"]),
@@ -44,9 +44,9 @@ def envolver_variacion_coloreada(valor, con_signo_dolar=False):
             flecha = "<span class='flecha-verde'>▲</span>"
         else:
             flecha = "<span class='flecha-roja'>▼</span>"
-    
+
     valor_redondeado = f"{valor:,.2f}"
-    
+
     if con_signo_dolar:
         contenido = f"{sufijo}{valor_redondeado}"
     else:
