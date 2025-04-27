@@ -1,14 +1,16 @@
-# Simulador Exchange (Proyecto Educativo)
+# Simulador Exchange - **BlokX**
 
-Este es un proyecto educativo desarrollado para la materia "Algoritmos y Estructuras de Datos I", cuyo objetivo es simular el funcionamiento básico de un exchange de criptomonedas. El sistema permite a los usuarios operar con un saldo ficticio, utilizando datos reales de cotización obtenidos de CoinGecko y Binance.
+Este proyecto educativo fue desarrollado en el marco de la materia "Algoritmos y Estructuras de Datos I" de UADE, bajo la supervisión de la profesora Julia Monasterio.  
+Su objetivo es aplicar los conocimientos de la cátedra simulando el funcionamiento básico de un exchange de criptomonedas.  
+El sistema permite a los usuarios operar con saldo ficticio utilizando datos reales de cotización obtenidos de CoinGecko y Binance.
 
 ## 🎯 Objetivos del proyecto
 
-- Familiarizar a los usuarios con el entorno de un exchange cripto.
-- Simular compras y ventas con diferentes tipos de órdenes (market, limit, stop-loss).
-- Calcular ganancias, pérdidas, y balances del portafolio.
-- Almacenar toda la información en archivos locales (.json).
-- Aprender cómo se comunican el frontend y backend en una arquitectura moderna (HTML / CSS / Flask / Python).
+- Familiarizar a los usuarios con el entorno de un exchange de criptomonedas.
+- Simular operaciones de compra y venta mediante distintos tipos de órdenes: Market, Limit y Stop-Loss.
+- Calcular y visualizar ganancias, pérdidas y balances del portafolio.
+- Almacenar toda la información de manera local utilizando archivos `.json`.
+- Comprender la interacción entre frontend y backend mediante una arquitectura moderna (HTML, CSS, Flask y Python).
 
 ## ⚙️ Funcionalidades
 
@@ -16,7 +18,7 @@ Este es un proyecto educativo desarrollado para la materia "Algoritmos y Estruct
 - Visualización del top de criptomonedas con:
   - Nombre, ticker, precio, market cap, volumen, supply.
   - Variación en 1h, 24h y 7 días.
-- Actualización automática de precios cada 30 segundos.
+- Actualización automática de precios cada 15 segundos.
 
 ### Panel de trading
 En este panel se verán tres secciones diferentes que contemplan lo necesario para ejecutar las ordenes de compra/venta.
@@ -47,26 +49,38 @@ En este panel se verán tres secciones diferentes que contemplan lo necesario pa
 
 ```
 simulador_exchange/
-├── backend/               # Código Python del servidor
-│   ├── app.py             # Servidor Flask y rutas principales
-│   ├── api_cotizaciones.py
-│   └── XXXXXXXXXXXXXXXXXXX # FALTA ACTUALIZAR ESTO A MEDIDA QUE VAYAMOS PONIENDO ARCHIVOS
+├── backend/                       # Código Python del servidor
+│   ├── app.py                        # Servidor Flask y rutas principales
+│   ├── api_cotizaciones.py           # API para obtener cotizaciones de criptomonedas
+│   ├── billetera.py                  # Funciones para operar con la billetera
+│   ├── compra_y_venta.py             # Funciones para realizar operaciones de compra y venta
+│   ├── guardar_datos_cotizaciones.py # Funciones para guardar datos de cotizaciones en archivos locales
+│   └── tabla_cotizaciones.py         # Funciones para generar la tabla de cotizaciones en el frontend
 │
 ├── frontend/
 │   ├── templates/         # Archivos HTML (renderizados por Flask)
-│   │   ├── index.html
-│   │   ├── billetera.html
-│   │   └── trading.html
+│   │   ├── index.html         # Pantalla principal con tabla de cotizaciones
+│   │   ├── billetera.html     # Pantalla de billetera con datos de tenencias actuales
+│   │   └── trading.html       # Pantalla de trading con gráfico de velas, sección de órdenes e historial
+│   │
 │   └── static/            # Archivos estáticos (CSS/JS)
-│       ├── css/estilo.css
-│       └── js/funciones.js
+│       ├── css/
+│       │   ├── styles_index.css
+│       │   └── styles_trading.css
+│       │
+│       └── js/            
+│           ├── billetera.js         # Funciones para mostrar los datos de billetera y el historial al respectivo .html
+│           ├── funciones.js         # Funciones para traer las cotizaciones de datos_cotizaciones.json al index.html
+│           └── grafico_velas.js     # Funciones para el gráfico de velas japonesas con LightWeight Charts
 │
 ├── datos/                 # Archivos de persistencia (.json)
-│   ├── billetera.json
-│   ├── datos_cotizaciones.json
-│   ├── datos_velas.json
-│   └── historial_operaciones.json
+│   ├── billetera.json               # Almacena información sobre el saldo y las tenencias actuales de criptomonedas.
+│   ├── datos_cotizaciones.json      # Contiene las cotizaciones actuales de diferentes criptomonedas.
+│   ├── datos_velas.json             # Guarda los datos históricos de velas japonesas de criptomonedas.
+│   └── historial_operaciones.json   # Registra todas las operaciones de compra y venta realizadas por el usuario.
 │
+├── requirements.txt
+├── .gitignore
 └── README.md
 ```
 
@@ -95,9 +109,8 @@ http://localhost:5000
 
 ## 📦 Tecnologías utilizadas
 
-- Python (3.x)
+- Python 3.13
 - Flask
-- Requests
 - HTML, CSS, JavaScript
 - Lightweight Charts (TradingView)
 
