@@ -6,12 +6,24 @@ COTIZACIONES_PATH = "./datos/datos_cotizaciones.json"
 
 
 def obtener_precios():
+    """
+        Lee el archivo de cotizaciones y devuelve un diccionario con los nombres de las
+        criptomonedas como claves y sus precios actuales en USD como valores.
+    """
     with open(COTIZACIONES_PATH, "r") as f:
         datos = json.load(f)
     return {cripto["ticker"]: cripto["precio_usd"] for cripto in datos}
 
 
 def cargar_historial():
+    """
+    Carga el historial de operaciones desde un archivo JSON.
+
+    Intenta abrir y leer el archivo especificado por `HISTORIAL_PATH`. Si el archivo
+    se encuentra, retorna su contenido como una lista de operaciones. Si el archivo
+    no existe, retorna una lista vacía.
+    """
+
     try:
         with open(HISTORIAL_PATH, "r") as f:
             return json.load(f)
@@ -20,6 +32,13 @@ def cargar_historial():
 
 
 def cargar_datos_billetera():
+    """
+    Carga la billetera desde un archivo JSON.
+
+    Intenta abrir y leer el archivo especificado por `BILLETERA_PATH`. Si el archivo
+    se encuentra, retorna su contenido como un diccionario. Si el archivo no existe,
+    retorna un diccionario vacío.
+    """
     try:
         with open(BILLETERA_PATH, "r") as f:
             return json.load(f)
@@ -28,6 +47,16 @@ def cargar_datos_billetera():
 
 
 def calcular_detalle_cripto(ticker, cantidad_actual, precios, historial):
+    """
+    Calcula el estado financiero de una criptomoneda en base a su cantidad actual, el precio de mercado
+    y el historial de compras.
+
+    Obtiene el precio actual, calcula el valor de la tenencia en USDT, el precio promedio de compra,
+    el monto invertido en la cantidad disponible, y la ganancia o pérdida actual tanto en USDT como en porcentaje.
+
+    Devuelve un diccionario con toda esta información resumida.
+    """
+
     precio_actual = precios.get(ticker, 0)
     valor_usdt = cantidad_actual * precio_actual
 
@@ -62,6 +91,18 @@ def calcular_detalle_cripto(ticker, cantidad_actual, precios, historial):
 
 
 def estado_actual_completo():
+    """
+    Genera un resumen detallado del estado actual de todas las criptomonedas en la billetera.
+
+    Carga los saldos actuales, los precios de mercado y el historial de operaciones. Filtra
+    las criptomonedas para ignorar aquellas con cantidades insignificantes. Luego, calcula
+    el detalle financiero de cada criptomoneda (valor en USDT, ganancia, pérdida, etc.) y 
+    suma el valor total del portafolio.
+
+    Finalmente, asigna a cada criptomoneda su porcentaje de participación dentro del portafolio
+    y devuelve una lista con todos los detalles.
+    """
+    
     billetera = cargar_datos_billetera()
     precios = obtener_precios()
     historial = cargar_historial()
