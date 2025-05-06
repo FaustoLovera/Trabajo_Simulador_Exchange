@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BlocX - Billetera</title>
     <link rel="icon" href="{{ url_for('static', filename='img/logo_BlocX.png') }}" type="image/x-icon" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
+
 <body class="bg-dark text-white">
     <nav class="navbar navbar-expand-lg bg-black shadow">
         <div class="container-fluid">
@@ -52,33 +54,15 @@
                         <th>% Billetera</th>
                     </tr>
                 </thead>
-                <tbody>
-                    {% if datos %}
-                        {% for cripto in datos %}
-                        <tr>
-                            <td>{{ cripto.ticker }}</td>
-                            <td>{{ '%.6f' % cripto.cantidad if cripto.ticker != 'USDT' else '%.2f' % cripto.cantidad }}</td>
-                            <td>${{ '%.6f' % cripto.precio_actual }}</td>
-                            <td>${{ '%.2f' % cripto.valor_usdt }}</td>
-                            <td style="color: {{ 'green' if cripto.ganancia_perdida >= 0 else 'red' }};">
-                                ${{ '%.2f' % cripto.ganancia_perdida }}
-                            </td>
-                            <td style="color: {{ 'green' if cripto.porcentaje_ganancia >= 0 else 'red' }};">
-                                {{ '%.2f' % cripto.porcentaje_ganancia }}%
-                            </td>
-                            <td>{{ '%.2f' % cripto.porcentaje }}%</td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="7" class="text-center">No hay datos disponibles</td>
-                        </tr>
-                    {% endif %}
+                <tbody id="tabla-billetera">
+                    <!-- Las filas se insertan dinámicamente desde /api/billetera -->
                 </tbody>
             </table>
         </div>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/billetera.js') }}"></script>
 </body>
+
 </html>

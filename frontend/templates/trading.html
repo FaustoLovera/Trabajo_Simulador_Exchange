@@ -65,40 +65,10 @@
 				</div>
 
 				<!-- Mensajes Flash -->
-				{% with messages = get_flashed_messages(with_categories=true) %}
-				{% if messages %}
-				{% for category, message in messages %}
-				<div class="alert alert-{{ category }} mt-3">{{ message }}</div>
-				{% endfor %}
-				{% endif %}
-				{% endwith %}
+				{% include "fragmento_mensajes_flash.html" %}
 
 				<!-- Formulario de trading -->
-				<form method="POST" class="mt-4">
-					<div class="mb-3">
-						<label for="ticker" class="form-label">Criptomoneda</label>
-						<select name="ticker" id="ticker" class="form-select" required>
-							{% for cripto in criptos %}
-							<option value="{{ cripto.ticker }}">{{ cripto.nombre }} ({{ cripto.ticker }})</option>
-							{% endfor %}
-						</select>
-					</div>
-
-					<div class="mb-3">
-						<label for="monto" class="form-label">Monto</label>
-						<input type="number" step="any" class="form-control" name="monto" id="monto"
-							placeholder="Monto en USDT o unidades cripto" required>
-						<small class="form-text text-light">
-							• Para <strong>comprar</strong>: se usa saldo USDT. <br>
-							• Para <strong>vender</strong>: se usa cantidad de la criptomoneda.
-						</small>
-					</div>
-
-					<div class="d-flex gap-3">
-						<button type="submit" name="accion" value="comprar" class="btn btn-success">Comprar</button>
-						<button type="submit" name="accion" value="vender" class="btn btn-danger">Vender</button>
-					</div>
-				</form>
+				{% include "fragmento_formulario_trading.html" %}
 			</div>
 		</div>
 

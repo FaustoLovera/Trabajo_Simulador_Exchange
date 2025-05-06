@@ -137,8 +137,7 @@ def api_billetera():
     `estado_actual_completo()` y lo devuelve como una respuesta JSON.
     """
     
-    estado = estado_actual_completo()
-    return jsonify(estado)
+    return render_fragmento_billetera()
 
 
 @app.route("/api/velas")
