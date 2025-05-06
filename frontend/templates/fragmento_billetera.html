@@ -1,0 +1,15 @@
+{% for cripto in datos %}
+<tr>
+    <td>{{ cripto.ticker }}</td>
+    <td>{{ '%.6f' % cripto.cantidad if cripto.ticker != 'USDT' else '%.2f' % cripto.cantidad }}</td>
+    <td>${{ '%.6f' % cripto.precio_actual }}</td>
+    <td>${{ '%.2f' % cripto.valor_usdt }}</td>
+    <td style="color: {{ cripto.color_ganancia }};">
+        ${{ '%.2f' % cripto.ganancia_perdida }}
+    </td>
+    <td style="color: {{ cripto.color_porcentaje }};">
+        {{ '%.2f' % cripto.porcentaje_ganancia }}%
+    </td>
+    <td>{{ '%.2f' % cripto.porcentaje }}%</td>
+</tr>
+{% endfor %}

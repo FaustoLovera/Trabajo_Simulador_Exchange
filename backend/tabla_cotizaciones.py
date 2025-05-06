@@ -1,3 +1,4 @@
+from flask import render_template
 import json
 from config import COTIZACIONES_PATH
 
@@ -106,3 +107,20 @@ def formatear_numero(n, escala_manual=None):
         if n >= valor:
             return f"{n / valor:,.2f} {simbolo}"
     return f"{n:.2f}"
+
+
+# Nueva función para renderizar el fragmento de la tabla usando Flask
+def renderizar_fragmento_tabla():
+    datos = obtener_tabla_criptos()
+    clases_por_columna = [
+        'text-start px-3',  # #
+        'text-start px-3',  # Name + logo
+        'text-start px-3',  # Price
+        'text-end px-3',    # 1h%
+        'text-end px-3',    # 24h%
+        'text-end px-3',    # 7d%
+        'text-end px-3',    # Market Cap
+        'text-end px-3',    # Volume
+        'text-end px-3',    # Supply
+    ]
+    return render_template("fragmento_tabla.html", datos=datos, clases_por_columna=clases_por_columna)

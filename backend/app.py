@@ -3,8 +3,8 @@ from flask import Flask, render_template, jsonify
 from api_cotizaciones import obtener_datos_criptos_coingecko, obtener_velas_binance
 from tabla_cotizaciones import obtener_tabla_criptos
 from compra_y_venta import cargar_billetera, trading as vista_trading
-from billetera import estado_actual_completo
-from config import FLASK_SECRET_KEY, HISTORIAL_PATH, VELAS_PATH
+from billetera import estado_actual_completo, render_fragmento_billetera, render_fragmento_historial
+from config import FLASK_SECRET_KEY, VELAS_PATH
 
 app = Flask(
     __name__,
@@ -60,17 +60,14 @@ def actualizar():
     return jsonify({"estado": "ok", "cantidad": len(datos)})
 
 
+from tabla_cotizaciones import renderizar_fragmento_tabla
+
 @app.route("/datos_tabla")
 def datos_tabla():
     """
-    Obtiene los datos de criptomonedas formateados en una tabla y los retorna 
-    como una respuesta JSON.
-
-    La función llama a `obtener_tabla_criptos()` para generar la tabla de datos 
-    y devuelve la tabla en formato JSON a la solicitud realizada.
+    Renderiza el fragmento de la tabla de criptomonedas utilizando una función externa.
     """
-    
-    return jsonify(obtener_tabla_criptos())
+    return renderizar_fragmento_tabla()
 
 
 @app.route("/trading", methods=["GET", "POST"])
@@ -98,13 +95,7 @@ def api_historial():
     al cargar el archivo, devuelve un mensaje de error con un código de estado 500.
     """
     
-    try:
-        with open(HISTORIAL_PATH, "r") as f:
-            historial = json.load(f)
-        return jsonify(historial)
-    except Exception as e:
-        print("Error al cargar historial:", e)
-        return jsonify({"error": "No se pudo cargar el historial"}), 500
+    return render_fragmento_historial()
 
 
 @app.route("/estado")
@@ -127,9 +118,14 @@ def billetera():
     La función obtiene el estado actual de la billetera utilizando `estado_actual()` 
     y lo pasa al template `billetera.html` para su visualización.
     """
+    datos_billetera = estado_actual_completo()
+    # Imprimir para depuración
+    print("Tipo de datos:", type(datos_billetera))
+    print("Contenido de datos:", datos_billetera)
+    
     
     estado = estado_actual()
-    return render_template("billetera.html", estado=estado)
+    return render_template("billetera.html", datos=datos_billetera)
 
 
 @app.route("/api/billetera")

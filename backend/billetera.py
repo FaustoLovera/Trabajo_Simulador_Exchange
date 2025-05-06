@@ -1,3 +1,4 @@
+from flask import render_template
 import json
 from config import HISTORIAL_PATH, BILLETERA_PATH, COTIZACIONES_PATH
 
@@ -135,3 +136,23 @@ def estado_actual_completo():
         detalle_cripto["porcentaje"] = calcular_porcentaje(detalle_cripto["valor_usdt"])
 
     return detalles
+
+
+# Renderizado de fragmentos HTML para Flask
+def render_fragmento_billetera():
+    datos = estado_actual_completo()
+
+    for d in datos:
+        d["color_ganancia"] = "green" if d["ganancia_perdida"] >= 0 else "red"
+        d["color_porcentaje"] = "green" if d["porcentaje_ganancia"] >= 0 else "red"
+
+    return render_template("fragmento_billetera.html", datos=datos)
+
+
+def render_fragmento_historial():
+    historial = cargar_historial()
+
+    for h in historial:
+        h["color"] = "green" if h["tipo"] == "compra" else "red"
+
+    return render_template("fragmento_historial.html", historial=historial)
