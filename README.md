@@ -51,6 +51,7 @@ En este panel se verán tres secciones diferentes que contemplan lo necesario pa
 simulador_exchange/
 ├── backend/                       # Código Python del servidor
 │   ├── app.py                        # Servidor Flask y rutas principales
+│   ├── config.py                     # Configuración de rutas de archivos, URLs, y ajustes 
 │   ├── api_cotizaciones.py           # API para obtener cotizaciones de criptomonedas
 │   ├── billetera.py                  # Funciones para operar con la billetera
 │   ├── compra_y_venta.py             # Funciones para realizar operaciones de compra y venta
