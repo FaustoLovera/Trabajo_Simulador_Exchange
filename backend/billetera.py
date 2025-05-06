@@ -7,8 +7,8 @@ COTIZACIONES_PATH = "./datos/datos_cotizaciones.json"
 
 def obtener_precios():
     """
-        Lee el archivo de cotizaciones y devuelve un diccionario con los nombres de las
-        criptomonedas como claves y sus precios actuales en USD como valores.
+    Lee el archivo de cotizaciones y devuelve un diccionario con los nombres de las
+    criptomonedas como claves y sus precios actuales en USD como valores.
     """
     with open(COTIZACIONES_PATH, "r") as f:
         datos = json.load(f)
@@ -60,23 +60,24 @@ def calcular_detalle_cripto(ticker, cantidad_actual, precios, historial):
     precio_actual = precios.get(ticker, 0)
     valor_usdt = cantidad_actual * precio_actual
 
-    cantidad_comprada = 0
-    total_invertido = 0
-    for operacion in historial:
-        if operacion["ticker"] == ticker and operacion["tipo"] == "compra":
-            cantidad_comprada += operacion["cantidad"]
-            total_invertido += operacion["monto_usdt"]
+    # Filtra las operaciones de compra para el ticker especificado
+    compras = [
+        op for op in historial if op["ticker"] == ticker and op["tipo"] == "compra"
+    ]
 
-    precio_promedio = (
-        total_invertido / cantidad_comprada if cantidad_comprada > 0 else 0
-    )
+    cantidad_comprada = sum(op["cantidad"] for op in compras)
+    total_invertido = sum(op["monto_usdt"] for op in compras)
+
+    # Evita divisiones por 0 y devuelve 0 en caso de que el denominador sea 0
+    division_por_0_segura = lambda num, den: num / den if den != 0 else 0
+
+    precio_promedio = division_por_0_segura(total_invertido, cantidad_comprada)
     invertido_actual = cantidad_actual * precio_promedio
-    ganancia = valor_usdt - invertido_actual
-    porcentaje_ganancia = (
-        (ganancia / invertido_actual) * 100 if invertido_actual != 0 else 0
-    )
 
-    detalle_cripto = {
+    ganancia = valor_usdt - invertido_actual
+    porcentaje_ganancia = division_por_0_segura(ganancia, invertido_actual) * 100
+
+    return {
         "ticker": ticker,
         "cantidad": cantidad_actual,
         "valor_usdt": valor_usdt,
@@ -87,48 +88,52 @@ def calcular_detalle_cripto(ticker, cantidad_actual, precios, historial):
         "porcentaje_ganancia": porcentaje_ganancia,
     }
 
-    return detalle_cripto
-
 
 def estado_actual_completo():
     """
-    Genera un resumen detallado del estado actual de todas las criptomonedas en la billetera.
+    Calcula un resumen financiero completo del portafolio de criptomonedas actual.
 
-    Carga los saldos actuales, los precios de mercado y el historial de operaciones. Filtra
-    las criptomonedas para ignorar aquellas con cantidades insignificantes. Luego, calcula
-    el detalle financiero de cada criptomoneda (valor en USDT, ganancia, pérdida, etc.) y 
-    suma el valor total del portafolio.
+    Este resumen incluye, para cada activo con saldo significativo (> 0.000001):
+    - Cantidad disponible
+    - Valor de mercado en USDT
+    - Precio promedio de compra
+    - Monto invertido
+    - Ganancia/pérdida neta y en porcentaje
+    - Porcentaje de participación en el portafolio total
 
-    Finalmente, asigna a cada criptomoneda su porcentaje de participación dentro del portafolio
-    y devuelve una lista con todos los detalles.
+    Returns:
+        List[Dict]: Lista de diccionarios, cada uno representando una criptomoneda con su detalle financiero.
     """
-    
+
+    # Cargar los datos actuales desde archivos locales
     billetera = cargar_datos_billetera()
     precios = obtener_precios()
     historial = cargar_historial()
 
-    billetera_filtrada = {}
-    for ticker in billetera:
-        cantidad = billetera[ticker]
+    # Filtrar solo las criptomonedas con una cantidad significativa
+    billetera_filtrada = {
+        ticker: cantidad
+        for ticker, cantidad in billetera.items()
+        if cantidad >= 0.000001
+    }
 
-        if cantidad >= 0.000001:
-            billetera_filtrada[ticker] = cantidad
-
-    detalles = []
-    total_usdt = 0
-
-    for ticker in billetera_filtrada:
-        cantidad_actual = billetera_filtrada[ticker]
-        detalle_cripto = calcular_detalle_cripto(
-            ticker, cantidad_actual, precios, historial
+    # Calcular el detalle financiero de cada criptomoneda
+    detalles = list(
+        map(
+            lambda par: calcular_detalle_cripto(par[0], par[1], precios, historial),
+            billetera_filtrada.items(),
         )
-        total_usdt += detalle_cripto["valor_usdt"]
-        detalles.append(detalle_cripto)
+    )
 
+    # Calcular el valor total en USDT del portafolio
+    total_usdt = sum(d["valor_usdt"] for d in detalles)
+
+    # Función para calcular el porcentaje que representa cada cripto sobre el total
     calcular_porcentaje = lambda valor_usdt: (
         (valor_usdt / total_usdt) * 100 if total_usdt > 0 else 0
     )
 
+    # Asignar el porcentaje correspondiente a cada criptomoneda
     for detalle_cripto in detalles:
         detalle_cripto["porcentaje"] = calcular_porcentaje(detalle_cripto["valor_usdt"])
 

@@ -1,7 +1,8 @@
 import requests
 from guardar_datos_cotizaciones import guardar_datos_cotizaciones, guardar_datos_velas
 
-URL = "https://api.coingecko.com/api/v3/coins/markets"
+COINGECKO_URL = "https://api.coingecko.com/api/v3/coins/markets"
+BINANCE_URL = "https://api.binance.com/api/v3/klines"
 
 
 def obtener_datos_criptos_coingecko():
@@ -41,7 +42,7 @@ def obtener_datos_criptos_coingecko():
     }
 
     try:
-        respuesta = requests.get(URL, params)
+        respuesta = requests.get(COINGECKO_URL, params)
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener datos de CoinGecko: {str(e)}")
         return {"error": "Error al obtener datos de CoinGecko"}
@@ -54,29 +55,27 @@ def obtener_datos_criptos_coingecko():
     print(f"✅ Estado de la respuesta: {respuesta.status_code}")
 
     datos = respuesta.json()
-    resultado = []
-
-    indice = 1
-    for cripto in datos:
-        fila = {
-            "id": indice,
-            "nombre": cripto.get("name"),
-            "ticker": cripto.get("symbol").upper(),
-            "logo": cripto.get("image"),
-            "precio_usd": cripto.get("current_price"),
-            "1h_%": cripto.get("price_change_percentage_1h_in_currency"),
-            "24h_%": cripto.get("price_change_percentage_24h_in_currency"),
-            "7d_%": cripto.get("price_change_percentage_7d_in_currency"),
-            "market_cap": cripto.get("market_cap"),
-            "volumen_24h": cripto.get("total_volume"),
-            "circulating_supply": cripto.get("circulating_supply"),
-        }
-        resultado.append(fila)
-        indice += 1
+    resultado = list(map(
+        lambda par: {
+            "id": par[0],
+            "nombre": par[1].get("name"),
+            "ticker": par[1].get("symbol", "").upper(),
+            "logo": par[1].get("image"),
+            "precio_usd": par[1].get("current_price"),
+            "1h_%": par[1].get("price_change_percentage_1h_in_currency"),
+            "24h_%": par[1].get("price_change_percentage_24h_in_currency"),
+            "7d_%": par[1].get("price_change_percentage_7d_in_currency"),
+            "market_cap": par[1].get("market_cap"),
+            "volumen_24h": par[1].get("total_volume"),
+            "circulating_supply": par[1].get("circulating_supply"),
+        },
+        enumerate(datos, start=1)
+    ))
 
     print(f"💡 Total de criptos procesadas: {len(resultado)}")
     guardar_datos_cotizaciones(resultado)
     return resultado
+
 
 
 def obtener_velas_binance():
@@ -101,15 +100,13 @@ def obtener_velas_binance():
         Si ocurre un error de conexión o una respuesta inválida, la función retorna
         un diccionario con una clave "error" describiendo el problema.
     """
-    url = "https://api.binance.com/api/v3/klines"
     params = {
         "symbol": "BTCUSDT",
         "interval": "1d",
         "limit": 300,
     }  # Esto se tiene que parametrizar
-
     try:
-        respuesta = requests.get(url, params)
+        respuesta = requests.get(BINANCE_URL, params)
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener datos de Binance: {str(e)}")
         return {"error": "Error al obtener datos de Binance"}
