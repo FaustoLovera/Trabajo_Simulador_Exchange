@@ -4,6 +4,7 @@ from api_cotizaciones import obtener_datos_criptos_coingecko, obtener_velas_bina
 from tabla_cotizaciones import obtener_tabla_criptos
 from compra_y_venta import cargar_billetera, trading as vista_trading
 from billetera import estado_actual_completo
+from config import FLASK_SECRET_KEY, HISTORIAL_PATH, VELAS_PATH
 
 app = Flask(
     __name__,
@@ -11,7 +12,7 @@ app = Flask(
     template_folder="../frontend/templates",
 )
 
-app.secret_key = "clave_segura_para_flash"
+app.secret_key = FLASK_SECRET_KEY
 
 
 def estado_actual():
@@ -98,7 +99,7 @@ def api_historial():
     """
     
     try:
-        with open("datos/historial_operaciones.json", "r") as f:
+        with open(HISTORIAL_PATH, "r") as f:
             historial = json.load(f)
         return jsonify(historial)
     except Exception as e:
@@ -147,15 +148,15 @@ def api_billetera():
 @app.route("/api/velas")
 def obtener_datos_velas():
     """
-    Obtiene los datos de las velas almacenados en el archivo 'datos_velas.json' y los devuelve en formato JSON.
+    Obtiene los datos de las velas almacenados en el archivo de velas y los devuelve en formato JSON.
 
-    La función lee los datos del archivo 'datos/datos_velas.json', que contiene información sobre velas 
+    La función lee los datos del archivo de velas, que contiene información sobre velas 
     de criptomonedas, y devuelve estos datos como una respuesta JSON. En caso de error, se maneja la 
     excepción y se retorna un mensaje de error con un código de estado 500.
     """
     
     try:
-        with open("datos/datos_velas.json", "r") as archivo:
+        with open(VELAS_PATH, "r") as archivo:
             datos = json.load(archivo)
         return jsonify(datos)
     except Exception as e:

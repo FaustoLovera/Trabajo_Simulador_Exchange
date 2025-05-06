@@ -1,8 +1,6 @@
 import requests
 from guardar_datos_cotizaciones import guardar_datos_cotizaciones, guardar_datos_velas
-
-COINGECKO_URL = "https://api.coingecko.com/api/v3/coins/markets"
-BINANCE_URL = "https://api.binance.com/api/v3/klines"
+from config import COINGECKO_URL, BINANCE_URL, CANTIDAD_CRIPTOMONEDAS, CANTIDAD_VELAS
 
 
 def obtener_datos_criptos_coingecko():
@@ -35,7 +33,7 @@ def obtener_datos_criptos_coingecko():
     params = {
         "vs_currency": "usd",
         "order": "market_cap_desc",
-        "per_page": 100,
+        "per_page": CANTIDAD_CRIPTOMONEDAS,
         "page": 1,
         "sparkline": "false",
         "price_change_percentage": "1h,24h,7d",
@@ -82,7 +80,7 @@ def obtener_velas_binance():
     """
     Obtiene datos históricos de velas (Klines) diarias del par BTC/USDT desde la API pública de Binance.
 
-    Esta función consulta la API de Binance para recuperar las últimas 350 velas diarias,
+    Esta función consulta la API de Binance para recuperar las últimas velas diarias,
     equivalente aproximadamente a un año de datos históricos. Cada vela contiene precios
     de apertura, máximo, mínimo, cierre y volumen negociado. Los datos se procesan y almacenan
     localmente mediante la función `guardar_datos_velas`.
@@ -103,8 +101,8 @@ def obtener_velas_binance():
     params = {
         "symbol": "BTCUSDT",
         "interval": "1d",
-        "limit": 300,
-    }  # Esto se tiene que parametrizar
+        "limit": CANTIDAD_VELAS,
+    }
     try:
         respuesta = requests.get(BINANCE_URL, params)
     except requests.exceptions.RequestException as e:

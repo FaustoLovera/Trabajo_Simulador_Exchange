@@ -1,10 +1,7 @@
 from flask import request, redirect, url_for, render_template, flash
 import json
 import os
-
-COTIZACIONES_PATH = "./datos/datos_cotizaciones.json"
-BILLETERA_PATH = "./datos/billetera.json"
-HISTORIAL_PATH = "./datos/historial_operaciones.json"
+from config import COTIZACIONES_PATH, BILLETERA_PATH, HISTORIAL_PATH, BALANCE_INICIAL_USDT
 
 
 def cargar_datos_cotizaciones():
@@ -77,21 +74,18 @@ def procesar_operacion_trading(formulario):
 
 
 def cargar_billetera():
-    # Asegurar que el directorio exista
     """
     Carga la billetera desde un archivo JSON.
 
     Si el archivo especificado por `BILLETERA_PATH` no existe, se crea un archivo
-    con un saldo inicial de 100,000 USDT y se retorna este saldo inicial. Si el archivo
+    con un saldo inicial de USDT y se retorna este saldo inicial. Si el archivo
     ya existe, se carga su contenido y se retorna como un diccionario.
 
     Asegura que el directorio del archivo exista antes de intentar crear o leer el archivo.
     """
 
-    os.makedirs(os.path.dirname(BILLETERA_PATH), exist_ok=True)
-
     if not os.path.exists(BILLETERA_PATH):
-        billetera_inicial = {"USDT": 100000}
+        billetera_inicial = {"USDT": BALANCE_INICIAL_USDT}
         with open(BILLETERA_PATH, "w") as f:
             json.dump(billetera_inicial, f, indent=4)
         return billetera_inicial

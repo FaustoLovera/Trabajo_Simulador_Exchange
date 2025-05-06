@@ -1,8 +1,5 @@
 import json
-
-HISTORIAL_PATH = "./datos/historial_operaciones.json"
-BILLETERA_PATH = "./datos/billetera.json"
-COTIZACIONES_PATH = "./datos/datos_cotizaciones.json"
+from config import HISTORIAL_PATH, BILLETERA_PATH, COTIZACIONES_PATH
 
 
 def obtener_precios():
@@ -57,8 +54,8 @@ def calcular_detalle_cripto(ticker, cantidad_actual, precios, historial):
     Devuelve un diccionario con toda esta información resumida.
     """
 
-    precio_actual = precios.get(ticker, 0)
-    valor_usdt = cantidad_actual * precio_actual
+    precio_actual = round(precios.get(ticker, 0), 6)
+    valor_usdt = round(cantidad_actual * precio_actual, 2)
 
     # Filtra las operaciones de compra para el ticker especificado
     compras = [

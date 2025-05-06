@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     fila.innerHTML = `
                         <td>${cripto.ticker}</td>
                         <td>${cripto.cantidad.toFixed(decimalesCantidad)}</td>
-                        <td>$${cripto.precio_actual.toFixed(2)}</td>
+                        <td>$${cripto.precio_actual.toFixed(6)}</td>
                         <td>$${cripto.valor_usdt.toFixed(2)}</td>
                         <td style="color: ${cripto.ganancia_perdida >= 0 ? 'green' : 'red'};">
                             $${cripto.ganancia_perdida.toFixed(2)}

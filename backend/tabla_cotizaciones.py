@@ -1,9 +1,10 @@
 import json
+from config import COTIZACIONES_PATH
 
 
 def obtener_tabla_criptos():
     """
-    Carga los datos de las criptomonedas desde el archivo `datos_cotizaciones.json` y 
+    Carga los datos de las criptomonedas desde el archivo de cotizaciones y 
     genera una tabla con la información relevante de cada criptomoneda. La tabla incluye 
     detalles como el nombre, ticker, precio en USD, variación en diferentes intervalos de tiempo 
     (1 hora, 24 horas, 7 días), capitalización de mercado, volumen en las últimas 24 horas y 
@@ -13,7 +14,7 @@ def obtener_tabla_criptos():
     como el precio y las variaciones porcentuales, y devuelve la tabla en forma de lista de listas.
     """
     
-    with open("./datos/datos_cotizaciones.json") as f:
+    with open(COTIZACIONES_PATH) as f:
         datos = json.load(f)
 
     tabla = []
