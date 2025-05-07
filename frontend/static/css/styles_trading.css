@@ -22,3 +22,11 @@ body {
     max-width: 100%;
     min-width: 500px;
 }
+
+.text-verde {
+    color: var(--color-verde);
+}
+
+.text-rojo {
+    color: var(--color-rojo);
+}

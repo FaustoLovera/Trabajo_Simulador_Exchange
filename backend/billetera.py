@@ -1,6 +1,10 @@
 from flask import render_template
 import json
 from config import HISTORIAL_PATH, BILLETERA_PATH, COTIZACIONES_PATH
+from decimal import Decimal, getcontext, ROUND_HALF_UP
+
+getcontext().prec = 28
+getcontext().rounding = ROUND_HALF_UP
 
 
 def obtener_precios():
@@ -10,7 +14,7 @@ def obtener_precios():
     """
     with open(COTIZACIONES_PATH, "r") as f:
         datos = json.load(f)
-    return {cripto["ticker"]: cripto["precio_usd"] for cripto in datos}
+    return {cripto["ticker"]: Decimal(str(cripto["precio_usd"])) for cripto in datos}
 
 
 def cargar_historial():
@@ -55,25 +59,26 @@ def calcular_detalle_cripto(ticker, cantidad_actual, precios, historial):
     Devuelve un diccionario con toda esta información resumida.
     """
 
-    precio_actual = round(precios.get(ticker, 0), 6)
-    valor_usdt = round(cantidad_actual * precio_actual, 2)
+    cantidad_actual = Decimal(str(cantidad_actual))
+    precio_actual = precios.get(ticker, Decimal('0')).quantize(Decimal('0.000001'))
+    valor_usdt = (cantidad_actual * precio_actual).quantize(Decimal('0.01'))
 
     # Filtra las operaciones de compra para el ticker especificado
     compras = [
         op for op in historial if op["ticker"] == ticker and op["tipo"] == "compra"
     ]
 
-    cantidad_comprada = sum(op["cantidad"] for op in compras)
-    total_invertido = sum(op["monto_usdt"] for op in compras)
+    cantidad_comprada = sum(Decimal(str(op["cantidad"])) for op in compras)
+    total_invertido = sum(Decimal(str(op["monto_usdt"])) for op in compras)
 
     # Evita divisiones por 0 y devuelve 0 en caso de que el denominador sea 0
-    division_por_0_segura = lambda num, den: num / den if den != 0 else 0
+    division_por_0_segura = lambda num, den: num / den if den != 0 else Decimal('0')
 
-    precio_promedio = division_por_0_segura(total_invertido, cantidad_comprada)
-    invertido_actual = cantidad_actual * precio_promedio
+    precio_promedio = division_por_0_segura(total_invertido, cantidad_comprada).quantize(Decimal('0.000001')) if cantidad_comprada else Decimal('0')
+    invertido_actual = (cantidad_actual * precio_promedio).quantize(Decimal('0.01'))
 
-    ganancia = valor_usdt - invertido_actual
-    porcentaje_ganancia = division_por_0_segura(ganancia, invertido_actual) * 100
+    ganancia = (valor_usdt - invertido_actual).quantize(Decimal('0.01'))
+    porcentaje_ganancia = division_por_0_segura(ganancia, invertido_actual) * Decimal('100') if invertido_actual != 0 else Decimal('0')
 
     return {
         "ticker": ticker,
@@ -104,7 +109,7 @@ def estado_actual_completo():
     """
 
     # Cargar los datos actuales desde archivos locales
-    billetera = cargar_datos_billetera()
+    billetera = {k: Decimal(str(v)) for k, v in cargar_datos_billetera().items()}
     precios = obtener_precios()
     historial = cargar_historial()
 
@@ -112,7 +117,7 @@ def estado_actual_completo():
     billetera_filtrada = {
         ticker: cantidad
         for ticker, cantidad in billetera.items()
-        if cantidad >= 0.000001
+        if cantidad >= Decimal('0.000001')
     }
 
     # Calcular el detalle financiero de cada criptomoneda
@@ -124,16 +129,16 @@ def estado_actual_completo():
     )
 
     # Calcular el valor total en USDT del portafolio
-    total_usdt = sum(d["valor_usdt"] for d in detalles)
+    total_usdt = sum(Decimal(str(d["valor_usdt"])) for d in detalles)
 
     # Función para calcular el porcentaje que representa cada cripto sobre el total
-    calcular_porcentaje = lambda valor_usdt: (
-        (valor_usdt / total_usdt) * 100 if total_usdt > 0 else 0
-    )
+    calcular_porcentaje = lambda valor_usdt: ((Decimal(str(valor_usdt)) / total_usdt) * Decimal('100')).quantize(Decimal('0.01')) if total_usdt > 0 else Decimal('0')
 
-    # Asignar el porcentaje correspondiente a cada criptomoneda
+    # Asignar el porcentaje correspondiente a cada criptomoneda y los colores
     for detalle_cripto in detalles:
         detalle_cripto["porcentaje"] = calcular_porcentaje(detalle_cripto["valor_usdt"])
+        detalle_cripto["color_ganancia"] = "green" if detalle_cripto["ganancia_perdida"] >= 0 else "red"
+        detalle_cripto["color_porcentaje"] = "green" if detalle_cripto["porcentaje_ganancia"] >= 0 else "red"
 
     return detalles
 

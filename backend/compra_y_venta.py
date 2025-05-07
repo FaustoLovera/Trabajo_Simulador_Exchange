@@ -2,6 +2,11 @@ from flask import request, redirect, url_for, render_template, flash
 import json
 import os
 from config import COTIZACIONES_PATH, BILLETERA_PATH, HISTORIAL_PATH, BALANCE_INICIAL_USDT
+from decimal import Decimal, getcontext, ROUND_HALF_UP
+
+# Configuración de precisión y redondeo
+getcontext().prec = 28
+getcontext().rounding = ROUND_HALF_UP
 
 
 def cargar_datos_cotizaciones():
@@ -37,7 +42,7 @@ def obtener_precio(ticker):
 
     for cripto in datos_criptos:
         if cripto["ticker"].lower() == ticker.lower():
-            return cripto["precio_usd"]
+            return Decimal(str(cripto["precio_usd"]))
     return None
 
 
@@ -63,7 +68,7 @@ def procesar_operacion_trading(formulario):
     
     ticker = formulario["ticker"]
     accion = formulario["accion"]
-    monto = float(formulario["monto"])
+    monto = Decimal(formulario["monto"])
 
     if accion == "comprar":
         return comprar_cripto(ticker, monto)
@@ -91,7 +96,7 @@ def cargar_billetera():
         return billetera_inicial
 
     with open(BILLETERA_PATH, "r") as f:
-        return json.load(f)
+        return {k: Decimal(v) for k, v in json.load(f).items()}
 
 
 def guardar_billetera(billetera):
@@ -101,8 +106,9 @@ def guardar_billetera(billetera):
     Asegura que el directorio del archivo exista antes de intentar escribir el archivo.
 
     """
+    from decimal import Decimal
     with open(BILLETERA_PATH, "w") as f:
-        json.dump(billetera, f, indent=4)
+        json.dump(billetera, f, indent=4, default=lambda o: str(o) if isinstance(o, Decimal) else o)
 
 
 obtener_estado = lambda: cargar_billetera()
@@ -127,11 +133,11 @@ def comprar_cripto(ticker, monto_usd):
     if monto_usd > billetera["USDT"]:
         return False, "❌ Saldo insuficiente"
 
-    billetera["USDT"] -= monto_usd
+    billetera["USDT"] = Decimal(str(billetera["USDT"])) - monto_usd
 
     cantidad = monto_usd / precio
     if ticker in billetera:
-        billetera[ticker] += cantidad
+        billetera[ticker] = Decimal(str(billetera[ticker])) + cantidad
     else:
         billetera[ticker] = cantidad
 
@@ -158,7 +164,7 @@ def vender_cripto(ticker, cantidad_a_vender):
         return False, f"❌ No se encontró el ticker {ticker}"
 
     if ticker in billetera:
-        cantidad_actual = billetera[ticker]
+        cantidad_actual = Decimal(str(billetera[ticker]))
     else:
         cantidad_actual = 0
 
@@ -168,14 +174,14 @@ def vender_cripto(ticker, cantidad_a_vender):
             f"❌ No tenés suficiente {ticker} para vender (disponible: {cantidad_actual:.6f})",
         )
 
-    monto_usd = cantidad_a_vender * precio
+    monto_usd = Decimal(cantidad_a_vender) * precio
     if "USDT" in billetera:
-        billetera["USDT"] += monto_usd
+        billetera["USDT"] = Decimal(str(billetera["USDT"])) + monto_usd
     else:
         billetera["USDT"] = monto_usd
-    billetera[ticker] -= cantidad_a_vender
+    billetera[ticker] = cantidad_actual - Decimal(cantidad_a_vender)
 
-    if billetera[ticker] <= 0:
+    if billetera[ticker] <= Decimal('0'):
         billetera.pop(ticker)
 
     guardar_billetera(billetera)
@@ -216,6 +222,10 @@ def guardar_en_historial(tipo, ticker, cantidad, monto_usdt, precio_unitario):
     if os.path.exists(HISTORIAL_PATH):
         with open(HISTORIAL_PATH, "r") as f:
             historial = json.load(f)
+        for operacion in historial:
+            operacion["cantidad"] = Decimal(operacion["cantidad"])
+            operacion["monto_usdt"] = Decimal(operacion["monto_usdt"])
+            operacion["precio_unitario"] = Decimal(operacion["precio_unitario"])
     else:
         historial = []
 
@@ -228,7 +238,7 @@ def guardar_en_historial(tipo, ticker, cantidad, monto_usdt, precio_unitario):
 
     # Guardar el historial actualizado
     with open(HISTORIAL_PATH, "w") as f:
-        json.dump(historial, f, indent=4)
+        json.dump(historial, f, indent=4, default=lambda o: str(o) if isinstance(o, Decimal) else o)
 
 
 def trading():
@@ -255,4 +265,8 @@ def trading():
         flash(mensaje, "success" if exito else "danger")
         return redirect(url_for("trading"))
 
-    return render_template("trading.html", criptos=criptos, estado=estado)
+    from billetera import cargar_historial
+    historial = cargar_historial()
+    for h in historial:
+        h["color"] = "green" if h["tipo"] == "compra" else "red"
+    return render_template("trading.html", criptos=criptos, estado=estado, historial=historial)

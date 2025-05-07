@@ -2,8 +2,8 @@
 <tr>
     <td style="color: {{ item.color }}">{{ item.tipo }}</td>
     <td>{{ item.ticker }}</td>
-    <td>{{ '%.8f' % item.cantidad }}</td>
-    <td>${{ '%.2f' % item.monto_usdt }}</td>
-    <td>${{ '%.6f' % item.precio_unitario }}</td>
+    <td class="text-end">{{ '%.8f' % (item.cantidad | float) }}</td>
+    <td class="text-end">${{ '%.2f' % (item.monto_usdt | float) }}</td>
+    <td class="text-end">${{ '%.6f' % (item.precio_unitario | float) }}</td>
 </tr>
 {% endfor %}

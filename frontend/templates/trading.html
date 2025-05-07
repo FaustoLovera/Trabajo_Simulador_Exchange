@@ -61,7 +61,7 @@
 
 
 				<div class="alert alert-info mt-3">
-					<strong>Saldo actual:</strong> USDT {{ estado["USDT"] | default(0.0) | round(2) }}
+					<strong>Saldo actual:</strong> USDT {{ '%.2f' % (estado["USDT"] | float) }}
 				</div>
 
 				<!-- Mensajes Flash -->
@@ -90,7 +90,7 @@
             </tr>
         </thead>
         <tbody id="tabla-historial">
-            <!-- Filas serán añadidas por JS -->
+            {% include "fragmento_historial.html" %}
         </tbody>
     </table>
 </div>

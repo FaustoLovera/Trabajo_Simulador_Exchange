@@ -1,3 +1,7 @@
+from decimal import Decimal, getcontext, ROUND_HALF_UP
+
+getcontext().prec = 28
+getcontext().rounding = ROUND_HALF_UP
 import requests
 from guardar_datos_cotizaciones import guardar_datos_cotizaciones, guardar_datos_velas
 from config import COINGECKO_URL, BINANCE_URL, CANTIDAD_CRIPTOMONEDAS, CANTIDAD_VELAS
@@ -59,13 +63,13 @@ def obtener_datos_criptos_coingecko():
             "nombre": par[1].get("name"),
             "ticker": par[1].get("symbol", "").upper(),
             "logo": par[1].get("image"),
-            "precio_usd": par[1].get("current_price"),
-            "1h_%": par[1].get("price_change_percentage_1h_in_currency"),
-            "24h_%": par[1].get("price_change_percentage_24h_in_currency"),
-            "7d_%": par[1].get("price_change_percentage_7d_in_currency"),
-            "market_cap": par[1].get("market_cap"),
-            "volumen_24h": par[1].get("total_volume"),
-            "circulating_supply": par[1].get("circulating_supply"),
+            "precio_usd": Decimal(str(par[1].get("current_price"))),
+            "1h_%": Decimal(str(par[1].get("price_change_percentage_1h_in_currency"))),
+            "24h_%": Decimal(str(par[1].get("price_change_percentage_24h_in_currency"))),
+            "7d_%": Decimal(str(par[1].get("price_change_percentage_7d_in_currency"))),
+            "market_cap": Decimal(str(par[1].get("market_cap"))),
+            "volumen_24h": Decimal(str(par[1].get("total_volume"))),
+            "circulating_supply": Decimal(str(par[1].get("circulating_supply"))),
         },
         enumerate(datos, start=1)
     ))
@@ -124,11 +128,11 @@ def obtener_velas_binance():
         resultado.append(
             {
                 "time": int(vela[0] / 1000),  # Timestamp en segundos
-                "open": float(vela[1]),
-                "high": float(vela[2]),
-                "low": float(vela[3]),
-                "close": float(vela[4]),
-                "volume": float(vela[5]),
+                "open": Decimal(str(vela[1])),
+                "high": Decimal(str(vela[2])),
+                "low": Decimal(str(vela[3])),
+                "close": Decimal(str(vela[4])),
+                "volume": Decimal(str(vela[5])),
             }
         )
 

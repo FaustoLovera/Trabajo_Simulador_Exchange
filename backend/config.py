@@ -3,6 +3,9 @@ import os
 # Directorio base para archivos de datos
 BASE_DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "datos")
 
+# Asegurar que el directorio de datos exista
+os.makedirs(BASE_DATA_DIR, exist_ok=True) 
+
 # Rutas de archivos
 COTIZACIONES_PATH = os.path.join(BASE_DATA_DIR, "datos_cotizaciones.json")
 BILLETERA_PATH = os.path.join(BASE_DATA_DIR, "billetera.json")
@@ -22,6 +25,3 @@ FLASK_SECRET_KEY = "clave_segura_para_flash"
 # Configuración de APIs
 CANTIDAD_CRIPTOMONEDAS = 100  # Cantidad de criptomonedas a obtener de CoinGecko
 CANTIDAD_VELAS = 300  # Cantidad de velas a obtener de Binance
-
-# Asegurar que el directorio de datos exista
-os.makedirs(BASE_DATA_DIR, exist_ok=True) 

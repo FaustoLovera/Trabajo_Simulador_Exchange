@@ -3,7 +3,7 @@ from flask import Flask, render_template, jsonify
 from api_cotizaciones import obtener_datos_criptos_coingecko, obtener_velas_binance
 from tabla_cotizaciones import obtener_tabla_criptos
 from compra_y_venta import cargar_billetera, trading as vista_trading
-from billetera import estado_actual_completo, render_fragmento_billetera, render_fragmento_historial
+from billetera import estado_actual_completo
 from config import FLASK_SECRET_KEY, VELAS_PATH
 
 app = Flask(
@@ -80,22 +80,8 @@ def trading():
     y luego renderiza la vista de trading a través de la función `vista_trading()`, 
     permitiendo a los usuarios realizar operaciones de trading.
     """
-    
     obtener_velas_binance()
     return vista_trading()
-
-
-@app.route("/api/historial")
-def api_historial():
-    """
-    Proporciona el historial de operaciones en formato JSON a través de una API.
-
-    La función intenta cargar el historial de operaciones desde un archivo JSON. 
-    Si tiene éxito, devuelve el historial como una respuesta JSON. En caso de error 
-    al cargar el archivo, devuelve un mensaje de error con un código de estado 500.
-    """
-    
-    return render_fragmento_historial()
 
 
 @app.route("/estado")
@@ -124,20 +110,7 @@ def billetera():
     print("Contenido de datos:", datos_billetera)
     
     
-    estado = estado_actual()
     return render_template("billetera.html", datos=datos_billetera)
-
-
-@app.route("/api/billetera")
-def api_billetera():
-    """
-    Proporciona el estado completo de la billetera en formato JSON.
-
-    La función obtiene el estado completo de la billetera utilizando la función 
-    `estado_actual_completo()` y lo devuelve como una respuesta JSON.
-    """
-    
-    return render_fragmento_billetera()
 
 
 @app.route("/api/velas")

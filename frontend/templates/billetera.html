@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BlocX - Billetera</title>
     <link rel="icon" href="{{ url_for('static', filename='img/logo_BlocX.png') }}" type="image/x-icon" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles_trading.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 
@@ -42,7 +42,7 @@
         </div>
 
         <div class="table-responsive mt-4">
-            <table class="table table-dark table-bordered text-center align-middle">
+            <table class="table table-dark table-bordered align-middle text-center">
                 <thead class="table-secondary">
                     <tr class="table-dark">
                         <th>Nombre</th>
@@ -55,14 +55,13 @@
                     </tr>
                 </thead>
                 <tbody id="tabla-billetera">
-                    <!-- Las filas se insertan dinámicamente desde /api/billetera -->
+                    {% include "fragmento_billetera.html" %}
                 </tbody>
             </table>
         </div>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ url_for('static', filename='js/billetera.js') }}"></script>
 </body>
 
 </html>
