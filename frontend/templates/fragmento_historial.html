@@ -1,9 +1,9 @@
 {% for item in historial %}
 <tr>
-    <td style="color: {{ item.color }}">{{ item.tipo }}</td>
-    <td>{{ item.ticker }}</td>
-    <td class="text-end">{{ '%.8f' % (item.cantidad | float) }}</td>
-    <td class="text-end">${{ '%.2f' % (item.monto_usdt | float) }}</td>
-    <td class="text-end">${{ '%.6f' % (item.precio_unitario | float) }}</td>
+    <td class="text-center" style="color: {{ item.color }}">{{ item.tipo }}</td>
+    <td class="text-center">{{ item.ticker }}</td>
+    <td class="text-center">{{ '%.8f' % (item.cantidad | float) }}</td>
+    <td class="text-center">${{ '%.2f' % (item.monto_usdt | float) }}</td>
+    <td class="text-center">${{ '%.6f' % (item.precio_unitario | float) }}</td>
 </tr>
 {% endfor %}
