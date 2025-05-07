@@ -13,7 +13,7 @@ HISTORIAL_PATH = os.path.join(BASE_DATA_DIR, "historial_operaciones.json")
 VELAS_PATH = os.path.join(BASE_DATA_DIR, "datos_velas.json")
 
 # Saldo inicial de la billetera en USDT
-BALANCE_INICIAL_USDT = 10000
+BALANCE_INICIAL_USDT = "10000"
 
 # URLs de las APIs
 COINGECKO_URL = "https://api.coingecko.com/api/v3/coins/markets"

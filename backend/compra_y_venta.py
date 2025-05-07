@@ -2,7 +2,7 @@ from flask import request, redirect, url_for, render_template, flash
 import json
 import os
 from config import COTIZACIONES_PATH, BILLETERA_PATH, HISTORIAL_PATH, BALANCE_INICIAL_USDT
-from decimal import Decimal, getcontext, ROUND_HALF_UP
+from decimal import Decimal, getcontext, ROUND_HALF_UP, ROUND_DOWN
 
 # Configuración de precisión y redondeo
 getcontext().prec = 28
@@ -108,7 +108,7 @@ def guardar_billetera(billetera):
     """
     from decimal import Decimal
     with open(BILLETERA_PATH, "w") as f:
-        json.dump(billetera, f, indent=4, default=lambda o: str(o) if isinstance(o, Decimal) else o)
+        json.dump(billetera, f, indent=4, default=lambda o: format(o, 'f') if isinstance(o, Decimal) else o)
 
 
 obtener_estado = lambda: cargar_billetera()
@@ -230,6 +230,8 @@ def guardar_en_historial(tipo, ticker, cantidad, monto_usdt, precio_unitario):
         historial = []
 
     nuevo_id = len(historial) + 1
+
+    cantidad = cantidad.quantize(Decimal("0.00000001"), rounding=ROUND_DOWN)
 
     operacion = crear_operacion(
         nuevo_id, tipo, ticker, cantidad, monto_usdt, precio_unitario

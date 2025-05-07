@@ -1,17 +1,26 @@
 {% for cripto in datos %}
 <tr>
-    <td class="text-center">{{ cripto.ticker }}</td>
     <td class="text-center">
-        {{ '%.6f' % (cripto.cantidad | float) if cripto.ticker != 'USDT' else '%.2f' % (cripto.cantidad | float) }}
+        {{ cripto.ticker }}
+        {% if cripto.es_polvo %}
+            <span class="text-muted" style="font-size: 0.8em;">(polvo)</span>
+        {% endif %}
     </td>
-    <td class="text-center">${{ '%.6f' % (cripto.precio_actual | float) }}</td>
-    <td class="text-center">${{ '%.2f' % (cripto.valor_usdt | float) }}</td>
+    <td class="text-center">
+        {% if cripto.ticker != 'USDT' %}
+            {{ cripto.cantidad | formato_cantidad }}
+        {% else %}
+            {{ cripto.cantidad | formato_valor(2, 0.01, '') }}
+        {% endif %}
+    </td>
+    <td class="text-center">{{ cripto.precio_actual | formato_valor(6, 0.000001, '') }}</td>
+    <td class="text-center">{{ cripto.valor_usdt | formato_valor }}</td>
     <td class="text-center" style="color: {{ cripto.color_ganancia }};">
-        ${{ '%.2f' % (cripto.ganancia_perdida | float) }}
+        {{ cripto.ganancia_perdida | formato_valor }}
     </td>
     <td class="text-center" style="color: {{ cripto.color_porcentaje }};">
-        {{ '%.2f' % (cripto.porcentaje_ganancia | float) }}%
+        {{ cripto.porcentaje_ganancia | formato_valor(2, 0.0001, '') }}%
     </td>
-    <td class="text-center">{{ '%.2f' % (cripto.porcentaje | float) }}%</td>
+    <td class="text-center">{{ cripto.porcentaje | formato_valor(2, 0.01, '') }}%</td>
 </tr>
 {% endfor %}

@@ -1,18 +1,13 @@
 import json
-from flask import Flask, render_template, jsonify
+from flask import render_template, jsonify
 from api_cotizaciones import obtener_datos_criptos_coingecko, obtener_velas_binance
 from tabla_cotizaciones import obtener_tabla_criptos
 from compra_y_venta import cargar_billetera, trading as vista_trading
 from billetera import estado_actual_completo
-from config import FLASK_SECRET_KEY, VELAS_PATH
+from backend import crear_app
+from config import VELAS_PATH
 
-app = Flask(
-    __name__,
-    static_folder="../frontend/static",
-    template_folder="../frontend/templates",
-)
-
-app.secret_key = FLASK_SECRET_KEY
+app = crear_app()
 
 
 def estado_actual():

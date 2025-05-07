@@ -1,7 +1,7 @@
 from flask import render_template
 import json
 from config import HISTORIAL_PATH, BILLETERA_PATH, COTIZACIONES_PATH
-from decimal import Decimal, getcontext, ROUND_HALF_UP
+from decimal import Decimal, getcontext, ROUND_HALF_UP, ROUND_DOWN
 
 getcontext().prec = 28
 getcontext().rounding = ROUND_HALF_UP
@@ -110,15 +110,12 @@ def estado_actual_completo():
 
     # Cargar los datos actuales desde archivos locales
     billetera = {k: Decimal(str(v)) for k, v in cargar_datos_billetera().items()}
+    if "USDT" in billetera:
+        billetera["USDT"] = billetera["USDT"].quantize(Decimal("0.01"), rounding=ROUND_DOWN)
     precios = obtener_precios()
     historial = cargar_historial()
 
-    # Filtrar solo las criptomonedas con una cantidad significativa
-    billetera_filtrada = {
-        ticker: cantidad
-        for ticker, cantidad in billetera.items()
-        if cantidad >= Decimal('0.000001')
-    }
+    billetera_filtrada = billetera
 
     # Calcular el detalle financiero de cada criptomoneda
     detalles = list(
@@ -139,6 +136,9 @@ def estado_actual_completo():
         detalle_cripto["porcentaje"] = calcular_porcentaje(detalle_cripto["valor_usdt"])
         detalle_cripto["color_ganancia"] = "green" if detalle_cripto["ganancia_perdida"] >= 0 else "red"
         detalle_cripto["color_porcentaje"] = "green" if detalle_cripto["porcentaje_ganancia"] >= 0 else "red"
+        detalle_cripto["es_polvo"] = detalle_cripto["valor_usdt"] < Decimal("0.001")
+        # Truncamiento a 8 decimales eliminado, se mantiene la cantidad tal cual
+        detalle_cripto["cantidad"] = detalle_cripto["cantidad"]
 
     return detalles
 
@@ -159,5 +159,6 @@ def render_fragmento_historial():
 
     for h in historial:
         h["color"] = "green" if h["tipo"] == "compra" else "red"
+        h["cantidad"] = str(Decimal(h["cantidad"]).quantize(Decimal("0.00000001"), rounding=ROUND_DOWN))
 
     return render_template("fragmento_historial.html", historial=historial)
