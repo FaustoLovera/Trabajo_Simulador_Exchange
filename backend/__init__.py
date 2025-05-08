@@ -1,6 +1,7 @@
 from flask import Flask
 from config import FLASK_SECRET_KEY
-from formateo_decimales import registrar_filtros
+from backend.utils.formateo_decimales import registrar_filtros
+from backend.rutas import registrar_rutas
 
 def crear_app():
     app = Flask(
@@ -11,7 +12,7 @@ def crear_app():
 
     app.secret_key = FLASK_SECRET_KEY
 
-    # Registrar filtros personalizados
     registrar_filtros(app)
+    registrar_rutas(app)
 
     return app

@@ -1,51 +1,8 @@
 from flask import render_template
-import json
-from config import HISTORIAL_PATH, BILLETERA_PATH, COTIZACIONES_PATH
-from decimal import Decimal, getcontext, ROUND_HALF_UP, ROUND_DOWN
-
-getcontext().prec = 28
-getcontext().rounding = ROUND_HALF_UP
-
-
-def obtener_precios():
-    """
-    Lee el archivo de cotizaciones y devuelve un diccionario con los nombres de las
-    criptomonedas como claves y sus precios actuales en USD como valores.
-    """
-    with open(COTIZACIONES_PATH, "r") as f:
-        datos = json.load(f)
-    return {cripto["ticker"]: Decimal(str(cripto["precio_usd"])) for cripto in datos}
-
-
-def cargar_historial():
-    """
-    Carga el historial de operaciones desde un archivo JSON.
-
-    Intenta abrir y leer el archivo especificado por `HISTORIAL_PATH`. Si el archivo
-    se encuentra, retorna su contenido como una lista de operaciones. Si el archivo
-    no existe, retorna una lista vacía.
-    """
-
-    try:
-        with open(HISTORIAL_PATH, "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return []
-
-
-def cargar_datos_billetera():
-    """
-    Carga la billetera desde un archivo JSON.
-
-    Intenta abrir y leer el archivo especificado por `BILLETERA_PATH`. Si el archivo
-    se encuentra, retorna su contenido como un diccionario. Si el archivo no existe,
-    retorna un diccionario vacío.
-    """
-    try:
-        with open(BILLETERA_PATH, "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return {}
+from decimal import Decimal
+from acceso_datos.datos_billetera import cargar_datos_billetera as cargar_billetera
+from acceso_datos.datos_historial import cargar_historial
+from acceso_datos.datos_cotizaciones import obtener_precios
 
 
 def calcular_detalle_cripto(ticker, cantidad_actual, precios, historial):
@@ -111,7 +68,7 @@ def estado_actual_completo():
     # Cargar los datos actuales desde archivos locales
     billetera = {k: Decimal(str(v)) for k, v in cargar_datos_billetera().items()}
     if "USDT" in billetera:
-        billetera["USDT"] = billetera["USDT"].quantize(Decimal("0.01"), rounding=ROUND_DOWN)
+        billetera["USDT"] = billetera["USDT"].quantize(Decimal("0.01"))
     precios = obtener_precios()
     historial = cargar_historial()
 
@@ -141,24 +98,3 @@ def estado_actual_completo():
         detalle_cripto["cantidad"] = detalle_cripto["cantidad"]
 
     return detalles
-
-
-# Renderizado de fragmentos HTML para Flask
-def render_fragmento_billetera():
-    datos = estado_actual_completo()
-
-    for d in datos:
-        d["color_ganancia"] = "green" if d["ganancia_perdida"] >= 0 else "red"
-        d["color_porcentaje"] = "green" if d["porcentaje_ganancia"] >= 0 else "red"
-
-    return render_template("fragmento_billetera.html", datos=datos)
-
-
-def render_fragmento_historial():
-    historial = cargar_historial()
-
-    for h in historial:
-        h["color"] = "green" if h["tipo"] == "compra" else "red"
-        h["cantidad"] = str(Decimal(h["cantidad"]).quantize(Decimal("0.00000001"), rounding=ROUND_DOWN))
-
-    return render_template("fragmento_historial.html", historial=historial)

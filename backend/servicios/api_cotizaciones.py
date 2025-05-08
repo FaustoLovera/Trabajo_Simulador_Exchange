@@ -1,9 +1,6 @@
-from decimal import Decimal, getcontext, ROUND_HALF_UP
-
-getcontext().prec = 28
-getcontext().rounding = ROUND_HALF_UP
+from decimal import Decimal
 import requests
-from guardar_datos_cotizaciones import guardar_datos_cotizaciones, guardar_datos_velas
+from backend.servicios.velas_logica import guardar_datos_cotizaciones, guardar_datos_velas
 from config import COINGECKO_URL, BINANCE_URL, CANTIDAD_CRIPTOMONEDAS, CANTIDAD_VELAS
 
 
