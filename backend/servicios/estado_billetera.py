@@ -1,8 +1,8 @@
 from flask import render_template
 from decimal import Decimal
-from acceso_datos.datos_billetera import cargar_datos_billetera as cargar_billetera
-from acceso_datos.datos_historial import cargar_historial
-from acceso_datos.datos_cotizaciones import obtener_precios
+from backend.acceso_datos.datos_billetera import cargar_billetera
+from backend.acceso_datos.datos_historial import cargar_historial
+from backend.acceso_datos.datos_cotizaciones import obtener_precio
 
 
 def calcular_detalle_cripto(ticker, cantidad_actual, precios, historial):
@@ -66,10 +66,12 @@ def estado_actual_completo():
     """
 
     # Cargar los datos actuales desde archivos locales
-    billetera = {k: Decimal(str(v)) for k, v in cargar_datos_billetera().items()}
+    billetera = {k: Decimal(str(v)) for k, v in cargar_billetera().items()}
     if "USDT" in billetera:
         billetera["USDT"] = billetera["USDT"].quantize(Decimal("0.01"))
-    precios = obtener_precios()
+    
+    # Obtener precios para cada cripto en la billetera
+    precios = {ticker: obtener_precio(ticker) or Decimal('0') for ticker in billetera.keys()}
     historial = cargar_historial()
 
     billetera_filtrada = billetera

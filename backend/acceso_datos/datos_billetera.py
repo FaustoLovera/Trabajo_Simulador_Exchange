@@ -7,7 +7,9 @@ def cargar_billetera():
         with open(BILLETERA_PATH, "r") as f:
             return {k: Decimal(v) for k, v in json.load(f).items()}
     except FileNotFoundError:
-        return {}
+        billetera_inicial = {"USDT": Decimal("10000")}
+        guardar_billetera(billetera_inicial)
+        return billetera_inicial
 
 def guardar_billetera(billetera):
     with open(BILLETERA_PATH, "w") as f:

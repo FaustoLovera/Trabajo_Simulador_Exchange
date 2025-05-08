@@ -1,6 +1,7 @@
 from decimal import Decimal
 import json
 from config import COTIZACIONES_PATH
+from flask import render_template
 
 
 def obtener_todas_las_cotizaciones():
@@ -43,11 +44,11 @@ def formatear_numero(n, escala_manual=None):
 
     if escala_manual:
         escalas = {"T": 1e12, "B": 1e9, "M": 1e6}
-        return f"{n / escalas[escala_manual]:,.2f} {escala_manual}"
+        return f"{n / Decimal(str(escalas[escala_manual])):,.2f} {escala_manual}"
 
     for valor, simbolo in [(1e12, "T"), (1e9, "B"), (1e6, "M")]:
         if n >= valor:
-            return f"{n / valor:,.2f} {simbolo}"
+            return f"{n / Decimal(str(valor)):,.2f} {simbolo}"
     return f"{n:.2f}"
 
 
@@ -78,3 +79,23 @@ def obtener_tabla_criptos():
     ]
 
     return tabla
+
+def renderizar_fragmento_tabla():
+    """
+    Renderiza el fragmento HTML de la tabla de cotizaciones.
+    Returns:
+        str: HTML renderizado de la tabla de cotizaciones
+    """
+    tabla = obtener_tabla_criptos()
+    clases_por_columna = [
+        "text-start px-3",  # para #
+        "text-start px-3",  # para Nombre
+        "text-start px-3",  # para Precio
+        "text-end px-3",    # para 1h
+        "text-end px-3",    # para 24h
+        "text-end px-3",    # para 7d
+        "text-end px-3",    # para Cap. Mercado
+        "text-end px-3",    # para Volumen
+        "text-end px-3",    # para Suministro
+    ]
+    return render_template("fragmento_tabla.html", tabla=tabla, clases_por_columna=clases_por_columna)

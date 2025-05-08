@@ -61,7 +61,7 @@
 
 
 				<div class="alert alert-info mt-3">
-					<strong>Saldo actual:</strong> USDT {{ '%.2f' % (estado["USDT"] | float) }}
+					<strong>Saldo actual:</strong> USDT {{ '%.2f' % (estado.get("USDT", 0) | float) }}
 				</div>
 
 				<!-- Mensajes Flash -->

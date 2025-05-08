@@ -2,11 +2,12 @@ function cargarTabla() {
     fetch('/datos_tabla')
         .then((res) => res.text())
         .then((html) => {
+            console.log("📥 HTML recibido:", html);
             const cuerpo = document.getElementById('tabla-datos');
             cuerpo.innerHTML = html;
         })
         .catch((error) => {
-            console.error('Error al cargar los datos:', error);
+            console.error('❌ Error al cargar los datos:', error);
         });
 }
 

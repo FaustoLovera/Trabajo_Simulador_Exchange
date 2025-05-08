@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, jsonify
 from decimal import Decimal, ROUND_DOWN
 from backend.servicios.estado_billetera import estado_actual_completo
-from acceso_datos.datos_historial import cargar_historial
-from acceso_datos.datos_billetera import cargar_datos_billetera as cargar_billetera
+from backend.acceso_datos.datos_historial import cargar_historial
+from backend.acceso_datos.datos_billetera import cargar_billetera
 
 bp = Blueprint("billetera", __name__)
 
