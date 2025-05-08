@@ -43,42 +43,75 @@ En este panel se verán tres secciones diferentes que contemplan lo necesario pa
   - Cantidad, precio promedio, valor actual, ganancia/pérdida por activo.
 - Balance total del portafolio en USDT.
 
+## 🧠 Cómo funciona el sistema
 
+El sistema está diseñado bajo una arquitectura modular que separa responsabilidades:
+
+- **Rutas (`rutas/`)**: contienen los blueprints de Flask, que responden a las URLs y renderizan las plantillas HTML.
+- **Servicios (`servicios/`)**: implementan la lógica de negocio (por ejemplo, compra y venta de criptomonedas, cálculos de balances, renderizado dinámico de fragmentos).
+- **Acceso a datos (`acceso_datos/`)**: se encargan de leer y escribir archivos JSON, simulando una base de datos local.
+- **Frontend (`frontend/`)**: contiene el HTML, CSS y JavaScript para la interfaz del usuario, incluyendo gráficos interactivos y recarga dinámica de datos.
+
+### Flujo general
+
+1. Al ingresar a la app, se cargan cotizaciones reales desde CoinGecko.
+2. El usuario puede:
+   - Consultar cotizaciones (actualizadas cada 15 segundos).
+   - Ingresar al panel de trading y operar.
+   - Visualizar su billetera y el historial de operaciones.
+3. Toda la información es persistida automáticamente en archivos `.json`.
 
 ## 🗃️ Estructura del proyecto
 
 ```
 simulador_exchange/
-├── backend/                       # Código Python del servidor
-│   ├── app.py                        # Servidor Flask y rutas principales
-│   ├── config.py                     # Configuración de rutas de archivos, URLs, y ajustes 
-│   ├── api_cotizaciones.py           # API para obtener cotizaciones de criptomonedas
-│   ├── billetera.py                  # Funciones para operar con la billetera
-│   ├── compra_y_venta.py             # Funciones para realizar operaciones de compra y venta
-│   ├── guardar_datos_cotizaciones.py # Funciones para guardar datos de cotizaciones en archivos locales
-│   └── tabla_cotizaciones.py         # Funciones para generar la tabla de cotizaciones en el frontend
+├── backend/
+│   ├── app.py                      # Servidor Flask y punto de entrada
+│   ├── config.py                   # Configuración del sistema y constantes globales
+│   ├── rutas/                      # Blueprints que definen las vistas
+│   │   ├── __init__.py
+│   │   ├── home.py
+│   │   ├── trading_vista.py
+│   │   ├── billetera_vista.py
+│   │   └── api_externa.py
+│   ├── servicios/                  # Lógica de negocio de cada módulo
+│   │   ├── api_cotizaciones.py
+│   │   ├── cotizaciones.py
+│   │   ├── estado_billetera.py
+│   │   ├── trading_logica.py
+│   │   └── velas_logica.py
+│   ├── acceso_datos/              # Acceso y manipulación de archivos .json
+│   │   ├── datos_billetera.py
+│   │   ├── datos_cotizaciones.py
+│   │   └── datos_historial.py
+│   └── utils/                     # Utilidades auxiliares
+│       └── formateo_decimales.py
 │
 ├── frontend/
-│   ├── templates/         # Archivos HTML (renderizados por Flask)
-│   │   ├── index.html         # Pantalla principal con tabla de cotizaciones
-│   │   ├── billetera.html     # Pantalla de billetera con datos de tenencias actuales
-│   │   └── trading.html       # Pantalla de trading con gráfico de velas, sección de órdenes e historial
-│   │
-│   └── static/            # Archivos estáticos (CSS/JS)
+│   ├── templates/                 # Plantillas HTML renderizadas por Flask
+│   │   ├── index.html
+│   │   ├── billetera.html
+│   │   ├── trading.html
+│   │   ├── fragmento_billetera.html
+│   │   ├── fragmento_formulario_trading.html
+│   │   ├── fragmento_historial.html
+│   │   ├── fragmento_mensajes_flash.html
+│   │   └── fragmento_tabla.html
+│   └── static/                    # Archivos estáticos
 │       ├── css/
 │       │   ├── styles_index.css
 │       │   └── styles_trading.css
-│       │
-│       └── js/            
-│           ├── billetera.js         # Funciones para mostrar los datos de billetera y el historial al respectivo .html
-│           ├── funciones.js         # Funciones para traer las cotizaciones de datos_cotizaciones.json al index.html
-│           └── grafico_velas.js     # Funciones para el gráfico de velas japonesas con LightWeight Charts
+│       ├── img/
+│       │   └── logo_BlocX.png
+│       └── js/
+│           ├── funciones.js
+│           └── grafico_velas.js
 │
-├── datos/                 # Archivos de persistencia (.json)
-│   ├── billetera.json               # Almacena información sobre el saldo y las tenencias actuales de criptomonedas.
-│   ├── datos_cotizaciones.json      # Contiene las cotizaciones actuales de diferentes criptomonedas.
-│   ├── datos_velas.json             # Guarda los datos históricos de velas japonesas de criptomonedas.
-│   └── historial_operaciones.json   # Registra todas las operaciones de compra y venta realizadas por el usuario.
+├── datos/                         # Archivos de persistencia
+│   ├── billetera.json
+│   ├── datos_cotizaciones.json
+│   ├── datos_velas.json
+│   └── historial_operaciones.json
 │
 ├── requirements.txt
 ├── .gitignore
