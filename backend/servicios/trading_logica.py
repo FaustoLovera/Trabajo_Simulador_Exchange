@@ -1,7 +1,7 @@
 from decimal import Decimal
-from acceso_datos.datos_billetera import cargar_billetera, guardar_billetera
-from acceso_datos.datos_cotizaciones import obtener_precio
-from acceso_datos.datos_historial import guardar_en_historial
+from backend.acceso_datos.datos_billetera import cargar_billetera, guardar_billetera
+from backend.acceso_datos.datos_cotizaciones import obtener_precio
+from backend.acceso_datos.datos_historial import guardar_en_historial
 
 
 def procesar_operacion_trading(formulario):

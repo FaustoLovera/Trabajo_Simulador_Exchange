@@ -1,15 +1,13 @@
-import json
 from flask import render_template
 from backend.servicios.api_cotizaciones import obtener_datos_criptos_coingecko
-from backend import crear_app
+from . import crear_app
+from flasgger import Swagger
 
 app = crear_app()
+swagger = Swagger(app)
 
-@app.route("/")
-def index():
-    resultado = obtener_datos_criptos_coingecko()
-    print("👉 Finalizó la obtención de datos.")
-    return render_template("index.html")
+# http://localhost:5000/apidocs
+# Para ver la documentacion interactiva
 
 if __name__ == "__main__":
     app.run(debug=True)
