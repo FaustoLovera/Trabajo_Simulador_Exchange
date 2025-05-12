@@ -14,7 +14,7 @@
 <body class="bg-dark text-white">
 	<nav class="navbar navbar-expand-lg bg-black shadow">
 		<div class="container-fluid">
-			<a class="navbar-brand text-warning d-flex align-items-center gap-2" href="{{ url_for('index') }}">
+			<a class="navbar-brand text-warning d-flex align-items-center gap-2" href="{{ url_for('home.index') }}">
 				<img src="{{ url_for('static', filename='img/logo_BlocX.png') }}" alt="Logo" width="40" height="40">
 				<span>BlocX</span>
 			</a>
@@ -24,7 +24,7 @@
 			<div class="collapse navbar-collapse" id="navbarNav">
 				<ul class="navbar-nav ms-auto">
 					<li class="nav-item">
-						<a class="nav-link text-white" href="{{ url_for('index') }}">Cotizaciones</a>
+						<a class="nav-link text-white" href="{{ url_for('home.index') }}">Cotizaciones</a>
 					</li>
 					<li class="nav-item">
 						<a class="nav-link text-white" href="{{ url_for('trading.trading') }}">Trading</a>
