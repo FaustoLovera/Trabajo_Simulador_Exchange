@@ -7,6 +7,7 @@
 	<title>BlocX - Trading</title>
 	<link rel="icon" href="{{ url_for('static', filename='img/logo_BlocX.png') }}" type="image/x-icon">
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/styles_trading.css') }}">
+	<script src="{{ url_for('static', filename='js/comportamientoFormulario.js') }}"></script>
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet"
 		integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
 </head>
@@ -56,23 +57,68 @@
 			</div>
 
 			<!-- TRADING -->
-			<div class="col-md-5 p-4">
+			<div class="col-md-5 p-3" id="formulario-trading">
 				<h2 class="text-warning">Trading</h2>
 
 
-				<div class="alert alert-info mt-3">
-					<strong>Saldo actual:</strong> USDT {{ '%.2f' % (estado.get("USDT", 0) | float) }}
+				<!-- Input de par de criptomonedas -->
+				<div class="mb-3">
+					<label for="par" class="form-label">Par</label>
+					<input type="text" class="form-control" id="par" placeholder="BTCUSDT">
 				</div>
 
-				<!-- Mensajes Flash -->
-				{% include "fragmento_mensajes_flash.html" %}
+				<!-- BOTONES DE COMPRA VENTA -->
+				<div class="btn-group mb-3 w-100" role="group" id="toggle-trade-type">
+					<button type="button" class="btn w-50 btn-success active boton-comprar"
+						data-action="buy">Comprar</button>
+					<button type="button" class="btn w-50 btn-outline-secondary boton-vender"
+						data-action="sell">Vender</button>
+				</div>
 
-				<!-- Formulario de trading -->
-				{% include "fragmento_formulario_trading.html" %}
+				<!-- Selector tipo de orden -->
+				<div class="mb-3">
+					<label for="tipo-orden" class="form-label">Tipo de orden</label>
+					<select class="form-select" id="tipo-orden">
+						<option value="mercado">Mercado</option>
+						<option value="limite">Límite</option>
+						<option value="stop-limit">Stop-Limit</option>
+					</select>
+				</div>
+
+				<!-- Selector entre monto o total -->
+				<div class="mb-3">
+					<label for="modo-ingreso" class="form-label">Ingresar por</label>
+					<select class="form-select" id="modo-ingreso">
+						<option value="monto">Monto</option>
+						<option value="total">Total</option>
+					</select>
+				</div>
+
+				<!-- Input del monto -->
+				<div class="mb-3">
+					<label for="monto" class="form-label">Monto</label>
+					<input type="number" class="form-control" id="monto" placeholder="0.00">
+				</div>
+
+				<!-- Slider de porcentaje -->
+				<div class="mb-3">
+					<input type="range" class="form-range" min="0" max="100" step="1" id="slider-monto">
+					<div class="d-flex justify-content-between text-white small">
+						<span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+					</div>
+				</div>
+
+				<!-- Saldo disponible -->
+				<div class="mb-3 text-end text-secondary">
+					<small>Disponible: -- ###</small>
+				</div>
+
+				<!-- Botón de acción -->
+				<button class="btn w-100 btn-success boton-confirmar" id="boton-confirmar">COMPRAR</button>
 			</div>
 		</div>
 
-		<!-- Historial de transacciones -->
+
 		<!-- Historial de transacciones -->
 		<div class="row mt-5">
 			<div class="col-12">
@@ -99,9 +145,9 @@
 		</div>
 
 
-		<script
-			src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
-		<script src="{{ url_for('static', filename='js/grafico_velas.js') }}"></script>
+	</div>
+	<script defer src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+	<script defer src="{{ url_for('static', filename='js/grafico_velas.js') }}"></script>
 </body>
 
 </html>
