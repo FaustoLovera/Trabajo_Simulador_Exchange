@@ -3,12 +3,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const botonComprar = document.querySelector('.boton-comprar');
     const botonVender = document.querySelector('.boton-vender');
     const botonConfirmar = document.querySelector('.boton-confirmar');
+    const slider = document.getElementById('slider-monto');
 
     const activarModoCompra = () => {
         botonComprar.className = 'btn w-50 btn-success active boton-comprar';
         botonVender.className = 'btn w-50 btn-outline-secondary boton-vender';
         botonConfirmar.className = 'btn w-100 btn-success boton-confirmar';
         botonConfirmar.textContent = 'COMPRAR';
+        slider.classList.remove('slider-venta');
+        slider.classList.add('slider-compra');
     };
 
     const activarModoVenta = () => {
@@ -16,6 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
         botonVender.className = 'btn w-50 btn-danger active boton-vender';
         botonConfirmar.className = 'btn w-100 btn-danger boton-confirmar';
         botonConfirmar.textContent = 'VENDER';
+        slider.classList.remove('slider-compra');
+        slider.classList.add('slider-venta');
     };
 
     botonComprar.addEventListener('click', activarModoCompra);

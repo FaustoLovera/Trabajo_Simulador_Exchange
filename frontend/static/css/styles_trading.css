@@ -1,6 +1,9 @@
 :root {
     --color-verde: rgb(31, 191, 113);
     --color-rojo: rgb(226, 33, 52);
+    /* --bs-dark-rgb: 30, 30, 30 !important;
+    --bs-body-bg: 44, 44, 44 !important;
+    --bs-border-width: 1px solid rgb(219, 71, 71) !important; */
 }
 
 * {
@@ -11,7 +14,7 @@
 
 body {
     font-family: Arial, sans-serif;
-    background-color: #0e0e0e;
+    background-color: #303030 !important;
     color: #f0c000;
 }
 
@@ -20,7 +23,6 @@ body {
     overflow: hidden;
     width: 100%;
     max-width: 100%;
-    min-width: 500px;
 }
 
 .text-verde {
@@ -31,7 +33,28 @@ body {
     color: var(--color-rojo);
 }
 
-
 /* FORMULARIO TRADING */
 
+.form-control {
+    background-color: 44, 44, 44 !important;
+}
 
+/* CAMBIO DE COLOR DEL PUNTO DEL SLIDER THUMB DINÁMICO */
+
+/* Chrome/Safari */
+input[type='range'].slider-compra::-webkit-slider-thumb {
+    background-color: rgb(31, 191, 113) !important; /* verde */
+}
+
+input[type='range'].slider-venta::-webkit-slider-thumb {
+    background-color: rgb(226, 33, 52) !important; /* rojo */
+}
+
+/* Firefox */
+input[type='range'].slider-compra::-moz-range-thumb {
+    background-color: rgb(31, 191, 113) !important;
+}
+
+input[type='range'].slider-venta::-moz-range-thumb {
+    background-color: rgb(226, 33, 52) !important;
+}

@@ -57,14 +57,14 @@
 			</div>
 
 			<!-- TRADING -->
-			<div class="col-md-5 p-3" id="formulario-trading">
+			<form class="col-md-5 p-3" id="formulario-trading" method="POST" action="{{ url_for('trading.trading') }}">
 				<h2 class="text-warning">Trading</h2>
 
 
 				<!-- Input de par de criptomonedas -->
 				<div class="mb-3">
 					<label for="par" class="form-label">Par</label>
-					<input type="text" class="form-control" id="par" placeholder="BTCUSDT">
+					<input type="text" class="form-control" id="par" placeholder="BTCUSDT" name="par">
 				</div>
 
 				<!-- BOTONES DE COMPRA VENTA -->
@@ -78,7 +78,7 @@
 				<!-- Selector tipo de orden -->
 				<div class="mb-3">
 					<label for="tipo-orden" class="form-label">Tipo de orden</label>
-					<select class="form-select" id="tipo-orden">
+					<select class="form-select" id="tipo-orden" name="tipo-orden">
 						<option value="mercado">Mercado</option>
 						<option value="limite">Límite</option>
 						<option value="stop-limit">Stop-Limit</option>
@@ -88,7 +88,7 @@
 				<!-- Selector entre monto o total -->
 				<div class="mb-3">
 					<label for="modo-ingreso" class="form-label">Ingresar por</label>
-					<select class="form-select" id="modo-ingreso">
+					<select class="form-select" id="modo-ingreso" name="modo-ingreso">
 						<option value="monto">Monto</option>
 						<option value="total">Total</option>
 					</select>
@@ -97,12 +97,12 @@
 				<!-- Input del monto -->
 				<div class="mb-3">
 					<label for="monto" class="form-label">Monto</label>
-					<input type="number" class="form-control" id="monto" placeholder="0.00">
+					<input type="number" class="form-control" id="monto" placeholder="0.00" name="monto">
 				</div>
 
 				<!-- Slider de porcentaje -->
 				<div class="mb-3">
-					<input type="range" class="form-range" min="0" max="100" step="1" id="slider-monto">
+					<input type="range" class="form-range" min="0" max="100" step="1" id="slider-monto" value="0" name="slider">
 					<div class="d-flex justify-content-between text-white small">
 						<span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
 					</div>
@@ -115,7 +115,7 @@
 
 				<!-- Botón de acción -->
 				<button class="btn w-100 btn-success boton-confirmar" id="boton-confirmar">COMPRAR</button>
-			</div>
+			</form>
 		</div>
 
 
