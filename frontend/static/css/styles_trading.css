@@ -58,3 +58,26 @@ input[type='range'].slider-compra::-moz-range-thumb {
 input[type='range'].slider-venta::-moz-range-thumb {
     background-color: rgb(226, 33, 52) !important;
 }
+
+/* Estilos del dropdown de Select2 */
+.select2-container--default .select2-results__option {
+  color: black;
+}
+
+/* Fondo blanco del dropdown */
+.select2-container--default .select2-results {
+  background-color: white;
+}
+
+/* Fondo blanco en el campo de entrada de búsqueda */
+.select2-container--default .select2-search--dropdown .select2-search__field {
+  background-color: white;
+  color: black;
+}
+
+/* También el contenedor principal si querés que se vea bien al estar cerrado */
+.select2-container--default .select2-selection--single {
+  background-color: white;
+  color: black;
+}
+

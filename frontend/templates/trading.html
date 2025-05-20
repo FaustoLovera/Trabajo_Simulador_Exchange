@@ -10,6 +10,8 @@
 	<script src="{{ url_for('static', filename='js/comportamientoFormulario.js') }}"></script>
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet"
 		integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+	<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
 </head>
 
 <body class="bg-dark text-white">
@@ -60,12 +62,16 @@
 			<form class="col-md-5 p-3" id="formulario-trading" method="POST" action="{{ url_for('trading.trading') }}">
 				<h2 class="text-warning">Trading</h2>
 
-
-				<!-- Input de par de criptomonedas -->
+				<!-- Selector de criptomonedas -->
 				<div class="mb-3">
-					<label for="par" class="form-label">Par</label>
-					<input type="text" class="form-control" id="par" placeholder="BTCUSDT" name="par">
+					<label for="cripto" class="form-label">Seleccionar Criptomoneda</label>
+					<select class="form-select" id="cripto" name="cripto">
+					  {% for cripto in criptos %}
+					    <option value="{{ cripto['ticker'] }}">{{ cripto['nombre'] }}</option>
+					  {% endfor %}
+					</select>
 				</div>
+
 
 				<!-- BOTONES DE COMPRA VENTA -->
 				<div class="btn-group mb-3 w-100" role="group" id="toggle-trade-type">
@@ -118,7 +124,6 @@
 			</form>
 		</div>
 
-
 		<!-- Historial de transacciones -->
 		<div class="row mt-5">
 			<div class="col-12">
@@ -143,11 +148,33 @@
 
 			</div>
 		</div>
-
-
 	</div>
+
 	<script defer src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 	<script defer src="{{ url_for('static', filename='js/grafico_velas.js') }}"></script>
+
+	<!-- Script para autocompletar el par al elegir la cripto -->
+	<script>
+		document.addEventListener("DOMContentLoaded", function () {
+			const criptoSelect = document.getElementById("cripto");
+			const parInput = document.getElementById("par");
+
+			criptoSelect.addEventListener("change", function () {
+				const symbol = criptoSelect.value;
+				parInput.value = symbol + "USDT";
+			});
+		});
+	</script>
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+	<script>
+	  $(document).ready(function() {
+	    $('#cripto').select2({
+	      placeholder: "Buscar criptomoneda...",
+	      width: '100%' // Asegura que se ajuste bien
+	    });
+	  });
+	</script>
 </body>
 
 </html>

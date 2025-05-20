@@ -18,9 +18,6 @@ def trading():
       responses:
         200:
           description: Página de trading renderizada correctamente.
-          content:
-            text/html:
-              example: "<html><body>Trading page</body></html>"
 
     post:
       description: Procesa una operación de compra o venta enviada por formulario.
@@ -43,16 +40,26 @@ def trading():
         302:
           description: Redirecciona tras procesar la operación con un mensaje flash.
     """
+
+    print("🟢 Ruta /trading llamada")  # Para depuración
+
+    # Paso 1: Actualizar velas si es necesario
     obtener_velas_binance()
+
+    # Paso 2: Cargar datos necesarios
     criptos = cargar_datos_cotizaciones()
     estado = cargar_billetera()
 
+    # Paso 3: Procesar formulario si es POST
     if request.method == "POST":
         exito, mensaje = procesar_operacion_trading(request.form)
         flash(mensaje, "success" if exito else "danger")
-        return redirect(url_for("trading.trading"))
+        return redirect(url_for("trading.trading"))  # Redirige para evitar repost
 
+    # Paso 4: Cargar historial para mostrarlo
     historial = cargar_historial()
     for h in historial:
         h["color"] = "green" if h["tipo"] == "compra" else "red"
+
+    # Paso 5: Renderizar plantilla
     return render_template("trading.html", criptos=criptos, estado=estado, historial=historial)

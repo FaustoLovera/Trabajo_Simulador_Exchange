@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, render_template
 from backend.servicios.api_cotizaciones import obtener_datos_criptos_coingecko
 from backend.servicios.cotizaciones import renderizar_fragmento_tabla
-from config import VELAS_PATH
+from config import VELAS_PATH, COTIZACIONES_PATH
 import json
 
 bp = Blueprint("api_ruta", __name__)
@@ -10,12 +10,13 @@ bp = Blueprint("api_ruta", __name__)
 def index():
     """
     Página principal de la API externa.
-    ---
+    --- 
     responses:
       200:
         description: Devuelve la página principal del simulador.
     """
-    return render_template("index.html")
+    criptos = obtener_datos_criptos_coingecko()
+    return render_template("index.html", criptos=criptos)
 
 @bp.route("/actualizar")
 def actualizar():

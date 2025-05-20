@@ -26,3 +26,4 @@ document.addEventListener('DOMContentLoaded', () => {
     cargarTabla();
     actualizarDatosCada15Segundos();
 });
+
