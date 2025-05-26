@@ -65,26 +65,24 @@
 				<!-- Selector de criptomonedas -->
 				<div class="mb-3">
 					<label for="cripto" class="form-label">Seleccionar Criptomoneda</label>
-					<select class="form-select" id="cripto" name="cripto">
-					  {% for cripto in criptos %}
-					    <option value="{{ cripto['ticker'] }}">{{ cripto['nombre'] }}</option>
-					  {% endfor %}
+					<select class="form-select" id="cripto" name="ticker" required>
+						{% for cripto in criptos %}
+							<option value="{{ cripto['ticker'] }}">{{ cripto['nombre'] }}</option>
+						{% endfor %}
 					</select>
 				</div>
 
-
 				<!-- BOTONES DE COMPRA VENTA -->
 				<div class="btn-group mb-3 w-100" role="group" id="toggle-trade-type">
-					<button type="button" class="btn w-50 btn-success active boton-comprar"
-						data-action="buy">Comprar</button>
-					<button type="button" class="btn w-50 btn-outline-secondary boton-vender"
-						data-action="sell">Vender</button>
+					<input type="hidden" name="accion" id="accion" value="comprar">
+					<button type="button" class="btn w-50 btn-success active boton-comprar" data-action="comprar">Comprar</button>
+					<button type="button" class="btn w-50 btn-outline-secondary boton-vender" data-action="vender">Vender</button>
 				</div>
 
 				<!-- Selector tipo de orden -->
 				<div class="mb-3">
 					<label for="tipo-orden" class="form-label">Tipo de orden</label>
-					<select class="form-select" id="tipo-orden" name="tipo-orden">
+					<select class="form-select" id="tipo-orden" name="tipo-orden" required>
 						<option value="mercado">Mercado</option>
 						<option value="limite">Límite</option>
 						<option value="stop-limit">Stop-Limit</option>
@@ -94,7 +92,7 @@
 				<!-- Selector entre monto o total -->
 				<div class="mb-3">
 					<label for="modo-ingreso" class="form-label">Ingresar por</label>
-					<select class="form-select" id="modo-ingreso" name="modo-ingreso">
+					<select class="form-select" id="modo-ingreso" name="modo-ingreso" required>
 						<option value="monto">Monto</option>
 						<option value="total">Total</option>
 					</select>
@@ -103,7 +101,7 @@
 				<!-- Input del monto -->
 				<div class="mb-3">
 					<label for="monto" class="form-label">Monto</label>
-					<input type="number" class="form-control" id="monto" placeholder="0.00" name="monto">
+					<input type="number" class="form-control" id="monto" placeholder="0.00" name="monto" required min="0.00000001" step="any">
 				</div>
 
 				<!-- Slider de porcentaje -->
@@ -120,7 +118,7 @@
 				</div>
 
 				<!-- Botón de acción -->
-				<button class="btn w-100 btn-success boton-confirmar" id="boton-confirmar">COMPRAR</button>
+				<button type="submit" class="btn w-100 btn-success boton-confirmar" id="boton-confirmar">CONFIRMAR</button>
 			</form>
 		</div>
 
@@ -136,7 +134,7 @@
 								<th>Tipo</th>
 								<th>Nombre</th>
 								<th>Cantidad</th>
-								<th>Monto USDT</th>
+								<th>USDT</th>
 								<th>Precio Unitario</th>
 							</tr>
 						</thead>
@@ -152,21 +150,9 @@
 
 	<script defer src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 	<script defer src="{{ url_for('static', filename='js/grafico_velas.js') }}"></script>
-
-	<!-- Script para autocompletar el par al elegir la cripto -->
-	<script>
-		document.addEventListener("DOMContentLoaded", function () {
-			const criptoSelect = document.getElementById("cripto");
-			const parInput = document.getElementById("par");
-
-			criptoSelect.addEventListener("change", function () {
-				const symbol = criptoSelect.value;
-				parInput.value = symbol + "USDT";
-			});
-		});
-	</script>
 	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+	<script src="{{ url_for('static', filename='js/funciones.js') }}"></script>
 	<script>
 	  $(document).ready(function() {
 	    $('#cripto').select2({
@@ -175,6 +161,7 @@
 	    });
 	  });
 	</script>
+	<script type="module" src="trading.js"></script>
 </body>
 
 </html>

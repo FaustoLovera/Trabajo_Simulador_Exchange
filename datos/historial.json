@@ -1,0 +1,50 @@
+[
+    {
+        "id": 6,
+        "tipo": "venta",
+        "ticker": "XRP",
+        "cantidad": "2.16450216",
+        "monto_usdt": "5.00",
+        "precio_unitario": "2.31"
+    },
+    {
+        "id": 5,
+        "tipo": "compra",
+        "ticker": "XRP",
+        "cantidad": "2.16450216",
+        "monto_usdt": "5",
+        "precio_unitario": "2.31"
+    },
+    {
+        "id": 4,
+        "tipo": "compra",
+        "ticker": "XRP",
+        "cantidad": "5.00000000",
+        "monto_usdt": "11.55",
+        "precio_unitario": "2.31"
+    },
+    {
+        "id": 3,
+        "tipo": "venta",
+        "ticker": "XRP",
+        "cantidad": "2.00000000",
+        "monto_usdt": "4.64",
+        "precio_unitario": "2.32"
+    },
+    {
+        "id": 2,
+        "tipo": "compra",
+        "ticker": "BTC",
+        "cantidad": "0.00004566",
+        "monto_usdt": "5",
+        "precio_unitario": "109505.0"
+    },
+    {
+        "id": 1,
+        "tipo": "compra",
+        "ticker": "XRP",
+        "cantidad": "2.15517241",
+        "monto_usdt": "5",
+        "precio_unitario": "2.32"
+    }
+]
