@@ -1,5 +1,45 @@
 [
     {
+        "id": 11,
+        "tipo": "compra",
+        "ticker": "XRP -> ETH",
+        "cantidad": "0.00168738",
+        "monto_usdt": "2",
+        "precio_unitario": "0.00084369"
+    },
+    {
+        "id": 10,
+        "tipo": "compra",
+        "ticker": "XRP -> ETH",
+        "cantidad": "3.8E-7",
+        "monto_usdt": "0.00045039",
+        "precio_unitario": "0.00084369"
+    },
+    {
+        "id": 9,
+        "tipo": "compra",
+        "ticker": "XRP    -> ETH",
+        "cantidad": "0.00045039",
+        "monto_usdt": "0.5",
+        "precio_unitario": "0.00090078"
+    },
+    {
+        "id": 8,
+        "tipo": "compra",
+        "ticker": "XRP    -> ETH",
+        "cantidad": "0.00045036",
+        "monto_usdt": "0.5",
+        "precio_unitario": "0.00090071"
+    },
+    {
+        "id": 7,
+        "tipo": "compra",
+        "ticker": "XRP->ETH",
+        "cantidad": "0.00045028",
+        "monto_usdt": "0.5",
+        "precio_unitario": "0.00090056"
+    },
+    {
         "id": 6,
         "tipo": "venta",
         "ticker": "XRP",

@@ -62,10 +62,10 @@
 			<form class="col-md-5 p-3" id="formulario-trading" method="POST" action="{{ url_for('trading.trading') }}">
 				<h2 class="text-warning">Trading</h2>
 
-				<!-- Selector de criptomonedas -->
+				<!-- Selector de criptomoneda de destino -->
 				<div class="mb-3">
-					<label for="cripto" class="form-label">Seleccionar Criptomoneda</label>
-					<select class="form-select" id="cripto" name="ticker" required>
+					<label for="cripto" class="form-label">Hacia (Cripto Destino)</label>
+					<select class="form-select" id="cripto" name="destino" required>
 						{% for cripto in criptos %}
 							<option value="{{ cripto['ticker'] }}">{{ cripto['nombre'] }}</option>
 						{% endfor %}
@@ -74,9 +74,9 @@
 
 				<!-- BOTONES DE COMPRA VENTA -->
 				<div class="btn-group mb-3 w-100" role="group" id="toggle-trade-type">
-					<input type="hidden" name="accion" id="accion" value="comprar">
-					<button type="button" class="btn w-50 btn-success active boton-comprar" data-action="comprar">Comprar</button>
-					<button type="button" class="btn w-50 btn-outline-secondary boton-vender" data-action="vender">Vender</button>
+					<input type="hidden" name="tipo" id="accion" value="compra">
+					<button type="button" class="btn w-50 btn-success active boton-comprar" data-action="compra">Comprar</button>
+					<button type="button" class="btn w-50 btn-outline-secondary boton-vender" data-action="venta">Vender</button>
 				</div>
 
 				<!-- Selector tipo de orden -->
@@ -95,6 +95,16 @@
 					<select class="form-select" id="modo-ingreso" name="modo-ingreso" required>
 						<option value="monto">Monto</option>
 						<option value="total">Total</option>
+					</select>
+				</div>
+
+								<!-- Selector de criptomoneda de origen -->
+				<div class="mb-3">
+					<label for="cripto-origen" class="form-label">Desde (Cripto Origen)</label>
+					<select class="form-select" id="cripto-origen" name="origen" required>
+						{% for cripto in datos %}
+							<option value="{{ cripto['ticker'] }}">{{ cripto['nombre'] }}</option>
+						{% endfor %}
 					</select>
 				</div>
 
