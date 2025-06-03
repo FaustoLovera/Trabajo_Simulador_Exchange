@@ -1,5 +1,29 @@
 [
     {
+        "id": 14,
+        "tipo": "compra",
+        "ticker": "USDT -> BTC",
+        "cantidad": "0.00009410",
+        "monto_usdt": "10",
+        "precio_unitario": "0.00000941"
+    },
+    {
+        "id": 13,
+        "tipo": "compra",
+        "ticker": "USDT -> BTC",
+        "cantidad": "0.00009410",
+        "monto_usdt": "10",
+        "precio_unitario": "0.00000941"
+    },
+    {
+        "id": 12,
+        "tipo": "compra",
+        "ticker": "USDT -> BTC",
+        "cantidad": "0.00009410",
+        "monto_usdt": "10",
+        "precio_unitario": "0.00000941"
+    },
+    {
         "id": 11,
         "tipo": "compra",
         "ticker": "XRP -> ETH",

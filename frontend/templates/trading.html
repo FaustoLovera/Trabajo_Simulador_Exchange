@@ -102,9 +102,9 @@
 				<div class="mb-3">
 					<label for="cripto-origen" class="form-label">Desde (Cripto Origen)</label>
 					<select class="form-select" id="cripto-origen" name="origen" required>
-						{% for cripto in datos %}
-							<option value="{{ cripto['ticker'] }}">{{ cripto['nombre'] }}</option>
-						{% endfor %}
+					    {% for cripto in datos %}
+					        <option value="{{ cripto.ticker }}">{{ cripto.ticker }}</option>
+					    {% endfor %}
 					</select>
 				</div>
 

@@ -4,6 +4,8 @@ from backend.servicios.velas_logica import cargar_datos_cotizaciones
 from backend.acceso_datos.datos_billetera import cargar_billetera
 from backend.acceso_datos.datos_historial import cargar_historial
 from backend.servicios.api_cotizaciones import obtener_velas_binance
+from backend.servicios.estado_billetera import estado_actual_completo
+from decimal import Decimal
 
 bp = Blueprint("trading", __name__)
 
@@ -11,34 +13,6 @@ bp = Blueprint("trading", __name__)
 def trading():
     """
     Vista principal de trading. Muestra las criptos disponibles, estado de billetera e historial.
-    
-    ---
-    get:
-      description: Muestra la interfaz de trading con datos actualizados.
-      responses:
-        200:
-          description: Página de trading renderizada correctamente.
-
-    post:
-      description: Procesa una operación de compra o venta enviada por formulario.
-      requestBody:
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              properties:
-                tipo:
-                  type: string
-                  example: "compra"
-                ticker:
-                  type: string
-                  example: "BTC"
-                cantidad:
-                  type: string
-                  example: "0.1"
-      responses:
-        302:
-          description: Redirecciona tras procesar la operación con un mensaje flash.
     """
 
     print("🟢 Ruta /trading llamada")  # Para depuración
@@ -47,19 +21,27 @@ def trading():
     obtener_velas_binance()
 
     # Paso 2: Cargar datos necesarios
-    criptos = cargar_datos_cotizaciones()
-    estado = cargar_billetera()
+    criptos = cargar_datos_cotizaciones()               # Lista completa para "Destino"
+    estado = cargar_billetera()                         # Billetera en crudo (JSON)
+    billetera = estado_actual_completo()                # Lista detallada para "Origen"
+    datos = [d for d in billetera if Decimal(d["cantidad"]) > 0]  # Solo con saldo
 
     # Paso 3: Procesar formulario si es POST
     if request.method == "POST":
         exito, mensaje = procesar_operacion_trading(request.form)
         flash(mensaje, "success" if exito else "danger")
-        return redirect(url_for("trading.trading"))  # Redirige para evitar repost
+        return redirect(url_for("trading.trading"))
 
-    # Paso 4: Cargar historial para mostrarlo
+    # Paso 4: Cargar historial
     historial = cargar_historial()
     for h in historial:
         h["color"] = "green" if h["tipo"] == "compra" else "red"
 
     # Paso 5: Renderizar plantilla
-    return render_template("trading.html", criptos=criptos, estado=estado, historial=historial)
+    return render_template(
+        "trading.html",
+        criptos=criptos,
+        estado=estado,
+        historial=historial,
+        datos=datos  # 👈 PASAMOS ESTA VARIABLE AL TEMPLATE
+    )

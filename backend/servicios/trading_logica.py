@@ -69,14 +69,21 @@ def procesar_operacion_trading(formulario):
         return False, f"❌ No se puede obtener el precio entre {origen_cripto} y {destino_cripto}."
 
     if modo_ingreso == "monto":
-        cantidad_origen = monto
-        cantidad_destino = (cantidad_origen * precio).quantize(Decimal("0.00000001"))
-    else:  # total deseado en destino
+        # Monto deseado en destino → calcular cuánto origen necesito gastar
         cantidad_destino = monto
         cantidad_origen = (cantidad_destino / precio).quantize(Decimal("0.00000001"))
+    else:  # "total"
+        # Total en origen a gastar → calcular cuánto destino recibo
+        cantidad_origen = monto
+        cantidad_destino = (cantidad_origen * precio).quantize(Decimal("0.00000001"))
 
-    return operar_par(origen_cripto, destino_cripto, cantidad_origen, cantidad_destino, precio)
+        resultado = operar_par(origen_cripto, destino_cripto, cantidad_origen, cantidad_destino, precio)
 
+        # Asegurarse de que siempre se devuelva una tupla
+        if resultado is None:
+            return False, "❌ Error inesperado al procesar la operación."
+
+        return resultado
 
 def comprar_cripto(ticker, monto_usd):
     billetera = cargar_billetera()
