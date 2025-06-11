@@ -28,24 +28,74 @@ function actualizarDatosCada15Segundos() {
 }
 
 // Elementos del DOM, chequeo que existan
-const criptoSelect = document.getElementById("cripto");
-const parInput = document.getElementById("par");
-const btnComprar = document.querySelector(".boton-comprar");
-const btnVender = document.querySelector(".boton-vender");
-const botonConfirmar = document.getElementById("boton-confirmar");
+const criptoDestinoSelect = document.getElementById("cripto");
+const parInput            = document.getElementById("par");
+const btnComprar          = document.querySelector(".boton-comprar");
+const btnVender           = document.querySelector(".boton-vender");
+const botonConfirmar      = document.getElementById("boton-confirmar");
 
-// Actualiza el campo oculto "par" con el valor seleccionado
+// ---------------------------
+// NUEVO: Elementos para saldo
+const criptoOrigenSelect = document.getElementById("cripto-origen");
+const saldoDisponibleElem = document.getElementById("saldo-disponible");
+// ---------------------------
+
+// Actualiza el campo oculto "par" con el valor seleccionado de destino
 function actualizarPar() {
-    if (criptoSelect && parInput) {
-        const cripto = criptoSelect.value;
+    if (criptoDestinoSelect && parInput) {
+        const cripto = criptoDestinoSelect.value;
         parInput.value = cripto + "USDT";
     }
 }
 
-// Inicialización
-if (criptoSelect && parInput) {
+// NUEVO: Actualiza el saldo disponible según la cripto origen
+function actualizarSaldo() {
+    if (!criptoOrigenSelect || !saldoDisponibleElem) return;
+
+    const selectedOption = criptoOrigenSelect.options[criptoOrigenSelect.selectedIndex];
+    const saldo = selectedOption.getAttribute("data-saldo");
+    const ticker = selectedOption.value;
+
+    if (saldo !== null) {
+        saldoDisponibleElem.textContent = `${parseFloat(saldo).toFixed(8)} ${ticker}`;
+    } else {
+        saldoDisponibleElem.textContent = "--";
+    }
+}
+
+// NUEVO: Pobla el select de cripto origen con el JSON recibido
+function poblarCriptoOrigenDesdeObjeto() {
+    fetch('/saldos') // Este endpoint debe devolver tu objeto JSON plano
+        .then(res => res.json())
+        .then(data => {
+            if (!criptoOrigenSelect) return;
+
+            criptoOrigenSelect.innerHTML = ""; // Limpia opciones previas
+
+            for (const [ticker, saldo] of Object.entries(data)) {
+                const option = document.createElement("option");
+                option.value = ticker;
+                option.textContent = ticker;
+                option.setAttribute("data-saldo", saldo);
+                criptoOrigenSelect.appendChild(option);
+            }
+
+            actualizarSaldo(); // Mostrar saldo de la primera opción
+        })
+        .catch((error) => {
+            console.error("❌ Error al poblar criptos de origen:", error);
+        });
+}
+
+// Inicialización para destino
+if (criptoDestinoSelect && parInput) {
     actualizarPar();
-    criptoSelect.addEventListener("change", actualizarPar);
+    criptoDestinoSelect.addEventListener("change", actualizarPar);
+}
+
+// Inicialización para origen (saldo)
+if (criptoOrigenSelect && saldoDisponibleElem) {
+    criptoOrigenSelect.addEventListener("change", actualizarSaldo);
 }
 
 // Eventos para los botones comprar/vender, cambio de estilos y texto
@@ -93,10 +143,11 @@ document.addEventListener("DOMContentLoaded", function () {
             inputAccion.value = boton.getAttribute("data-action");
         });
     });
-});
 
-
-document.addEventListener('DOMContentLoaded', () => {
+    // Iniciar carga de tabla y actualización periódica
     cargarTabla();
     actualizarDatosCada15Segundos();
+
+    // NUEVO: cargar cripto origen desde el JSON
+    poblarCriptoOrigenDesdeObjeto();
 });

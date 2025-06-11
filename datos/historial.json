@@ -1,5 +1,389 @@
 [
     {
+        "id": 62,
+        "tipo": "intercambio",
+        "ticker": "ETH -> SOL",
+        "cantidad": "17.00515714",
+        "monto_usdt": "1",
+        "precio_unitario": "17.00515714"
+    },
+    {
+        "id": 61,
+        "tipo": "compra",
+        "ticker": "USDT -> ETH",
+        "cantidad": "0.00356600",
+        "monto_usdt": "10",
+        "precio_unitario": "0.00035660"
+    },
+    {
+        "id": 60,
+        "tipo": "compra",
+        "ticker": "USDT -> ETH",
+        "cantidad": "1.00000000",
+        "monto_usdt": "2804.41976555",
+        "precio_unitario": "0.00035658"
+    },
+    {
+        "id": 59,
+        "tipo": "intercambio",
+        "ticker": "ETH -> SOL",
+        "cantidad": "17.04952959",
+        "monto_usdt": "1",
+        "precio_unitario": "17.04952959"
+    },
+    {
+        "id": 58,
+        "tipo": "intercambio",
+        "ticker": "ETH -> SOL",
+        "cantidad": "1.00000000",
+        "monto_usdt": "0.05868701",
+        "precio_unitario": "17.03954631"
+    },
+    {
+        "id": 57,
+        "tipo": "intercambio",
+        "ticker": "ETH -> SOL",
+        "cantidad": "1.00000000",
+        "monto_usdt": "0.05870811",
+        "precio_unitario": "17.03342230"
+    },
+    {
+        "id": 56,
+        "tipo": "compra",
+        "ticker": "USDT -> ETH",
+        "cantidad": "1.00000000",
+        "monto_usdt": "2808.12108618",
+        "precio_unitario": "0.00035611"
+    },
+    {
+        "id": 55,
+        "tipo": "intercambio",
+        "ticker": "ETH -> ADA",
+        "cantidad": "5.57771683",
+        "monto_usdt": "0.00142646",
+        "precio_unitario": "3910.18102574"
+    },
+    {
+        "id": 54,
+        "tipo": "intercambio",
+        "ticker": "ETH -> SOL",
+        "cantidad": "0.00151545",
+        "monto_usdt": "0.00008899",
+        "precio_unitario": "17.02906906"
+    },
+    {
+        "id": 53,
+        "tipo": "intercambio",
+        "ticker": "ETH -> SOL",
+        "cantidad": "0.00160999",
+        "monto_usdt": "0.00009454",
+        "precio_unitario": "17.02906906"
+    },
+    {
+        "id": 52,
+        "tipo": "venta",
+        "ticker": "ETH -> USDT",
+        "cantidad": "2780.00000000",
+        "monto_usdt": "0.99538827",
+        "precio_unitario": "2792.88000000"
+    },
+    {
+        "id": 51,
+        "tipo": "venta",
+        "ticker": "ETH -> USDT",
+        "cantidad": "2781.93000000",
+        "monto_usdt": "1",
+        "precio_unitario": "2781.93000000"
+    },
+    {
+        "id": 50,
+        "tipo": "compra",
+        "ticker": "USDT -> ETH",
+        "cantidad": "0.99699826",
+        "monto_usdt": "2773.60",
+        "precio_unitario": "0.00035946"
+    },
+    {
+        "id": 49,
+        "tipo": "compra",
+        "ticker": "USDT -> XRP",
+        "cantidad": "1205.84782970",
+        "monto_usdt": "2773.450000",
+        "precio_unitario": "0.43478261"
+    },
+    {
+        "id": 48,
+        "tipo": "compra",
+        "ticker": "USDT -> ETH",
+        "cantidad": "1.00000000",
+        "monto_usdt": "2773.46350122",
+        "precio_unitario": "0.00036056"
+    },
+    {
+        "id": 47,
+        "tipo": "venta",
+        "ticker": "ETH -> USDT",
+        "cantidad": "0.13010254",
+        "monto_usdt": "0.00004691",
+        "precio_unitario": "2773.45000000"
+    },
+    {
+        "id": 46,
+        "tipo": "venta",
+        "ticker": "ETH -> USDT",
+        "cantidad": "2771.00000000",
+        "monto_usdt": "0.99995309",
+        "precio_unitario": "2771.13000000"
+    },
+    {
+        "id": 45,
+        "tipo": "compra",
+        "ticker": "USDT -> ETH",
+        "cantidad": "1.00000000",
+        "monto_usdt": "2771.15778972",
+        "precio_unitario": "0.00036086"
+    },
+    {
+        "id": 44,
+        "tipo": "venta",
+        "ticker": "ETH -> USDT",
+        "cantidad": "2770.20051130",
+        "monto_usdt": "0.99963933",
+        "precio_unitario": "2771.20000000"
+    },
+    {
+        "id": 43,
+        "tipo": "venta",
+        "ticker": "ETH -> USDT",
+        "cantidad": "1.00000000",
+        "monto_usdt": "0.00036067",
+        "precio_unitario": "2772.64000000"
+    },
+    {
+        "id": 42,
+        "tipo": "compra",
+        "ticker": "USDT -> ETH",
+        "cantidad": "1.00000000",
+        "monto_usdt": "2772.61762830",
+        "precio_unitario": "0.00036067"
+    },
+    {
+        "id": 41,
+        "tipo": "venta",
+        "ticker": "ETH -> USDT",
+        "cantidad": "1385.20256863",
+        "monto_usdt": "0.49993055",
+        "precio_unitario": "2770.79000000"
+    },
+    {
+        "id": 40,
+        "tipo": "venta",
+        "ticker": "ETH -> USDT",
+        "cantidad": "0.50011146",
+        "monto_usdt": "0.00018091",
+        "precio_unitario": "2764.49000000"
+    },
+    {
+        "id": 39,
+        "tipo": "venta",
+        "ticker": "ETH -> USDT",
+        "cantidad": "0.50029260",
+        "monto_usdt": "0.00018114",
+        "precio_unitario": "2761.90000000"
+    },
+    {
+        "id": 38,
+        "tipo": "venta",
+        "ticker": "ETH -> USDT",
+        "cantidad": "0.50047378",
+        "monto_usdt": "0.00018118",
+        "precio_unitario": "2762.31000000"
+    },
+    {
+        "id": 37,
+        "tipo": "venta",
+        "ticker": "ETH -> USDT",
+        "cantidad": "1375.91500000",
+        "monto_usdt": "0.49952622",
+        "precio_unitario": "2754.44000000"
+    },
+    {
+        "id": 36,
+        "tipo": "compra",
+        "ticker": "USDT -> ETH",
+        "cantidad": "1.00000000",
+        "monto_usdt": "2751.86438812",
+        "precio_unitario": "0.00036339"
+    },
+    {
+        "id": 35,
+        "tipo": "venta",
+        "ticker": "ETH -> USDT",
+        "cantidad": "2750.83045279",
+        "monto_usdt": "0.99963677",
+        "precio_unitario": "2751.83000000"
+    },
+    {
+        "id": 34,
+        "tipo": "venta",
+        "ticker": "ETH -> USDT",
+        "cantidad": "1.00000000",
+        "monto_usdt": "0.00036323",
+        "precio_unitario": "2753.07000000"
+    },
+    {
+        "id": 33,
+        "tipo": "compra",
+        "ticker": "USDT -> ETH",
+        "cantidad": "1.00000000",
+        "monto_usdt": "2753.83471484",
+        "precio_unitario": "0.00036313"
+    },
+    {
+        "id": 32,
+        "tipo": "venta",
+        "ticker": "ETH -> USDT",
+        "cantidad": "97.28350980",
+        "monto_usdt": "0.03532598",
+        "precio_unitario": "2753.88000000"
+    },
+    {
+        "id": 31,
+        "tipo": "venta",
+        "ticker": "ETH -> USDT",
+        "cantidad": "0.03533881",
+        "monto_usdt": "0.00001283",
+        "precio_unitario": "2753.88000000"
+    },
+    {
+        "id": 30,
+        "tipo": "venta",
+        "ticker": "ETH -> USDT",
+        "cantidad": "0.03500000",
+        "monto_usdt": "0.00001268",
+        "precio_unitario": "2761.21000000"
+    },
+    {
+        "id": 29,
+        "tipo": "compra",
+        "ticker": "USDT -> ETH",
+        "cantidad": "0.02824140",
+        "monto_usdt": "78.03",
+        "precio_unitario": "0.00036193"
+    },
+    {
+        "id": 28,
+        "tipo": "intercambio",
+        "ticker": "XRP -> BTC",
+        "cantidad": "0.00000100",
+        "monto_usdt": "0.04748338",
+        "precio_unitario": "0.00002106"
+    },
+    {
+        "id": 27,
+        "tipo": "compra",
+        "ticker": "XRP -> BTC",
+        "cantidad": "1E-8",
+        "monto_usdt": "0.0005",
+        "precio_unitario": "0.00002106"
+    },
+    {
+        "id": 26,
+        "tipo": "compra",
+        "ticker": "XRP -> BTC",
+        "cantidad": "0.00001264",
+        "monto_usdt": "0.6",
+        "precio_unitario": "0.00002106"
+    },
+    {
+        "id": 25,
+        "tipo": "compra",
+        "ticker": "BTC -> ETH",
+        "cantidad": "9.0E-7",
+        "monto_usdt": "2E-8",
+        "precio_unitario": "40.19413310"
+    },
+    {
+        "id": 24,
+        "tipo": "intercambio",
+        "ticker": "XRP -> BTC",
+        "cantidad": "0.00002107",
+        "monto_usdt": "1",
+        "precio_unitario": "0.00002107"
+    },
+    {
+        "id": 23,
+        "tipo": "compra",
+        "ticker": "BTC -> ETH",
+        "cantidad": "0.00014310",
+        "monto_usdt": "0.00000356",
+        "precio_unitario": "40.17782547"
+    },
+    {
+        "id": 22,
+        "tipo": "compra",
+        "ticker": "USDT -> BTC",
+        "cantidad": "0.00014310",
+        "monto_usdt": "15",
+        "precio_unitario": "0.00000954"
+    },
+    {
+        "id": 21,
+        "tipo": "compra",
+        "ticker": "BTC -> ETH",
+        "cantidad": "0.00009540",
+        "monto_usdt": "0.00000238",
+        "precio_unitario": "40.15966718"
+    },
+    {
+        "id": 20,
+        "tipo": "compra",
+        "ticker": "USDT -> BTC",
+        "cantidad": "0.00009600",
+        "monto_usdt": "10.06289308",
+        "precio_unitario": "0.00000954"
+    },
+    {
+        "id": 19,
+        "tipo": "compra",
+        "ticker": "USDT -> BTC",
+        "cantidad": "0.00009540",
+        "monto_usdt": "10.00000000",
+        "precio_unitario": "0.00000954"
+    },
+    {
+        "id": 18,
+        "tipo": "compra",
+        "ticker": "USDT -> BTC",
+        "cantidad": "0.00009540",
+        "monto_usdt": "10",
+        "precio_unitario": "0.00000954"
+    },
+    {
+        "id": 17,
+        "tipo": "compra",
+        "ticker": "USDT -> BTC",
+        "cantidad": "0.00009540",
+        "monto_usdt": "10",
+        "precio_unitario": "0.00000954"
+    },
+    {
+        "id": 16,
+        "tipo": "compra",
+        "ticker": "USDT -> ETH",
+        "cantidad": "0.00383190",
+        "monto_usdt": "10",
+        "precio_unitario": "0.00038319"
+    },
+    {
+        "id": 15,
+        "tipo": "compra",
+        "ticker": "USDT -> BTC",
+        "cantidad": "0.00009550",
+        "monto_usdt": "10",
+        "precio_unitario": "0.00000955"
+    },
+    {
         "id": 14,
         "tipo": "compra",
         "ticker": "USDT -> BTC",
