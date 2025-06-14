@@ -5,6 +5,7 @@ from backend.acceso_datos.datos_billetera import cargar_billetera
 from backend.acceso_datos.datos_historial import cargar_historial
 from backend.servicios.api_cotizaciones import obtener_velas_binance
 from backend.servicios.estado_billetera import estado_actual_completo
+from backend.acceso_datos.datos_cotizaciones import obtener_precio
 from decimal import Decimal, InvalidOperation
 
 bp = Blueprint("trading", __name__)
@@ -14,19 +15,14 @@ def trading():
     """
     Vista principal de trading. Muestra las criptos disponibles, estado de billetera e historial.
     """
-
-    print("🟢 Ruta /trading llamada")  # Para depuración
-
     # Paso 1: Actualizar velas si es necesario
     obtener_velas_binance() 
 
-    # Paso 2: Cargar datos necesarios
+    # Paso 2: Cargar datos necesarios (sin cambios en esta sección)
     raw_all_cryptos_data = cargar_datos_cotizaciones()
-    print(f"DEBUG: Raw all_cryptos_data (from cargar_datos_cotizaciones): {raw_all_cryptos_data}") # DEBUG
     
     criptos_for_template = []
     for c in raw_all_cryptos_data:
-        # Check if 'c' is actually a dictionary before using .get()
         if isinstance(c, dict):
             criptos_for_template.append({
                 'ticker': c.get('ticker'),
@@ -34,64 +30,94 @@ def trading():
                 'precio_usdt': c.get('precio_usdt', Decimal('0.0')) 
             })
         else:
-            print(f"ERROR: Element in all_cryptos_data is not a dict: {c} (Type: {type(c)})") # DEBUG for non-dict
-            # Optionally, skip or handle this non-dict element more robustly
-            continue # Skip this malformed element
-    print(f"DEBUG: Processed criptos_for_template: {criptos_for_template}") # DEBUG
+            print(f"ERROR: Element in all_cryptos_data is not a dict: {c} (Type: {type(c)})")
+            continue
     
     estado = cargar_billetera() 
-    print(f"DEBUG: Raw estado (from cargar_billetera): {estado}") # DEBUG
     
     raw_full_wallet_holdings = estado_actual_completo() 
-    print(f"DEBUG: Raw full_wallet_holdings (from estado_actual_completo): {raw_full_wallet_holdings}") # DEBUG
     
     datos_for_template = []
     for d in raw_full_wallet_holdings:
-        if isinstance(d, dict): # Check if 'd' is actually a dictionary
-            if d.get("cantidad") is not None and Decimal(d.get("cantidad", '0.0')) > 0: # Use .get for 'cantidad' too for safety
+        if isinstance(d, dict):
+            if d.get("cantidad") is not None and Decimal(d.get("cantidad", '0.0')) > 0:
                 datos_for_template.append({
                     'ticker': d.get('ticker'),
                     'cantidad': d.get('cantidad'),
                     'precio_usdt': d.get('precio_usdt', Decimal('0.0')) 
                 })
         else:
-            print(f"ERROR: Element in full_wallet_holdings is not a dict: {d} (Type: {type(d)})") # DEBUG for non-dict
-            # Optionally, skip or handle this non-dict element more robustly
-            continue # Skip this malformed element
-    print(f"DEBUG: Processed datos_for_template (held cryptos): {datos_for_template}") # DEBUG
+            print(f"ERROR: Element in full_wallet_holdings is not a dict: {d} (Type: {type(d)})")
+            continue
 
     usdt_in_datos = any(d['ticker'] == 'USDT' for d in datos_for_template)
     if not usdt_in_datos and estado.get('USDT'):
-        # Ensure 'estado.get('USDT')' returns a value that can be converted to Decimal
-        usdt_balance = estado.get('USDT', '0.0') # Default to string '0.0' for Decimal conversion
+        usdt_balance = estado.get('USDT', '0.0')
         try:
-            Decimal(usdt_balance) # Attempt conversion to catch errors early
+            Decimal(usdt_balance)
             datos_for_template.append({
                 'ticker': 'USDT',
                 'cantidad': usdt_balance,
                 'precio_usdt': Decimal('1.0') 
             })
         except InvalidOperation:
-            print(f"ERROR: USDT balance '{usdt_balance}' from estado.get('USDT') is not a valid decimal.") # DEBUG
-    
-    print(f"DEBUG: Final datos_for_template (including USDT if added): {datos_for_template}") # DEBUG
+            print(f"ERROR: USDT balance '{usdt_balance}' from estado.get('USDT') is not a valid decimal.")
 
     # Paso 3: Procesar formulario si es POST
     if request.method == "POST":
-        exito, mensaje = procesar_operacion_trading(request.form)
+        # Crea una copia mutable de los datos del formulario
+        form_data = request.form.to_dict()
+
+        accion_tipo = form_data.get("accion_tipo")
+        modo_ingreso = form_data.get("modo-ingreso")
+        origen_cripto = form_data.get("origen", "").upper()
+        monto_str = form_data.get("monto")
+
+        # Lógica para manejar la "venta por valor_usdt_origen"
+        if accion_tipo == "venta" and modo_ingreso == "valor_usdt_origen":
+            try:
+                monto_usdt_a_vender = Decimal(monto_str)
+                
+                # Obtener el precio de la cripto de origen en USDT
+                precio_origen_usdt = obtener_precio(origen_cripto)
+
+                if precio_origen_usdt is None or precio_origen_usdt == Decimal("0"):
+                    flash(f"❌ No se pudo obtener el precio de {origen_cripto} para la venta por valor.", "danger")
+                    return redirect(url_for("trading.trading"))
+
+                # Calcular la cantidad de la cripto de origen que corresponde al valor en USDT
+                # cantidad_origen = valor_en_USDT / precio_de_origen_en_USDT
+                cantidad_origen_calculada = (monto_usdt_a_vender / precio_origen_usdt).quantize(Decimal("0.00000001"))
+
+                # Sobrescribir el modo-ingreso y el monto en los datos del formulario
+                # para que procesar_operacion_trading lo entienda como "cantidad_origen"
+                form_data["modo-ingreso"] = "cantidad_origen"
+                form_data["monto"] = str(cantidad_origen_calculada) # Convertir a string para el formulario
+                # El destino ya es USDT y la accion_tipo ya es venta, no necesitan ser cambiados
+
+            except InvalidOperation:
+                flash("❌ El monto para la venta por valor no es un número válido.", "danger")
+                return redirect(url_for("trading.trading"))
+            except Exception as e:
+                flash(f"❌ Error interno al procesar la venta por valor: {e}", "danger")
+                return redirect(url_for("trading.trading"))
+        
+        # Ahora, `form_data` contiene la `cantidad_origen` calculada si fue una venta por valor,
+        # o los datos originales si no lo fue.
+        exito, mensaje = procesar_operacion_trading(form_data)
         flash(mensaje, "success" if exito else "danger")
         return redirect(url_for("trading.trading"))
 
-    # Paso 4: Cargar historial
+    # Paso 4: Cargar historial (sin cambios)
     historial = cargar_historial()
     for h in historial:
         h["color"] = "green" if h["tipo"] == "compra" else "red"
 
-    # Paso 5: Renderizar plantilla
+    # Paso 5: Renderizar plantilla (sin cambios)
     return render_template(
         "trading.html",
         criptos=criptos_for_template,  
         estado=estado,
         historial=historial,
-        datos=datos_for_template       
+        datos=datos_for_template      
     )

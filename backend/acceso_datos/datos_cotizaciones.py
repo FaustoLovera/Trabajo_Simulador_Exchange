@@ -12,6 +12,6 @@ def obtener_precio(ticker):
 
     for cripto in datos:
         if cripto["ticker"].lower() == ticker.lower():
-            return Decimal(str(cripto["precio_usd"]))
+            return Decimal(str(cripto["precio_usdt"]))
 
     return None

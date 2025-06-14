@@ -17,8 +17,8 @@ def calcular_detalle_cripto(ticker, cantidad_actual, precios, historial):
     """
 
     cantidad_actual = Decimal(str(cantidad_actual))
-    precio_actual = precios.get(ticker, Decimal('0')).quantize(Decimal('0.000001'))
-    valor_usdt = (cantidad_actual * precio_actual).quantize(Decimal('0.01'))
+    precio_usdt = precios.get(ticker, Decimal('0')).quantize(Decimal('0.000001'))
+    valor_usdt = (cantidad_actual * precio_usdt).quantize(Decimal('0.01'))
 
     # Filtra las operaciones de compra para el ticker especificado
     compras = [
@@ -41,7 +41,7 @@ def calcular_detalle_cripto(ticker, cantidad_actual, precios, historial):
         "ticker": ticker,
         "cantidad": cantidad_actual,
         "valor_usdt": valor_usdt,
-        "precio_actual": precio_actual,
+        "precio_usdt": precio_usdt,
         "precio_promedio": precio_promedio,
         "invertido": invertido_actual,
         "ganancia_perdida": ganancia,

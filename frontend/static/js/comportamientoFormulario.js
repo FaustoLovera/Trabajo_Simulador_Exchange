@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const montoInput = document.getElementById('monto');
     const sliderMonto = document.getElementById('slider-monto');
     const saldoDisponibleSpan = document.getElementById('saldo-disponible');
+    const labelMonto = document.querySelector('label[for="monto"]'); // Agregamos esta línea para seleccionar el label del monto
 
     // Get all option elements for easier manipulation
     const cantidadDestinoOption = modoIngresoUI.querySelector('option[value="cantidad_destino"]');
@@ -31,14 +32,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- Helper function to get current price from data attributes ---
+    // Esta función ya no será necesaria en el frontend para el submit de valor_usdt_origen,
+    // pero la mantenemos por si la usas para cálculos en tiempo real en la UI (que no es el caso actual).
     function obtenerPrecioDesdeAtributo(ticker) {
         let price = null;
-        // Check origin select options first
         const origenOption = criptoOrigenSelect.querySelector(`option[value="${ticker}"]`);
         if (origenOption && origenOption.dataset.priceUsdt) {
             price = parseFloat(origenOption.dataset.priceUsdt);
         }
-        // If not found in origin, check destination select options
         if (price === null) {
             const destinoOption = criptoDestinoSelect.querySelector(`option[value="${ticker}"]`);
             if (destinoOption && destinoOption.dataset.priceUsdt) {
@@ -56,20 +57,21 @@ document.addEventListener('DOMContentLoaded', function() {
         if (accion === 'compra') {
             botonComprar.className = 'btn w-50 btn-success active boton-comprar';
             botonVender.className = 'btn w-50 btn-outline-secondary boton-vender';
-            botonConfirmar.classList.remove('btn-danger'); // Ensure no lingering danger class
+            botonConfirmar.classList.remove('btn-danger'); 
             botonConfirmar.classList.add('btn-success');
             botonConfirmar.textContent = 'CONFIRMAR COMPRA';
             sliderMonto.classList.remove('slider-venta');
             sliderMonto.classList.add('slider-compra');
-            labelCriptoOrigen.textContent = 'Comprar con'; // Update label for origin crypto
+            labelCriptoOrigen.textContent = 'Comprar con';
 
             // Configure modo-ingreso options for 'compra'
-            cantidadDestinoOption.classList.remove('d-none'); // Show "Cantidad de Cripto a Recibir"
-            cantidadOrigenOption.classList.remove('d-none'); // Show "USDT a Gastar"
-            valorUsdtOrigenOption.classList.add('d-none'); // Hide "Valor en USDT de Cripto a Vender"
+            cantidadDestinoOption.classList.remove('d-none');
+            cantidadOrigenOption.classList.remove('d-none');
+            valorUsdtOrigenOption.classList.add('d-none');
 
-            cantidadDestinoOption.textContent = 'Monto';
-            cantidadOrigenOption.textContent = 'Total';
+            // Actualizar el texto de las opciones para Compra
+            cantidadDestinoOption.textContent = 'Cantidad a Recibir';
+            cantidadOrigenOption.textContent = 'USDT a Gastar';
             
             // Set default modo-ingreso for buy
             modoIngresoUI.value = "cantidad_destino";
@@ -77,30 +79,30 @@ document.addEventListener('DOMContentLoaded', function() {
             // Ensure USDT is selected as origin for buying by default if available
             if (criptoOrigenSelect.querySelector('option[value="USDT"]')) {
                 criptoOrigenSelect.value = 'USDT';
-                // Trigger Select2 update if it's initialized on this element
                 $('#cripto-origen').trigger('change.select2'); 
             }
 
         } else { // accion === 'venta'
             botonComprar.className = 'btn w-50 btn-outline-secondary boton-comprar';
             botonVender.className = 'btn w-50 btn-danger active boton-vender';
-            botonConfirmar.classList.remove('btn-success'); // Ensure no lingering success class
+            botonConfirmar.classList.remove('btn-success'); 
             botonConfirmar.classList.add('btn-danger');
             botonConfirmar.textContent = 'CONFIRMAR VENTA';
             sliderMonto.classList.remove('slider-compra');
             sliderMonto.classList.add('slider-venta');
-            labelCriptoOrigen.textContent = 'Vender'; // Update label for origin crypto
+            labelCriptoOrigen.textContent = 'Vender';
 
             // Configure modo-ingreso options for 'venta'
-            cantidadDestinoOption.classList.add('d-none'); // Hide "Cantidad de Destino a Recibir" for sell
+            cantidadDestinoOption.classList.add('d-none'); // Ocultamos "Cantidad de USDT a Recibir"
             cantidadOrigenOption.classList.remove('d-none'); // Show "Cantidad de Cripto a Vender"
-            valorUsdtOrigenOption.classList.remove('d-none'); // Show "Valor en USDT de Cripto a Vender"
+            valorUsdtOrigenOption.classList.remove('d-none'); // Show "Valor en USDT a Vender"
 
-            cantidadOrigenOption.textContent = 'Monto';
-            valorUsdtOrigenOption.textContent = 'Total';
+            // Actualizar el texto de las opciones para Venta
+            cantidadOrigenOption.textContent = 'Cantidad de Cripto a Vender';
+            valorUsdtOrigenOption.textContent = 'Valor en USDT a Vender';
             
             // Set default modo-ingreso for sell
-            modoIngresoUI.value = "cantidad_origen"; 
+            modoIngresoUI.value = "cantidad_origen"; // O podrías poner "valor_usdt_origen" si lo prefieres por defecto.
             
             // If USDT was selected as origin, try to switch to first non-USDT crypto available for selling
             const currentOrigin = criptoOrigenSelect.value;
@@ -113,7 +115,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         // Ensure the backend hidden input is set correctly after UI update
-        modoIngresoBackend.value = modoIngresoUI.value;
+        // ESTA LÍNEA ES CRUCIAL y DEBE ESTAR AL FINAL DE actualizarFormulario
+        modoIngresoBackend.value = modoIngresoUI.value; 
         actualizarSaldoDisponible(); // Update balance after changing origin crypto
         actualizarTextoCampo(); // Update label for monto field
     }
@@ -126,18 +129,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (accion === 'compra') {
             if (modoSeleccionado === 'cantidad_destino') {
                 montoInput.placeholder = 'Ej: 0.05 BTC';
-                labelMonto.textContent = 'Monto';
-            } else { // cantidad_origen
+                labelMonto.textContent = 'Cantidad a Recibir';
+            } else { // cantidad_origen (USDT a Gastar)
                 montoInput.placeholder = 'Ej: 100 USDT';
-                labelMonto.textContent = 'Total';
+                labelMonto.textContent = 'Total a Gastar';
             }
         } else { // accion === 'venta'
-            if (modoSeleccionado === 'cantidad_origen') {
+            if (modoSeleccionado === 'cantidad_origen') { // Cantidad de Cripto a Vender
                 montoInput.placeholder = 'Ej: 0.1 ETH';
-                labelMonto.textContent = 'Monto';
-            } else { // valor_usdt_origen (only other option for selling)
+                labelMonto.textContent = 'Cantidad a Vender';
+            } else if (modoSeleccionado === 'valor_usdt_origen') { // Valor en USDT a Vender
                 montoInput.placeholder = 'Ej: 200'; // Represents 200 USDT
-                labelMonto.textContent = 'Total';
+                labelMonto.textContent = 'Valor en USDT a Vender';
             }
         }
     };
@@ -175,43 +178,30 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         const porcentaje = parseFloat(sliderMonto.value);
+        // NOTA: Para "Valor en USDT a Vender", el slider aplicaría un porcentaje del saldo en cripto,
+        // no un porcentaje del valor en USDT. Esto podría ser confuso.
+        // Si el modo es 'valor_usdt_origen', la lógica del slider debería ser diferente
+        // para calcular un valor en USDT basado en un porcentaje del valor total del saldo.
+        // Por ahora, lo dejamos así, pero es un punto a considerar para una mejora futura.
+
         const montoCalculado = (saldoValue * (porcentaje / 100)).toFixed(8);
         montoInput.value = parseFloat(montoCalculado); 
     });
 
-    // Pre-submission logic: Handle 'valor_usdt_origen' conversion
+    // Pre-submission logic: SIMPLIFICADA
     formularioTrading.addEventListener('submit', async function(event) {
         // Prevent default form submission
         event.preventDefault();
 
-        const currentAccion = accionInput.value;
-        const currentMonto = parseFloat(montoInput.value);
-        const currentModoIngresoUI = modoIngresoUI.value;
-        const currentOrigenTicker = criptoOrigenSelect.value;
-        
-        // If selling by USDT value of origin, convert monto to actual origin quantity
-        if (currentAccion === 'venta' && currentModoIngresoUI === 'valor_usdt_origen') {
-            const precioOrigenUsdt = obtenerPrecioDesdeAtributo(currentOrigenTicker); // Get price from data attributes
-            
-            if (precioOrigenUsdt === null || precioOrigenUsdt === 0 || isNaN(precioOrigenUsdt)) {
-                alert(`Error: No se pudo obtener el precio de ${currentOrigenTicker} para calcular el valor en USDT.`);
-                return; // Stop submission
-            }
-            const cantidadOrigenCalculada = (currentMonto / precioOrigenUsdt).toFixed(8); // Calculate actual crypto quantity
-            montoInput.value = parseFloat(cantidadOrigenCalculada); // Update monto field
-            modoIngresoBackend.value = "cantidad_origen"; // Change backend modo-ingreso to cantidad_origen
-        } else {
-            // For all other cases, the modo-ingreso is already set by the UI select (modoIngresoBackend.value)
-            modoIngresoBackend.value = modoIngresoUI.value;
-        }
+        // SIMPLEMENTE COPIAMOS EL VALOR DEL SELECT VISIBLE AL INPUT OCULTO
+        // La conversión de 'valor_usdt_origen' a 'cantidad_origen' se hace en el backend (vender_cripto).
+        modoIngresoBackend.value = modoIngresoUI.value; 
 
-        // Now, submit the form programmatically
+        // Ahora, submit the form programmatically
         formularioTrading.submit();
     });
 
     // Initial setup on page load
-    actualizarFormulario(); // Set up form based on default 'compra' mode
-    actualizarSaldoDisponible(); // Display initial available balance
-    actualizarTextoCampo(); // Apply initial label/placeholder for monto
-
+    actualizarFormulario();
+    actualizarSaldoDisponible();
 });

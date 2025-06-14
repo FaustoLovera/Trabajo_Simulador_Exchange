@@ -60,7 +60,7 @@ def obtener_datos_criptos_coingecko():
             "nombre": par[1].get("name"),
             "ticker": par[1].get("symbol", "").upper(),
             "logo": par[1].get("image"),
-            "precio_usd": Decimal(str(par[1].get("current_price"))),
+            "precio_usdt": Decimal(str(par[1].get("current_price"))),
             "1h_%": Decimal(str(par[1].get("price_change_percentage_1h_in_currency"))),
             "24h_%": Decimal(str(par[1].get("price_change_percentage_24h_in_currency"))),
             "7d_%": Decimal(str(par[1].get("price_change_percentage_7d_in_currency"))),

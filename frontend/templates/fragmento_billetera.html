@@ -13,7 +13,7 @@
             {{ cripto.cantidad | formato_valor(2, 0.01, '') }}
         {% endif %}
     </td>
-    <td class="text-center">{{ cripto.precio_actual | formato_valor(6, 0.000001, '') }}</td>
+    <td class="text-center">{{ cripto.precio_usdt | formato_valor(6, 0.000001, '') }}</td>
     <td class="text-center">{{ cripto.valor_usdt | formato_valor }}</td>
     <td class="text-center" style="color: {{ cripto.color_ganancia }};">
         {{ cripto.ganancia_perdida | formato_valor }}

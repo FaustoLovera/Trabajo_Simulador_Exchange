@@ -62,7 +62,7 @@ def obtener_tabla_criptos():
         [
             cripto["id"],
             f"<img src='{cripto['logo']}' width='20' class='logo-cripto'> <span class='nombre-cripto'>{cripto['nombre']}</span> <span class='ticker-cripto'>({cripto['ticker']})</span>",
-            envolver_variacion_coloreada(Decimal(str(cripto["precio_usd"])), con_signo_dolar=True),
+            envolver_variacion_coloreada(Decimal(str(cripto["precio_usdt"])), con_signo_dolar=True),
             envolver_variacion_coloreada(Decimal(str(cripto["1h_%"]))),
             envolver_variacion_coloreada(Decimal(str(cripto["24h_%"]))),
             envolver_variacion_coloreada(Decimal(str(cripto["7d_%"]))),
