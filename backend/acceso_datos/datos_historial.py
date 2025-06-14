@@ -1,46 +1,44 @@
+# backend/acceso_datos/datos_historial.py
 import json
-from config import HISTORIAL_PATH
+import os # Necesitamos el módulo os para verificar el tamaño del archivo
 from decimal import Decimal
-import os
+
+RUTA_HISTORIAL = "datos/historial.json"
 
 def cargar_historial():
-    try:
-        with open(HISTORIAL_PATH, "r") as f:
+    # Asegurarse de que el directorio existe
+    os.makedirs(os.path.dirname(RUTA_HISTORIAL), exist_ok=True)
+    
+    # Verificar si el archivo existe y no está vacío
+    if not os.path.exists(RUTA_HISTORIAL) or os.path.getsize(RUTA_HISTORIAL) == 0:
+        return [] # Si el archivo no existe o está vacío, devuelve una lista vacía
+    
+    with open(RUTA_HISTORIAL, "r", encoding="utf-8") as f:
+        # Aquí puedes añadir un bloque try-except para manejar archivos JSON corruptos
+        try:
             return json.load(f)
-    except FileNotFoundError:
-        return []
+        except json.JSONDecodeError:
+            # Si el archivo está corrupto (no vacío pero con JSON inválido),
+            # puedes decidir si quieres:
+            # 1. Devolver una lista vacía y sobrescribir el archivo corrupto al guardar.
+            # 2. Levantar el error para depuración.
+            # 3. Registrar el error y devolver []
+            print(f"Advertencia: El archivo de historial '{RUTA_HISTORIAL}' está corrupto. Se reiniciará el historial.")
+            return [] # O manejar el error de otra forma, como logs.
 
+def guardar_en_historial(tipo, par, cantidad_destino, cantidad_origen, precio_relativo):
+    historial = cargar_historial() # Carga el historial existente (o una lista vacía si no hay)
 
-
-def guardar_en_historial(tipo, ticker, cantidad, monto_usdt, precio_unitario):
-    crear_operacion = lambda id, tipo, ticker, cantidad, monto_usdt, precio_unitario: {
-        "id": id,
+    # Convertir los Decimal a string para que json.dump pueda serializarlos
+    operacion = {
+        "timestamp": os.path.getmtime(RUTA_HISTORIAL), # Podrías usar datetime.now() para un timestamp más exacto de la operación
         "tipo": tipo,
-        "ticker": ticker,
-        "cantidad": cantidad,
-        "monto_usdt": monto_usdt,
-        "precio_unitario": precio_unitario,
+        "par": par,
+        "cantidad_destino": str(cantidad_destino),
+        "cantidad_origen": str(cantidad_origen),
+        "precio_relativo": str(precio_relativo)
     }
-
-    os.makedirs(os.path.dirname(HISTORIAL_PATH), exist_ok=True)
-
-    if os.path.exists(HISTORIAL_PATH):
-        with open(HISTORIAL_PATH, "r") as f:
-            historial = json.load(f)
-        for operacion in historial:
-            operacion["cantidad"] = Decimal(operacion["cantidad"])
-            operacion["monto_usdt"] = Decimal(operacion["monto_usdt"])
-            operacion["precio_unitario"] = Decimal(operacion["precio_unitario"])
-    else:
-        historial = []
-
-    nuevo_id = len(historial) + 1
-    cantidad = cantidad.quantize(Decimal("0.00000001"))
-
-    operacion = crear_operacion(
-        nuevo_id, tipo, ticker, cantidad, monto_usdt, precio_unitario
-    )
-    historial.insert(0, operacion)
-
-    with open(HISTORIAL_PATH, "w") as f:
-        json.dump(historial, f, indent=4, default=lambda o: str(o) if isinstance(o, Decimal) else o)
+    historial.append(operacion)
+    
+    with open(RUTA_HISTORIAL, "w", encoding="utf-8") as f:
+        json.dump(historial, f, indent=4)

@@ -16,7 +16,7 @@
     <td class="text-center">{{ cripto.precio_usdt | formato_valor(6, 0.000001, '') }}</td>
     <td class="text-center">{{ cripto.valor_usdt | formato_valor }}</td>
     <td class="text-center" style="color: {{ cripto.color_ganancia }};">
-        {{ cripto.ganancia_perdida | formato_valor }}
+        {{ cripto.ganancia_o_perdida | formato_valor }}
     </td>
     <td class="text-center" style="color: {{ cripto.color_porcentaje }};">
         {{ cripto.porcentaje_ganancia | formato_valor(2, 0.0001, '') }}%

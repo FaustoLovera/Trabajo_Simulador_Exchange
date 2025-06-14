@@ -1,102 +1,133 @@
-from flask import render_template
-from decimal import Decimal
+# backend/servicios/estado_billetera.py
+
+from decimal import Decimal, InvalidOperation
 from backend.acceso_datos.datos_billetera import cargar_billetera
+from backend.acceso_datos.datos_cotizaciones import cargar_datos_cotizaciones
 from backend.acceso_datos.datos_historial import cargar_historial
-from backend.acceso_datos.datos_cotizaciones import obtener_precio
 
+# ... (mantén la función calcular_detalle_cripto tal como la dejamos, con 'ganancia_o_perdida' y 'porcentaje_ganancia') ...
+def calcular_detalle_cripto(ticker, cantidad, precios_usdt, historial):
+    # print(f"DEBUG calcular_detalle_cripto: Recibido ticker='{ticker}', cantidad='{cantidad}', tipo(cantidad)={type(cantidad)}") # DEBUG
+    precio_usdt = precios_usdt.get(ticker, Decimal('0.0'))
+    # print(f"DEBUG calcular_detalle_cripto: precio_usdt='{precio_usdt}', tipo(precio_usdt)={type(precio_usdt)}") # DEBUG
+    
+    valor_usdt = cantidad * precio_usdt
 
-def calcular_detalle_cripto(ticker, cantidad_actual, precios, historial):
-    """
-    Calcula el estado financiero de una criptomoneda en base a su cantidad actual, el precio de mercado
-    y el historial de compras.
-
-    Obtiene el precio actual, calcula el valor de la tenencia en USDT, el precio promedio de compra,
-    el monto invertido en la cantidad disponible, y la ganancia o pérdida actual tanto en USDT como en porcentaje.
-
-    Devuelve un diccionario con toda esta información resumida.
-    """
-
-    cantidad_actual = Decimal(str(cantidad_actual))
-    precio_usdt = precios.get(ticker, Decimal('0')).quantize(Decimal('0.000001'))
-    valor_usdt = (cantidad_actual * precio_usdt).quantize(Decimal('0.01'))
-
-    # Filtra las operaciones de compra para el ticker especificado
-    compras = [
-        op for op in historial if op["ticker"] == ticker and op["tipo"] == "compra"
+    compras_relevantes = [
+        op for op in historial 
+        if op["tipo"] == "compra" and op["par"].split(" -> ")[1].strip() == ticker
     ]
 
-    cantidad_comprada = sum(Decimal(str(op["cantidad"])) for op in compras)
-    total_invertido = sum(Decimal(str(op["monto_usdt"])) for op in compras)
+    costo_total = Decimal('0.0')
+    cantidad_total_comprada = Decimal('0.0')
 
-    # Evita divisiones por 0 y devuelve 0 en caso de que el denominador sea 0
-    division_por_0_segura = lambda num, den: num / den if den != 0 else Decimal('0')
+    for op in compras_relevantes:
+        try:
+            costo_de_esta_compra = Decimal(op["cantidad_origen"]) # USDT gastado
+            cantidad_comprada_en_esta_op = Decimal(op["cantidad_destino"]) # Cripto obtenida
 
-    precio_promedio = division_por_0_segura(total_invertido, cantidad_comprada).quantize(Decimal('0.000001')) if cantidad_comprada else Decimal('0')
-    invertido_actual = (cantidad_actual * precio_promedio).quantize(Decimal('0.01'))
+            costo_total += costo_de_esta_compra
+            cantidad_total_comprada += cantidad_comprada_en_esta_op
+        except (ValueError, KeyError, InvalidOperation) as e:
+            print(f"Advertencia: Error al procesar operación de historial: {op}. Error: {e}")
+            continue 
 
-    ganancia = (valor_usdt - invertido_actual).quantize(Decimal('0.01'))
-    porcentaje_ganancia = division_por_0_segura(ganancia, invertido_actual) * Decimal('100') if invertido_actual != 0 else Decimal('0')
+    costo_promedio = (costo_total / cantidad_total_comprada).quantize(Decimal("0.00000001")) \
+                     if cantidad_total_comprada > 0 else Decimal('0.0')
+
+    ganancia_o_perdida = valor_usdt - (cantidad * costo_promedio)
+
+    porcentaje_ganancia = Decimal('0.0')
+    costo_posicion_actual = cantidad * costo_promedio 
+
+    if costo_posicion_actual > 0:
+        porcentaje_ganancia = (ganancia_o_perdida / costo_posicion_actual * Decimal('100')).quantize(Decimal("0.01"))
+    elif cantidad > 0 and costo_promedio == Decimal('0.0'):
+        if valor_usdt > 0:
+            porcentaje_ganancia = Decimal('100.00')
+        else:
+            porcentaje_ganancia = Decimal('0.00')
 
     return {
         "ticker": ticker,
-        "cantidad": cantidad_actual,
-        "valor_usdt": valor_usdt,
+        "cantidad": cantidad,
         "precio_usdt": precio_usdt,
-        "precio_promedio": precio_promedio,
-        "invertido": invertido_actual,
-        "ganancia_perdida": ganancia,
-        "porcentaje_ganancia": porcentaje_ganancia,
+        "valor_usdt": valor_usdt,
+        "costo_promedio": costo_promedio,
+        "ganancia_o_perdida": ganancia_o_perdida,
+        "porcentaje_ganancia": porcentaje_ganancia
     }
 
 
 def estado_actual_completo():
-    """
-    Calcula un resumen financiero completo del portafolio de criptomonedas actual.
-
-    Este resumen incluye, para cada activo con saldo significativo (> 0.000001):
-    - Cantidad disponible
-    - Valor de mercado en USDT
-    - Precio promedio de compra
-    - Monto invertido
-    - Ganancia/pérdida neta y en porcentaje
-    - Porcentaje de participación en el portafolio total
-
-    Returns:
-        List[Dict]: Lista de diccionarios, cada uno representando una criptomoneda con su detalle financiero.
-    """
-
-    # Cargar los datos actuales desde archivos locales
-    billetera = {k: Decimal(str(v)) for k, v in cargar_billetera().items()}
-    if "USDT" in billetera:
-        billetera["USDT"] = billetera["USDT"].quantize(Decimal("0.01"))
-    
-    # Obtener precios para cada cripto en la billetera
-    precios = {ticker: obtener_precio(ticker) or Decimal('0') for ticker in billetera.keys()}
+    billetera = cargar_billetera()
+    cotizaciones = cargar_datos_cotizaciones()
     historial = cargar_historial()
 
-    billetera_filtrada = billetera
+    precios_actuales = {c['ticker']: c['precio_usdt'] for c in cotizaciones}
 
-    # Calcular el detalle financiero de cada criptomoneda
-    detalles = list(
-        map(
-            lambda par: calcular_detalle_cripto(par[0], par[1], precios, historial),
-            billetera_filtrada.items(),
-        )
-    )
+    detalle_criptos = []
+    total_portafolio_usdt = Decimal('0.0')
 
-    # Calcular el valor total en USDT del portafolio
-    total_usdt = sum(Decimal(str(d["valor_usdt"])) for d in detalles)
+    # Excluir USDT de la iteración inicial, se manejará por separado
+    # Asegúrate de que las cantidades de la billetera sean Decimal desde el principio
+    criptos_en_billetera = {}
+    for ticker, cantidad_str in billetera.items():
+        try:
+            criptos_en_billetera[ticker] = Decimal(cantidad_str)
+        except InvalidOperation:
+            print(f"Advertencia: Cantidad inválida '{cantidad_str}' para {ticker} en billetera. Se usa 0.0.")
+            criptos_en_billetera[ticker] = Decimal('0.0')
 
-    # Función para calcular el porcentaje que representa cada cripto sobre el total
-    calcular_porcentaje = lambda valor_usdt: ((Decimal(str(valor_usdt)) / total_usdt) * Decimal('100')).quantize(Decimal('0.01')) if total_usdt > 0 else Decimal('0')
 
-    # Asignar el porcentaje correspondiente a cada criptomoneda y los colores
-    for detalle_cripto in detalles:
-        detalle_cripto["porcentaje"] = calcular_porcentaje(detalle_cripto["valor_usdt"])
-        detalle_cripto["color_ganancia"] = "green" if detalle_cripto["ganancia_perdida"] >= 0 else "red"
-        detalle_cripto["color_porcentaje"] = "green" if detalle_cripto["porcentaje_ganancia"] >= 0 else "red"
-        detalle_cripto["es_polvo"] = detalle_cripto["valor_usdt"] < Decimal("0.001")
-        # Truncamiento a 8 decimales eliminado, se mantiene la cantidad tal cual
-        detalle_cripto["cantidad"] = detalle_cripto["cantidad"]
+    for ticker, cantidad_decimal in criptos_en_billetera.items():
+        if ticker == 'USDT':
+            # USDT se maneja de forma especial, no tiene ganancia/pérdida o costo promedio en este contexto
+            # Solo se añade su valor directo al total del portafolio.
+            if cantidad_decimal > 0:
+                detalle_criptos.append({
+                    "ticker": "USDT",
+                    "cantidad": cantidad_decimal,
+                    "precio_usdt": Decimal('1.0'), # El precio de USDT es 1
+                    "valor_usdt": cantidad_decimal, # El valor de USDT es su propia cantidad
+                    "costo_promedio": Decimal('1.0'), # Asumimos 1 para USDT en promedio
+                    "ganancia_o_perdida": Decimal('0.0'), # USDT no tiene ganancia/pérdida
+                    "porcentaje_ganancia": Decimal('0.0') # USDT no tiene porcentaje de ganancia
+                })
+                total_portafolio_usdt += cantidad_decimal
+            continue # Saltamos al siguiente elemento si es USDT
 
-    return detalles
+        # Para otras criptos (no USDT)
+        if cantidad_decimal > 0: 
+            try:
+                detalle = calcular_detalle_cripto(ticker, cantidad_decimal, precios_actuales, historial)
+                detalle_criptos.append(detalle)
+                total_portafolio_usdt += detalle['valor_usdt']
+            except Exception as e:
+                print(f"Error calculando detalle para {ticker}: {e}")
+        else:
+             # Si la cantidad es 0, también podemos añadirla para que aparezca en la lista,
+             # pero con valores de 0 en el detalle, si se desea.
+             # Si no quieres ver las criptos con 0, puedes eliminar este else.
+             detalle_criptos.append({
+                 "ticker": ticker,
+                 "cantidad": Decimal('0.0'),
+                 "precio_usdt": precios_actuales.get(ticker, Decimal('0.0')),
+                 "valor_usdt": Decimal('0.0'),
+                 "costo_promedio": Decimal('0.0'),
+                 "ganancia_o_perdida": Decimal('0.0'),
+                 "porcentaje_ganancia": Decimal('0.0')
+             })
+
+
+    # ¡NUEVO BLOQUE! Calcular el porcentaje de cada cripto en el portafolio total
+    for cripto_detalle in detalle_criptos:
+        porcentaje_en_billetera = Decimal('0.0')
+        if total_portafolio_usdt > 0:
+            porcentaje_en_billetera = (cripto_detalle['valor_usdt'] / total_portafolio_usdt * Decimal('100')).quantize(Decimal("0.01"))
+        
+        # Asignar el porcentaje calculado a la nueva clave 'porcentaje'
+        cripto_detalle['porcentaje'] = porcentaje_en_billetera 
+
+    print(f"DEBUG estado_actual_completo: Datos finales de billetera para plantilla: {detalle_criptos}") # Para depuración
+    return detalle_criptos

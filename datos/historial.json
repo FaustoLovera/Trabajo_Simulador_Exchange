@@ -1,0 +1,82 @@
+[
+    {
+        "timestamp": 1749927728.9717643,
+        "tipo": "compra",
+        "par": "USDT -> SOL",
+        "cantidad_destino": "2",
+        "cantidad_origen": "287.40009254",
+        "precio_relativo": "0.00695894"
+    },
+    {
+        "timestamp": 1749928394.0688522,
+        "tipo": "compra",
+        "par": "USDT -> SOL",
+        "cantidad_destino": "2",
+        "cantidad_origen": "288.26003361",
+        "precio_relativo": "0.00693818"
+    },
+    {
+        "timestamp": 1749930671.3752198,
+        "tipo": "compra",
+        "par": "USDT -> SOL",
+        "cantidad_destino": "0.01389758",
+        "cantidad_origen": "2",
+        "precio_relativo": "0.00694879"
+    },
+    {
+        "timestamp": 1749930703.8637488,
+        "tipo": "venta",
+        "par": "SOL -> USDT",
+        "cantidad_destino": "287.82000000",
+        "cantidad_origen": "2",
+        "precio_relativo": "143.91000000"
+    },
+    {
+        "timestamp": 1749930732.9190478,
+        "tipo": "intercambio",
+        "par": "SOL -> BTC",
+        "cantidad_destino": "1.3E-7",
+        "cantidad_origen": "0.00009664",
+        "precio_relativo": "0.00137087"
+    },
+    {
+        "timestamp": 1749930799.4281218,
+        "tipo": "venta",
+        "par": "BTC -> USDT",
+        "cantidad_destino": "0.01048770",
+        "cantidad_origen": "1.0E-7",
+        "precio_relativo": "104877.00000000"
+    },
+    {
+        "timestamp": 1749930850.5048685,
+        "tipo": "venta",
+        "par": "BTC -> USDT",
+        "cantidad_destino": "0.00314631",
+        "cantidad_origen": "3E-8",
+        "precio_relativo": "104877.00000000"
+    },
+    {
+        "timestamp": 1749930887.4352748,
+        "tipo": "venta",
+        "par": "SOL -> USDT",
+        "cantidad_destino": "1.97999981",
+        "cantidad_origen": "0.01377487",
+        "precio_relativo": "143.74000000"
+    },
+    {
+        "timestamp": 1749930921.068875,
+        "tipo": "intercambio",
+        "par": "SOL -> BTC",
+        "cantidad_destino": "4E-8",
+        "cantidad_origen": "0.00002607",
+        "precio_relativo": "0.00137087"
+    },
+    {
+        "timestamp": 1749930933.4087849,
+        "tipo": "venta",
+        "par": "BTC -> USDT",
+        "cantidad_destino": "0.00419412",
+        "cantidad_origen": "4E-8",
+        "precio_relativo": "104853.00000000"
+    }
+]
