@@ -2,166 +2,152 @@
 <html lang="en">
 
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>BlocX - Trading</title>
-	<link rel="icon" href="{{ url_for('static', filename='img/logo_BlocX.png') }}" type="image/x-icon">
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/styles_trading.css') }}">
-	<script src="{{ url_for('static', filename='js/comportamientoFormulario.js') }}"></script>
-	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet"
-		integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
-	<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlocX - Trading</title>
+    <link rel="icon" href="{{ url_for('static', filename='img/logo_BlocX.png') }}" type="image/x-icon">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles_trading.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 </head>
 
 <body class="bg-dark text-white">
-	<nav class="navbar navbar-expand-lg bg-black shadow">
-		<div class="container-fluid">
-			<a class="navbar-brand text-warning d-flex align-items-center gap-2" href="{{ url_for('home.index') }}">
-				<img src="{{ url_for('static', filename='img/logo_BlocX.png') }}" alt="Logo" width="40" height="40">
-				<span>BlocX</span>
-			</a>
-			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-				<span class="navbar-toggler-icon bg-light"></span>
-			</button>
-			<div class="collapse navbar-collapse" id="navbarNav">
-				<ul class="navbar-nav ms-auto">
-					<li class="nav-item">
-						<a class="nav-link text-white" href="{{ url_for('home.index') }}">Cotizaciones</a>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link text-white" href="{{ url_for('trading.trading') }}">Trading</a>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link text-white" href="{{ url_for('billetera.mostrar_billetera') }}">Billetera</a>
-					</li>
-				</ul>
-			</div>
-		</div>
-	</nav>
+    <nav class="navbar navbar-expand-lg bg-black shadow">
+        <div class="container-fluid">
+            <a class="navbar-brand text-warning d-flex align-items-center gap-2" href="{{ url_for('home.index') }}">
+                <img src="{{ url_for('static', filename='img/logo_BlocX.png') }}" alt="Logo" width="40" height="40">
+                <span>BlocX</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon bg-light"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('home.index') }}">Cotizaciones</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('trading.trading') }}">Trading</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('billetera.mostrar_billetera') }}">Billetera</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
-	<div class="container mt-5">
-		<div class="row">
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-md-7">
+                <h3 class="text-light">Gráfico velas</h3>
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="toggleVolume" checked>
+                    <label class="form-check-label text-light" for="toggleVolume">Mostrar volumen</label>
+                </div>
+                <div class="py-3">
+                    <div id="chart"></div>
+                </div>
+            </div>
 
-			<!-- GRAFICO VELAS -->
-			<div class="col-md-7">
+            <form class="col-md-5 p-3" id="formulario-trading" method="POST" action="{{ url_for('trading.trading') }}">
+                <h2 class="text-warning">Trading</h2>
 
-				<h3 class="text-light">Gráfico velas</h3>
+                <div class="mb-3">
+                    <label for="cripto" class="form-label">Seleccionar Criptomoneda</label>
+                    <select class="form-select" id="cripto" name="ticker" required></select>
+                </div>
 
-				<div class="form-check form-switch mb-2">
-					<input class="form-check-input" type="checkbox" id="toggleVolume" checked>
-					<label class="form-check-label text-light" for="toggleVolume">Mostrar volumen</label>
-				</div>
+                <div class="btn-group mb-3 w-100" role="group" id="toggle-trade-type">
+                    <input type="hidden" name="accion" id="accion" value="comprar">
+                    <button type="button" class="btn w-50 btn-success active boton-comprar" data-action="comprar">Comprar</button>
+                    <button type="button" class="btn w-50 btn-outline-secondary boton-vender" data-action="vender">Vender</button>
+                </div>
 
-				<div class="py-3">
-					<div id="chart"></div>
-				</div>
-			</div>
+                <div class="mb-3">
+                    <label for="tipo-orden" class="form-label">Tipo de orden</label>
+                    <select class="form-select" id="tipo-orden" name="tipo-orden" required>
+                        <option value="mercado">Mercado</option>
+                    </select>
+                </div>
 
-			<!-- TRADING -->
-			<form class="col-md-5 p-3" id="formulario-trading" method="POST" action="{{ url_for('trading.trading') }}">
-				<h2 class="text-warning">Trading</h2>
+                <div class="mb-3">
+                    <label for="modo-ingreso" class="form-label">Ingresar por</label>
+                    <select class="form-select" id="modo-ingreso" name="modo-ingreso" required>
+                        <option value="monto">Monto</option>
+                        <option value="total">Total</option>
+                    </select>
+                </div>
 
-				<!-- Selector de criptomonedas -->
-				<div class="mb-3">
-					<label for="cripto" class="form-label">Seleccionar Criptomoneda</label>
-					<select class="form-select" id="cripto" name="ticker" required>
-						{% for cripto in criptos %}
-							<option value="{{ cripto['ticker'] }}">{{ cripto['nombre'] }}</option>
-						{% endfor %}
-					</select>
-				</div>
+                <div class="mb-3">
+                    <label for="monto" class="form-label">Monto</label>
+                    <input type="number" class="form-control" id="monto" placeholder="0.00" name="monto" required min="0.00000001" step="any">
+                </div>
 
-				<!-- BOTONES DE COMPRA VENTA -->
-				<div class="btn-group mb-3 w-100" role="group" id="toggle-trade-type">
-					<input type="hidden" name="accion" id="accion" value="comprar">
-					<button type="button" class="btn w-50 btn-success active boton-comprar" data-action="comprar">Comprar</button>
-					<button type="button" class="btn w-50 btn-outline-secondary boton-vender" data-action="vender">Vender</button>
-				</div>
+                <div class="mb-3" id="campo-pagar-con" style="display: none;">
+                    <label for="moneda-pago" class="form-label">Pagar con</label>
+                    <select class="form-select" id="moneda-pago" name="moneda-pago">
+                        {% for ticker, cantidad in monedas_propias.items() %}
+                            <option value="{{ ticker }}">{{ ticker }} (Disponible: {{ '%.6f'|format(cantidad|float) }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-				<!-- Selector tipo de orden -->
-				<div class="mb-3">
-					<label for="tipo-orden" class="form-label">Tipo de orden</label>
-					<select class="form-select" id="tipo-orden" name="tipo-orden" required>
-						<option value="mercado">Mercado</option>
-						<option value="limite">Límite</option>
-						<option value="stop-limit">Stop-Limit</option>
-					</select>
-				</div>
+                <div class="mb-3" id="campo-recibir-en" style="display: none;">
+                    <label for="moneda-recibir" class="form-label">Recibir en</label>
+                    <select class="form-select" id="moneda-recibir" name="moneda-recibir">
+                        {% for cripto in criptos %}
+                            <option value="{{ cripto['ticker'] }}"> {{ cripto['nombre'] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-				<!-- Selector entre monto o total -->
-				<div class="mb-3">
-					<label for="modo-ingreso" class="form-label">Ingresar por</label>
-					<select class="form-select" id="modo-ingreso" name="modo-ingreso" required>
-						<option value="monto">Monto</option>
-						<option value="total">Total</option>
-					</select>
-				</div>
+                <div class="mb-3">
+                    <input type="range" class="form-range" min="0" max="100" step="1" id="slider-monto" value="0" name="slider">
+                    <div class="d-flex justify-content-between text-white small">
+                        <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+                    </div>
+                </div>
 
-				<!-- Input del monto -->
-				<div class="mb-3">
-					<label for="monto" class="form-label">Monto</label>
-					<input type="number" class="form-control" id="monto" placeholder="0.00" name="monto" required min="0.00000001" step="any">
-				</div>
+                <div class="mb-3 text-end text-secondary">
+                    <small>Disponible: -- ###</small>
+                </div>
+                
+                <button type="submit" class="btn w-100 btn-success boton-confirmar" id="boton-confirmar">CONFIRMAR</button>
+            </form>
+        </div>
 
-				<!-- Slider de porcentaje -->
-				<div class="mb-3">
-					<input type="range" class="form-range" min="0" max="100" step="1" id="slider-monto" value="0" name="slider">
-					<div class="d-flex justify-content-between text-white small">
-						<span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
-					</div>
-				</div>
+        <div class="row mt-5">
+            <div class="col-12">
+                <h4 class="text-warning">Historial de transacciones</h4>
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped text-center">
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Nombre</th>
+                                <th>Cantidad</th>
+                                <th>USDT</th>
+                                <th>Precio Unitario</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-historial">
+                            {% include "fragmento_historial.html" %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
-				<!-- Saldo disponible -->
-				<div class="mb-3 text-end text-secondary">
-					<small>Disponible: -- ###</small>
-				</div>
-
-				<!-- Botón de acción -->
-				<button type="submit" class="btn w-100 btn-success boton-confirmar" id="boton-confirmar">CONFIRMAR</button>
-			</form>
-		</div>
-
-		<!-- Historial de transacciones -->
-		<div class="row mt-5">
-			<div class="col-12">
-				<h4 class="text-warning">Historial de transacciones</h4>
-
-				<div class="table-responsive">
-					<table class="table table-dark table-striped text-center">
-						<thead>
-							<tr>
-								<th>Tipo</th>
-								<th>Nombre</th>
-								<th>Cantidad</th>
-								<th>USDT</th>
-								<th>Precio Unitario</th>
-							</tr>
-						</thead>
-						<tbody id="tabla-historial">
-							{% include "fragmento_historial.html" %}
-						</tbody>
-					</table>
-				</div>
-
-			</div>
-		</div>
-	</div>
-
-	<script defer src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
-	<script defer src="{{ url_for('static', filename='js/grafico_velas.js') }}"></script>
-	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-	<script src="{{ url_for('static', filename='js/funciones.js') }}"></script>
-	<script>
-	  $(document).ready(function() {
-	    $('#cripto').select2({
-	      placeholder: "Buscar criptomoneda...",
-	      width: '100%' // Asegura que se ajuste bien
-	    });
-	  });
-	</script>
-	<script type="module" src="trading.js"></script>
+    <script>
+        const todasLasCriptos = JSON.parse('{{ lista_todas_las_criptos_json|safe }}');
+        const monedasPropias = JSON.parse('{{ lista_monedas_propias_json|safe }}');
+    </script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script defer src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+    <script defer src="{{ url_for('static', filename='js/grafico_velas.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/comportamientoFormulario.js') }}"></script>
 </body>
-
 </html>

@@ -1,3 +1,5 @@
+// Este archivo ahora solo contiene funciones globales usadas en otras partes del sitio.
+
 function cargarTabla() {
     fetch('/datos_tabla')
         .then((res) => res.text())
@@ -19,84 +21,35 @@ function actualizarDatosCada15Segundos() {
             .then((res) => res.json())
             .then((data) => {
                 console.log('✅ Datos actualizados:', data);
-                cargarTabla(); // vuelve a pedir y mostrar los datos actualizados
+                cargarTabla();
             })
             .catch((error) => {
                 console.error('❌ Error al actualizar datos:', error);
             });
-    }, 15000); // 15 segundos
+    }, 15000);
 }
 
-// Elementos del DOM, chequeo que existan
-const criptoSelect = document.getElementById("cripto");
-const parInput = document.getElementById("par");
-const btnComprar = document.querySelector(".boton-comprar");
-const btnVender = document.querySelector(".boton-vender");
-const botonConfirmar = document.getElementById("boton-confirmar");
-
-// Actualiza el campo oculto "par" con el valor seleccionado
+// La lógica del `parInput` también se queda si se usa en otra página.
 function actualizarPar() {
+    const criptoSelect = document.getElementById("cripto");
+    const parInput = document.getElementById("par");
     if (criptoSelect && parInput) {
-        const cripto = criptoSelect.value;
-        parInput.value = cripto + "USDT";
+        parInput.value = criptoSelect.value + "USDT";
     }
 }
 
-// Inicialización
-if (criptoSelect && parInput) {
-    actualizarPar();
-    criptoSelect.addEventListener("change", actualizarPar);
-}
 
-// Eventos para los botones comprar/vender, cambio de estilos y texto
-if (btnComprar && btnVender && botonConfirmar) {
-    btnComprar.addEventListener("click", () => {
-        btnComprar.classList.add("btn-success", "active");
-        btnComprar.classList.remove("btn-outline-secondary");
-
-        btnVender.classList.remove("btn-danger", "active");
-        btnVender.classList.add("btn-outline-secondary");
-
-        botonConfirmar.classList.remove("btn-danger");
-        botonConfirmar.classList.add("btn-success");
-        botonConfirmar.textContent = "COMPRAR";
-    });
-
-    btnVender.addEventListener("click", () => {
-        btnVender.classList.add("btn-danger", "active");
-        btnVender.classList.remove("btn-outline-secondary");
-
-        btnComprar.classList.remove("btn-success", "active");
-        btnComprar.classList.add("btn-outline-secondary");
-
-        botonConfirmar.classList.remove("btn-success");
-        botonConfirmar.classList.add("btn-danger");
-        botonConfirmar.textContent = "VENDER";
-    });
-}
-
-document.addEventListener("DOMContentLoaded", function () {
-    const botones = document.querySelectorAll("#toggle-trade-type button");
-    const inputAccion = document.getElementById("accion");
-
-    botones.forEach(boton => {
-        boton.addEventListener("click", () => {
-            // Quitar clases activas de todos
-            botones.forEach(b => b.classList.remove("btn-success", "active"));
-            botones.forEach(b => b.classList.add("btn-outline-secondary"));
-
-            // Agregar clases activas al botón clickeado
-            boton.classList.remove("btn-outline-secondary");
-            boton.classList.add("btn-success", "active");
-
-            // Cambiar valor oculto
-            inputAccion.value = boton.getAttribute("data-action");
-        });
-    });
-});
-
-
+// Inicialización para las páginas que usen estas funciones
 document.addEventListener('DOMContentLoaded', () => {
-    cargarTabla();
-    actualizarDatosCada15Segundos();
+    // Estas funciones solo se ejecutarán si la página actual
+    // es la correcta (p.ej. la de Cotizaciones)
+    if (document.getElementById('tabla-datos')) {
+        cargarTabla();
+        actualizarDatosCada15Segundos();
+    }
+    if (document.getElementById('par')) {
+        const criptoSelect = document.getElementById("cripto");
+        actualizarPar();
+        criptoSelect.addEventListener("change", actualizarPar);
+    }
 });
