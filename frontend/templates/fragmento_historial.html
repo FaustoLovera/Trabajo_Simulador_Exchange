@@ -1,9 +1,34 @@
 {% for item in historial %}
-<tr>
-    <td class="text-center" style="color: {{ item.color }}">{{ item.tipo }}</td>
-    <td class="text-center">{{ item.ticker }}</td>
-    <td class="text-center">{{ item.cantidad | formato_cantidad }}</td>
-    <td class="text-center">{{ item.monto_usdt | formato_valor(2, 0.0001, "$") }}</td>
-    <td class="text-center">{{ item.precio_unitario | formato_valor(6, 0.000001, "$") }}</td>
-</tr>
+    <tr>
+        <!-- Columna 1: Fecha y Hora -->
+        <td class="text-start ps-3">
+            {{ item.fecha_formateada }} <span class="text-white-50" style="padding-left: 1em">{{ item.hora_formateada }}</span>
+        </td>
+
+        <!-- Columna 2: Par de Trading -->
+        <td class="fw-bold">
+            {% if item.tipo == 'compra' %}
+                {{ item.destino.ticker }}/{{ item.origen.ticker }}
+            {% else %}
+                {{ item.origen.ticker }}/{{ item.destino.ticker }}
+            {% endif %}
+        </td>
+        
+        <!-- Columna 3: Tipo -->
+        <td class="{% if item.tipo == 'compra' %}text-success{% elif item.tipo == 'venta' %}text-danger{% else %}text-warning{% endif %}">
+            {{ item.tipo|capitalize }}
+        </td>
+
+        <!-- Columna 4: Cantidad (de la moneda principal del par) -->
+        <td>
+            {% if item.tipo == 'compra' %}
+                {{ item.destino.cantidad | formato_cantidad }} {{ item.destino.ticker }}
+            {% else %}
+                {{ item.origen.cantidad | formato_cantidad }} {{ item.origen.ticker }}
+            {% endif %}
+        </td>
+        
+        <!-- Columna 5: Valor Total -->
+        <td>{{ item.valor_usd | formato_valor }}</td>
+    </tr>
 {% endfor %}

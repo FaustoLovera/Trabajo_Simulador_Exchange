@@ -5,30 +5,28 @@ from backend.acceso_datos.datos_historial import cargar_historial
 from backend.acceso_datos.datos_cotizaciones import obtener_precio
 
 
+# En backend/servicios/estado_billetera.py
+
 def calcular_detalle_cripto(ticker, cantidad_actual, precios, historial):
     """
     Calcula el estado financiero de una criptomoneda en base a su cantidad actual, el precio de mercado
     y el historial de compras.
-
-    Obtiene el precio actual, calcula el valor de la tenencia en USDT, el precio promedio de compra,
-    el monto invertido en la cantidad disponible, y la ganancia o pérdida actual tanto en USDT como en porcentaje.
-
-    Devuelve un diccionario con toda esta información resumida.
     """
-
     cantidad_actual = Decimal(str(cantidad_actual))
     precio_actual = precios.get(ticker, Decimal('0')).quantize(Decimal('0.000001'))
     valor_usdt = (cantidad_actual * precio_actual).quantize(Decimal('0.01'))
 
-    # Filtra las operaciones de compra para el ticker especificado
+    # Filtra las operaciones de compra donde el 'ticker' que estamos analizando fue el DESTINO.
     compras = [
-        op for op in historial if op["ticker"] == ticker and op["tipo"] == "compra"
+        op for op in historial 
+        if op.get("tipo") == "compra" and op.get("destino", {}).get("ticker") == ticker
     ]
 
-    cantidad_comprada = sum(Decimal(str(op["cantidad"])) for op in compras)
-    total_invertido = sum(Decimal(str(op["monto_usdt"])) for op in compras)
-
-    # Evita divisiones por 0 y devuelve 0 en caso de que el denominador sea 0
+    # Usamos .get() para evitar errores si alguna operación antigua no tiene el formato nuevo.
+    cantidad_comprada = sum(Decimal(str(op.get("destino", {}).get("cantidad", "0"))) for op in compras)
+    total_invertido = sum(Decimal(str(op.get("valor_usd", "0"))) for op in compras)
+    
+    # El resto de la función no necesita cambios...
     division_por_0_segura = lambda num, den: num / den if den != 0 else Decimal('0')
 
     precio_promedio = division_por_0_segura(total_invertido, cantidad_comprada).quantize(Decimal('0.000001')) if cantidad_comprada else Decimal('0')

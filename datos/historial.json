@@ -1,82 +1,58 @@
 [
     {
-        "id": 10,
-        "tipo": "compra",
-        "ticker": "BTC",
-        "cantidad": "0.00000968",
-        "monto_usdt": "1.00",
-        "precio_unitario": "103282.0"
-    },
-    {
-        "id": 9,
-        "tipo": "compra",
-        "ticker": "BTC",
-        "cantidad": "0.00000968",
-        "monto_usdt": "1",
-        "precio_unitario": "103282.0"
-    },
-    {
-        "id": 8,
-        "tipo": "compra",
-        "ticker": "BTC",
-        "cantidad": "0.00000968",
-        "monto_usdt": "1",
-        "precio_unitario": "103282.0"
-    },
-    {
-        "id": 7,
-        "tipo": "compra",
-        "ticker": "ETH",
-        "cantidad": "1.00000000",
-        "monto_usdt": "2427.99",
-        "precio_unitario": "2427.99"
-    },
-    {
-        "id": 6,
-        "tipo": "venta",
-        "ticker": "XRP",
-        "cantidad": "2.16450216",
-        "monto_usdt": "5.00",
-        "precio_unitario": "2.31"
-    },
-    {
-        "id": 5,
-        "tipo": "compra",
-        "ticker": "XRP",
-        "cantidad": "2.16450216",
-        "monto_usdt": "5",
-        "precio_unitario": "2.31"
-    },
-    {
         "id": 4,
+        "timestamp": "2025-06-20T20:26:59.403998",
         "tipo": "compra",
-        "ticker": "XRP",
-        "cantidad": "5.00000000",
-        "monto_usdt": "11.55",
-        "precio_unitario": "2.31"
+        "origen": {
+            "ticker": "USDT",
+            "cantidad": "1042.65402846"
+        },
+        "destino": {
+            "ticker": "KCS",
+            "cantidad": "94.78672986"
+        },
+        "valor_usd": "1042.65"
     },
     {
         "id": 3,
-        "tipo": "venta",
-        "ticker": "XRP",
-        "cantidad": "2.00000000",
-        "monto_usdt": "4.64",
-        "precio_unitario": "2.32"
+        "timestamp": "2025-06-20T20:26:26.389535",
+        "tipo": "compra",
+        "origen": {
+            "ticker": "USDT",
+            "cantidad": "200.00000000"
+        },
+        "destino": {
+            "ticker": "XRP",
+            "cantidad": "94.78672986"
+        },
+        "valor_usd": "200.00"
     },
     {
         "id": 2,
+        "timestamp": "2025-06-20T20:26:04.398852",
         "tipo": "compra",
-        "ticker": "BTC",
-        "cantidad": "0.00004566",
-        "monto_usdt": "5",
-        "precio_unitario": "109505.0"
+        "origen": {
+            "ticker": "USDT",
+            "cantidad": "309.29700000"
+        },
+        "destino": {
+            "ticker": "BTC",
+            "cantidad": "0.00300000"
+        },
+        "valor_usd": "309.30"
     },
     {
         "id": 1,
+        "timestamp": "2025-06-20T20:02:24.008027",
         "tipo": "compra",
-        "ticker": "XRP",
-        "cantidad": "2.15517241",
-        "monto_usdt": "5",
-        "precio_unitario": "2.32"
+        "origen": {
+            "ticker": "USDT",
+            "cantidad": "1100.00000000"
+        },
+        "destino": {
+            "ticker": "KCS",
+            "cantidad": "100.00000000"
+        },
+        "valor_usd": "1100.00"
     }
 ]

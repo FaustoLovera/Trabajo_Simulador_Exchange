@@ -12,6 +12,8 @@
 </head>
 
 <body class="bg-dark text-white">
+
+    <!-- ========== BARRA DE NAVEGACIÓN ========== -->
     <nav class="navbar navbar-expand-lg bg-black shadow">
         <div class="container-fluid">
             <a class="navbar-brand text-warning d-flex align-items-center gap-2" href="{{ url_for('home.index') }}">
@@ -27,7 +29,7 @@
                         <a class="nav-link text-white" href="{{ url_for('home.index') }}">Cotizaciones</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-white" href="{{ url_for('trading.trading') }}">Trading</a>
+                        <a class="nav-link text-white" href="{{ url_for('trading.mostrar_trading_page') }}">Trading</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link text-white" href="{{ url_for('billetera.mostrar_billetera') }}">Billetera</a>
@@ -37,8 +39,10 @@
         </div>
     </nav>
 
+    <!-- ========== CONTENIDO PRINCIPAL ========== -->
     <div class="container mt-5">
         <div class="row">
+            <!-- ===== SECCIÓN GRÁFICO ===== -->
             <div class="col-md-7">
                 <h3 class="text-light">Gráfico velas</h3>
                 <div class="form-check form-switch mb-2">
@@ -50,85 +54,119 @@
                 </div>
             </div>
 
-            <form class="col-md-5 p-3" id="formulario-trading" method="POST" action="{{ url_for('trading.trading') }}">
+            <!-- ===== SECCIÓN FORMULARIO DE TRADING ===== -->
+            <form class="col-md-5 p-3" id="formulario-trading" method="POST"
+                action="{{ url_for('trading.procesar_trading_form') }}">
                 <h2 class="text-warning">Trading</h2>
 
-                <div class="mb-3">
-                    <label for="cripto" class="form-label">Seleccionar Criptomoneda</label>
-                    <select class="form-select" id="cripto" name="ticker" required></select>
+                <!-- Fila para los selectores de moneda -->
+                <div class="row g-2 mb-3">
+                    <!-- Columna Izquierda: Criptomoneda Principal -->
+                    <div class="col-6">
+                        <label for="cripto" class="form-label">Criptomoneda</label>
+                        <select class="form-select" id="cripto" name="ticker" required></select>
+                    </div>
+
+                    <!-- Columna Derecha: Moneda de Pago o Recibo -->
+                    <div class="col-6">
+                        <!-- Campo para "Pagar con" (visible en modo compra) -->
+                        <div id="campo-pagar-con" style="display: none;">
+                            <label for="moneda-pago" class="form-label">Pagar con</label>
+                            <select class="form-select" id="moneda-pago" name="moneda-pago">
+                                {% for ticker, cantidad in monedas_propias.items() %}
+                                <option value="{{ ticker }}">{{ ticker }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Campo para "Recibir en" (visible en modo venta) -->
+                        <div id="campo-recibir-en" style="display: none;">
+                            <label for="moneda-recibir" class="form-label">Recibir en</label>
+                            <select class="form-select" id="moneda-recibir" name="moneda-recibir">
+                                {% for cripto in criptos %}
+                                <option value="{{ cripto['ticker'] }}">{{ cripto['ticker'] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
+                <!-- Botones de Compra/Venta -->
                 <div class="btn-group mb-3 w-100" role="group" id="toggle-trade-type">
                     <input type="hidden" name="accion" id="accion" value="comprar">
-                    <button type="button" class="btn w-50 btn-success active boton-comprar" data-action="comprar">Comprar</button>
-                    <button type="button" class="btn w-50 btn-outline-secondary boton-vender" data-action="vender">Vender</button>
+                    <button type="button" class="btn w-50 btn-success active boton-comprar"
+                        data-action="comprar">Comprar</button>
+                    <button type="button" class="btn w-50 btn-outline-secondary boton-vender"
+                        data-action="vender">Vender</button>
                 </div>
 
+                <!-- Tipo de Orden -->
                 <div class="mb-3">
-                    <label for="tipo-orden" class="form-label">Tipo de orden</label>
-                    <select class="form-select" id="tipo-orden" name="tipo-orden" required>
-                        <option value="mercado">Mercado</option>
-                    </select>
+                    <label class="form-label d-block mb-2">Tipo de orden</label>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-mercado" value="mercado" autocomplete="off" checked required>
+                        <label class="btn btn-outline-primary rounded-start-pill" for="tipo-mercado">Mercado</label>
+
+                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-limite" value="limite" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="tipo-limite">Límite</label>
+
+                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-stop-limit" value="stop-limit" autocomplete="off">
+                        <label class="btn btn-outline-primary rounded-end-pill" for="tipo-stop-limit">Stop-Limit</label>
+                    </div>
                 </div>
 
+                <!-- Modo de Ingreso -->
                 <div class="mb-3">
-                    <label for="modo-ingreso" class="form-label">Ingresar por</label>
-                    <select class="form-select" id="modo-ingreso" name="modo-ingreso" required>
-                        <option value="monto">Monto</option>
-                        <option value="total">Total</option>
-                    </select>
+                    <label class="form-label d-block mb-2">Ingresar por</label>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="modo-ingreso" id="modo-monto" value="monto" autocomplete="off" checked required>
+                        <label class="btn btn-outline-primary rounded-start-pill" for="modo-monto">Monto (Cripto)</label>
+
+                        <input type="radio" class="btn-check" name="modo-ingreso" id="modo-total" value="total" autocomplete="off">
+                        <label class="btn btn-outline-primary rounded-end-pill" for="modo-total">Total (USD)</label>
+                    </div>
                 </div>
 
+                <!-- Campo para el Monto -->
                 <div class="mb-3">
                     <label for="monto" class="form-label">Monto</label>
-                    <input type="number" class="form-control" id="monto" placeholder="0.00" name="monto" required min="0.00000001" step="any">
+                    <input type="number" class="form-control" id="monto" placeholder="0.00" name="monto" required
+                        min="0.00000001" step="any">
                 </div>
 
-                <div class="mb-3" id="campo-pagar-con" style="display: none;">
-                    <label for="moneda-pago" class="form-label">Pagar con</label>
-                    <select class="form-select" id="moneda-pago" name="moneda-pago">
-                        {% for ticker, cantidad in monedas_propias.items() %}
-                            <option value="{{ ticker }}">{{ ticker }} (Disponible: {{ '%.6f'|format(cantidad|float) }})</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="mb-3" id="campo-recibir-en" style="display: none;">
-                    <label for="moneda-recibir" class="form-label">Recibir en</label>
-                    <select class="form-select" id="moneda-recibir" name="moneda-recibir">
-                        {% for cripto in criptos %}
-                            <option value="{{ cripto['ticker'] }}"> {{ cripto['nombre'] }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
+                <!-- Slider de Porcentaje -->
                 <div class="mb-3">
-                    <input type="range" class="form-range" min="0" max="100" step="1" id="slider-monto" value="0" name="slider">
-                    <div class="d-flex justify-content-between text-white small">
+                    <input type="range" class="form-range" min="0" max="100" step="1" id="slider-monto" value="0"
+                        name="slider">
+                    <div class="d-flex justify-content-between text-white-50 small">
                         <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
                     </div>
                 </div>
 
+                <!-- Saldo Disponible (se actualizará con JS) -->
                 <div class="mb-3 text-end text-secondary">
-                    <small>Disponible: -- ###</small>
+                    <small>Disponible: <span id="saldo-disponible">--</span></small>
                 </div>
-                
-                <button type="submit" class="btn w-100 btn-success boton-confirmar" id="boton-confirmar">CONFIRMAR</button>
+
+                <!-- Botón de Confirmación -->
+                <button type="submit" class="btn w-100 btn-success boton-confirmar"
+                    id="boton-confirmar">CONFIRMAR</button>
             </form>
         </div>
 
+        <!-- ===== SECCIÓN HISTORIAL DE TRANSACCIONES ===== -->
         <div class="row mt-5">
             <div class="col-12">
                 <h4 class="text-warning">Historial de transacciones</h4>
                 <div class="table-responsive">
-                    <table class="table table-dark table-striped text-center">
+                    <table class="table table-dark table-striped text-center align-middle">
                         <thead>
                             <tr>
+                                <th class="text-start ps-3">Fecha</th>
+                                <th>Par</th>
                                 <th>Tipo</th>
-                                <th>Nombre</th>
                                 <th>Cantidad</th>
-                                <th>USDT</th>
-                                <th>Precio Unitario</th>
+                                <th>Valor Total</th>
                             </tr>
                         </thead>
                         <tbody id="tabla-historial">
@@ -140,14 +178,17 @@
         </div>
     </div>
 
+    <!-- ===== SECCIÓN SCRIPTS ===== -->
     <script>
         const todasLasCriptos = JSON.parse('{{ lista_todas_las_criptos_json|safe }}');
         const monedasPropias = JSON.parse('{{ lista_monedas_propias_json|safe }}');
     </script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script defer src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+    <script defer
+        src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <script defer src="{{ url_for('static', filename='js/grafico_velas.js') }}"></script>
     <script src="{{ url_for('static', filename='js/comportamientoFormulario.js') }}"></script>
 </body>
+
 </html>

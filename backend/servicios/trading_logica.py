@@ -3,98 +3,105 @@ from backend.acceso_datos.datos_billetera import cargar_billetera, guardar_bille
 from backend.acceso_datos.datos_cotizaciones import obtener_precio
 from backend.acceso_datos.datos_historial import guardar_en_historial
 
+def _calcular_cantidades_swap(moneda_origen, moneda_destino, monto_form, modo_ingreso, accion):
+    """
+    Función PURA de cálculo. No modifica nada, solo devuelve las cantidades.
+    Es fácil de probar y entender.
+    """
+    precio_origen_usdt = obtener_precio(moneda_origen)
+    precio_destino_usdt = obtener_precio(moneda_destino)
+
+    if precio_origen_usdt is None or precio_destino_usdt is None or precio_destino_usdt.is_zero():
+        return None, None, "❌ No se pudo obtener la cotización para el cálculo."
+
+    cantidad_origen, cantidad_destino = Decimal("0"), Decimal("0")
+
+    if accion == "comprar":
+        if modo_ingreso == "monto": # Monto = cantidad de cripto a recibir
+            cantidad_destino = monto_form
+            valor_total_usd = cantidad_destino * precio_destino_usdt
+            cantidad_origen = valor_total_usd / precio_origen_usdt
+        else: # modo_ingreso == "total"
+            valor_total_usd = monto_form
+            cantidad_origen = valor_total_usd / precio_origen_usdt
+            cantidad_destino = valor_total_usd / precio_destino_usdt
+    elif accion == "vender":
+        if modo_ingreso == "total":
+            return None, None, "❌ Al vender, debe ingresar la cantidad en modo 'Monto'."
+        cantidad_origen = monto_form
+        valor_total_usd = cantidad_origen * precio_origen_usdt
+        cantidad_destino = valor_total_usd / precio_destino_usdt
+        
+    return cantidad_origen, cantidad_destino, None # Retorna None para el error si todo va bien
+
+def realizar_swap(moneda_origen, moneda_destino, monto_form, modo_ingreso, accion):
+    """
+    EJECUTOR: Orquesta la operación de swap completa.
+    """
+    # 1. Delegar el cálculo matemático a una función pura
+    cantidad_origen, cantidad_destino, error = _calcular_cantidades_swap(
+        moneda_origen, moneda_destino, monto_form, modo_ingreso, accion
+    )
+    if error:
+        return False, error
+
+    # 2. Cargar billetera y validar fondos
+    billetera = cargar_billetera()
+    saldo_disponible = billetera.get(moneda_origen, Decimal("0"))
+    if cantidad_origen > saldo_disponible:
+        return False, f"❌ Saldo insuficiente. Tienes {saldo_disponible:.8f} {moneda_origen}."
+
+    # 3. Modificar el estado de la billetera
+    billetera[moneda_origen] -= cantidad_origen
+    if billetera[moneda_origen] <= Decimal("1e-8"): # Umbral para eliminar "polvo"
+        billetera.pop(moneda_origen, None)
+    
+    billetera[moneda_destino] = billetera.get(moneda_destino, Decimal("0")) + cantidad_destino
+    
+    guardar_billetera(billetera)
+
+    # 4. Registrar la transacción en el historial
+    precio_origen_usdt = obtener_precio(moneda_origen)
+    valor_total_usd = cantidad_origen * precio_origen_usdt
+    tipo_operacion = "compra" if moneda_origen == "USDT" else "venta" if moneda_destino == "USDT" else "intercambio"
+    
+    guardar_en_historial(
+        tipo_operacion,
+        moneda_origen,
+        cantidad_origen.quantize(Decimal("0.00000001")),
+        moneda_destino,
+        cantidad_destino.quantize(Decimal("0.00000001")),
+        valor_total_usd
+    )
+
+    mensaje = f"✅ Swap: {cantidad_origen:.8f} {moneda_origen} → {cantidad_destino:.8f} {moneda_destino}."
+    return True, mensaje
+
 def procesar_operacion_trading(formulario):
     """
-    Procesa una operación del formulario "Comprar/Vender" y la traduce
-    a una operación de SWAP universal.
+    TRADUCTOR: Recibe el formulario y lo convierte en una llamada a `realizar_swap`.
     """
     try:
         ticker_principal = formulario["ticker"].upper()
         accion = formulario["accion"]
         monto_form = Decimal(formulario["monto"])
         modo_ingreso = formulario["modo-ingreso"]
-    except (KeyError, InvalidOperation):
+    except (KeyError, InvalidOperation, TypeError):
         return False, "❌ Error en los datos del formulario."
 
     if monto_form <= 0:
-        return False, "❌ El monto debe ser mayor a 0."
+        return False, "❌ El monto debe ser un número positivo."
 
-    moneda_origen, moneda_destino, cantidad_origen = (None, None, None)
-
-    # --- TRADUCCIÓN DE LA LÓGICA DE FORMULARIO A SWAP ---
     if accion == "comprar":
-        # "Comprar" el ticker principal significa RECIBIRLO, pagando con otra moneda.
-        moneda_destino = ticker_principal
         moneda_origen = formulario.get("moneda-pago", "USDT").upper()
-
-        precio_destino = obtener_precio(moneda_destino)
-        precio_origen = obtener_precio(moneda_origen)
-        if precio_destino is None or precio_origen is None or precio_origen.is_zero():
-            return False, "❌ No se encontraron las cotizaciones para la operación."
-
-        if modo_ingreso == "monto": # Usuario ingresó la cantidad de CRIPTO a recibir (ej: 0.1 BTC)
-            costo_total_usd = monto_form * precio_destino
-            cantidad_origen = costo_total_usd / precio_origen
-        else: # "total" - Usuario ingresó el valor en USD a gastar
-            costo_total_usd = monto_form
-            cantidad_origen = costo_total_usd / precio_origen
-
+        moneda_destino = ticker_principal
     elif accion == "vender":
-        # "Vender" el ticker principal significa ENTREGARLO, recibiendo otra moneda.
         moneda_origen = ticker_principal
         moneda_destino = formulario.get("moneda-recibir", "USDT").upper()
+    else:
+        return False, "❌ Acción no válida."
 
-        # Al vender, el "monto" siempre se refiere a la cantidad del activo que se vende.
-        if modo_ingreso == "total":
-             return False, "❌ Al vender, debe ingresar la cantidad en el modo 'Monto', no 'Total'."
-
-        cantidad_origen = monto_form
-
-    # --- Validaciones finales y ejecución ---
     if moneda_origen == moneda_destino:
         return False, "❌ La moneda de origen y destino no pueden ser la misma."
-
-    if moneda_origen and moneda_destino and cantidad_origen:
-        return realizar_swap(moneda_origen, moneda_destino, cantidad_origen)
-    else:
-        return False, "❌ Error al procesar la operación."
-
-
-def realizar_swap(moneda_origen, moneda_destino, cantidad_origen):
-    """
-    Función universal de SWAP. Realiza el intercambio entre dos activos.
-    """
-    billetera = cargar_billetera()
-    cantidad_origen = cantidad_origen.quantize(Decimal("0.00000001"))
-
-    # 1. Verificar saldo de la moneda de origen
-    saldo_disponible = billetera.get(moneda_origen, Decimal("0"))
-    if cantidad_origen > saldo_disponible:
-        return False, f"❌ Saldo insuficiente. Tienes {saldo_disponible:.8f} {moneda_origen}."
-
-    # 2. Obtener precios para el cálculo
-    precio_origen = obtener_precio(moneda_origen)
-    precio_destino = obtener_precio(moneda_destino)
-    if precio_origen is None or precio_destino is None or precio_destino.is_zero():
-        return False, "❌ No se pudo obtener la cotización para realizar el swap."
-
-    # 3. Calcular la equivalencia
-    valor_en_usd = cantidad_origen * precio_origen
-    cantidad_destino = (valor_en_usd / precio_destino).quantize(Decimal("0.00000001"))
-
-    # 4. Actualizar la billetera atómicamente
-    billetera[moneda_origen] -= cantidad_origen
-    if billetera[moneda_origen].is_zero():
-        billetera.pop(moneda_origen) # Elimina el activo si el saldo llega a cero
-
-    billetera[moneda_destino] = billetera.get(moneda_destino, Decimal("0")) + cantidad_destino
-
-    guardar_billetera(billetera)
-
-    # guardar_en_historial(...) podría necesitar adaptarse para reflejar el swap
-
-    mensaje = (
-        f"✅ Swap exitoso: Intercambiaste {cantidad_origen:.8f} {moneda_origen} "
-        f"por {cantidad_destino:.8f} {moneda_destino}."
-    )
-    return True, mensaje
+    
+    return realizar_swap(moneda_origen, moneda_destino, monto_form, modo_ingreso, accion)
