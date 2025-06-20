@@ -1,10 +1,7 @@
-// comportamientoFormulario.js (VERSIÓN FINAL Y ROBUSTA)
-
-// Esperamos a que tanto el HTML como las variables globales (todasLasCriptos) estén listos.
 document.addEventListener('DOMContentLoaded', () => {
 
     // 1. SELECCIÓN DE ELEMENTOS
-    const selectorPrincipal = $('#cripto'); // Usamos jQuery para consistencia con Select2
+    const selectorPrincipal = $('#cripto'); // Usamos jQuery para consistencia
     const selectorPagarCon = $('#moneda-pago');
     const selectorRecibirEn = $('#moneda-recibir');
 
@@ -13,70 +10,81 @@ document.addEventListener('DOMContentLoaded', () => {
     const botonConfirmar = document.querySelector('.boton-confirmar');
     const campoPagarCon = document.getElementById('campo-pagar-con');
     const campoRecibirEn = document.getElementById('campo-recibir-en');
-    
-    // Inicializamos todos los selectores con el plugin Select2 desde el principio
-    selectorPrincipal.select2({ width: '100%' });
-    selectorPagarCon.select2({ width: '100%' });
-    selectorRecibirEn.select2({ width: '100%' });
+    const inputAccion = document.getElementById('accion');
 
+    // 2. FUNCIÓN AUXILIAR PARA RELLENAR EL SELECTOR
+    // Esta función funciona bien, la mantenemos.
+    function actualizarSelector(selector, listaDeMonedas) {
+        if (!selector.length) return; // Chequea si el elemento jQuery existe
 
-    // 2. FUNCIÓN AUXILIAR PARA RELLENAR EL SELECTOR PRINCIPAL
-    function actualizarSelectorPrincipal(listaDeMonedas) {
-        if (!selectorPrincipal.length) return; // Chequea si el elemento existe
-
-        const valorSeleccionado = selectorPrincipal.val();
-        selectorPrincipal.empty(); // Vacía las opciones usando el método de jQuery
+        const valorSeleccionado = selector.val();
+        selector.empty(); // Vacía opciones
 
         listaDeMonedas.forEach(moneda => {
+            // Creamos una nueva opción de forma compatible
             const option = new Option(moneda.nombre, moneda.ticker, false, false);
-            selectorPrincipal.append(option);
+            selector.append(option);
         });
 
-        // Intentar re-seleccionar el valor si aún es válido
+        // Re-seleccionar el valor anterior si aún es válido
         if (listaDeMonedas.some(m => m.ticker === valorSeleccionado)) {
-            selectorPrincipal.val(valorSeleccionado);
+            selector.val(valorSeleccionado);
         }
 
-        // Disparamos el evento 'change' de Select2 para notificar a todos los scripts
-        selectorPrincipal.trigger('change');
+        // Notificamos a Select2 de los cambios
+        selector.trigger('change');
     }
 
     // 3. FUNCIONES PARA CAMBIAR DE MODO
+    // (Con la corrección para el input 'accion' incluida)
     const activarModoCompra = () => {
-        // ... (código para cambiar estilos)
         botonConfirmar.textContent = 'COMPRAR';
         botonComprar.className = 'btn w-50 btn-success active boton-comprar';
         botonVender.className = 'btn w-50 btn-outline-secondary boton-vender';
         botonConfirmar.className = 'btn w-100 btn-success boton-confirmar';
 
-        actualizarSelectorPrincipal(todasLasCriptos); // Rellena con la lista completa
+        if (inputAccion) inputAccion.value = 'comprar';
+
+        // Rellenamos los selectores con los datos correctos
+        actualizarSelector(selectorPrincipal, todasLasCriptos);
+        actualizarSelector(selectorPagarCon, monedasPropias);
 
         if (campoPagarCon) campoPagarCon.style.display = 'block';
         if (campoRecibirEn) campoRecibirEn.style.display = 'none';
     };
 
     const activarModoVenta = () => {
-        // ... (código para cambiar estilos)
         botonConfirmar.textContent = 'VENDER';
         botonComprar.className = 'btn w-50 btn-outline-secondary boton-comprar';
         botonVender.className = 'btn w-50 btn-danger active boton-vender';
         botonConfirmar.className = 'btn w-100 btn-danger boton-confirmar';
         
-        actualizarSelectorPrincipal(monedasPropias); // Rellena solo con las monedas del usuario
+        if (inputAccion) inputAccion.value = 'vender';
+
+        // Rellenamos los selectores con los datos correctos
+        actualizarSelector(selectorPrincipal, monedasPropias);
+        actualizarSelector(selectorRecibirEn, todasLasCriptos);
 
         if (campoPagarCon) campoPagarCon.style.display = 'none';
         if (campoRecibirEn) campoRecibirEn.style.display = 'block';
     };
 
-    // 4. ASIGNACIÓN DE EVENTOS E INICIALIZACIÓN
+    // ==========================================================
+    // 4. INICIALIZACIÓN EN EL ORDEN CORRECTO (LA CLAVE)
+    // ==========================================================
+
+    // PASO A: Primero, establecemos el estado inicial del formulario.
+    // Esto llama a activarModoCompra(), que rellena los selectores con sus opciones iniciales.
+    activarModoCompra();
+
+    // PASO B: AHORA que los <select> ya tienen <option>s dentro, los inicializamos con Select2.
+    selectorPrincipal.select2({ width: '100%' });
+    selectorPagarCon.select2({ width: '100%' });
+    selectorRecibirEn.select2({ width: '100%' });
+
+    // PASO C: Finalmente, asignamos los eventos para que los clicks funcionen.
     if (botonComprar && botonVender) {
         botonComprar.addEventListener('click', activarModoCompra);
         botonVender.addEventListener('click', activarModoVenta);
     }
-    
-    // Estado inicial: se activa el modo compra, que a su vez llama a actualizarSelectorPrincipal
-    // y configura todo en el orden correcto.
-    activarModoCompra();
-
-    // La lógica para el label de Monto/Total no cambia y puede permanecer aquí si lo deseas.
 });
