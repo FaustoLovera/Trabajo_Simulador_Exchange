@@ -1,3 +1,5 @@
+// frontend/static/js/components/uiUpdater.js
+
 // Contiene funciones para actualizar dinámicamente la interfaz de usuario.
 import { DOMElements } from './domElements.js';
 import { UIState } from './uiState.js';
@@ -45,8 +47,17 @@ export const UIUpdater = {
             DOMElements.spanSaldoDisponible.text('--');
             return;
         }
-        // Busca la moneda en el estado completo para obtener el saldo formateado.
-        const moneda = window.monedasPropias.find(m => m.ticker === ticker);
+        
+        // ----> CORRECCIÓN DEFINITIVA <----
+        // Usar la variable correcta 'window.ownedCoins' en lugar de 'window.monedasPropias'.
+        // También nos aseguramos de que 'window.ownedCoins' exista para evitar errores.
+        if (!window.ownedCoins) {
+            console.warn("Intento de mostrar saldo antes de que window.ownedCoins esté listo.");
+            DOMElements.spanSaldoDisponible.text('Cargando...');
+            return;
+        }
+
+        const moneda = window.ownedCoins.find(m => m.ticker === ticker);
         const saldoFormateado = moneda ? moneda.cantidad_formatted : '0.00000000';
         DOMElements.spanSaldoDisponible.text(`${saldoFormateado} ${ticker}`);
     },
@@ -84,27 +95,19 @@ export const UIUpdater = {
 
         tablaHistorial.html(historialHTML);
     },
-
-    /**
-     * Muestra un mensaje de error en un contenedor de alertas en la parte superior de la página.
-     * @param {string} mensaje - El mensaje de error a mostrar.
-     * @param {string} [containerSelector='#error-container'] - El selector del contenedor donde se mostrará el error.
-     */
+    
     mostrarMensajeError(mensaje, containerSelector = '#error-container') {
         const errorContainer = $(containerSelector);
         if (!errorContainer.length) {
             console.error(`Error container '${containerSelector}' not found.`);
             return;
         }
-
         const alertHTML = `
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                 ${mensaje}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         `;
-
-        // Limpia mensajes anteriores y añade el nuevo para evitar acumulación.
         errorContainer.html(alertHTML);
     },
 };

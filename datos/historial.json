@@ -1,0 +1,30 @@
+[
+    {
+        "id": 2,
+        "timestamp": "2025-06-21T18:08:52.735940",
+        "tipo": "venta",
+        "origen": {
+            "ticker": "ETH",
+            "cantidad": "1.00000000"
+        },
+        "destino": {
+            "ticker": "USDT",
+            "cantidad": "2401.84000000"
+        },
+        "valor_usd": "2401.84"
+    },
+    {
+        "id": 1,
+        "timestamp": "2025-06-21T18:08:21.204002",
+        "tipo": "compra",
+        "origen": {
+            "ticker": "USDT",
+            "cantidad": "2401.84000000"
+        },
+        "destino": {
+            "ticker": "ETH",
+            "cantidad": "1.00000000"
+        },
+        "valor_usd": "2401.84"
+    }
+]

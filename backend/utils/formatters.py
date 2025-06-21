@@ -22,7 +22,6 @@ def formato_porcentaje(valor):
         return "-%"
     return f"{Decimal(valor):.2f}%"
 
-# ===> FUNCIÓN CORREGIDA <===
 def formato_valor_monetario(valor, simbolo="$", decimales=2):
     """Formatea un valor como moneda con N decimales."""
     if not isinstance(valor, (int, float, Decimal)):
@@ -37,13 +36,27 @@ def formato_cantidad_cripto(valor, decimales=8):
     return f"{Decimal(valor):.{decimales}f}"
 
 def formato_fecha_hora(timestamp):
-    """Formatea un timestamp UNIX a un string de fecha y hora local."""
-    if not isinstance(timestamp, (int, float)):
+    """
+    Formatea un timestamp a un string de fecha y hora local.
+    CORRECCIÓN: Ahora maneja timestamps numéricos y strings de fecha ISO.
+    """
+    if not timestamp:
         return "--:--"
+    
     try:
-        # Convierte el timestamp a un objeto datetime
-        dt_object = datetime.fromtimestamp(timestamp)
-        # Formatea la fecha y la hora en un formato legible
+        if isinstance(timestamp, (int, float)):
+            # Si es un número, lo trata como timestamp de Unix
+            dt_object = datetime.fromtimestamp(timestamp)
+        elif isinstance(timestamp, str):
+            # Si es un string, intenta parsearlo como formato ISO
+            # El formato recibido del backend es ISO 8601, ej: "2025-06-21T16:57:31.123456"
+            dt_object = datetime.fromisoformat(timestamp)
+        else:
+            # Si no es ni número ni string, no se puede formatear
+            return "--:--"
+            
+        # Formatea la fecha y la hora en un formato legible (DD/MM/YYYY HH:MM:SS)
         return dt_object.strftime("%d/%m/%Y %H:%M:%S")
     except (ValueError, TypeError):
+        # Captura cualquier error durante la conversión (ej. string mal formado)
         return "--:--"

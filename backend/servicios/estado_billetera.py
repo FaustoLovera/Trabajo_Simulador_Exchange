@@ -1,14 +1,11 @@
 from decimal import Decimal
 from backend.acceso_datos.datos_billetera import cargar_billetera
 from backend.acceso_datos.datos_historial import cargar_historial
-from backend.acceso_datos.datos_cotizaciones import obtener_precio
+from backend.acceso_datos.datos_cotizaciones import obtener_precio, cargar_datos_cotizaciones
 from backend.utils.formatters import formato_valor_monetario, formato_cantidad_cripto, formato_porcentaje, formato_fecha_hora
 
-def calcular_detalle_cripto(ticker, cantidad_actual, precios, historial):
-    """
-    Calcula el estado financiero de una criptomoneda en base a su cantidad actual,
-    el precio de mercado y el historial de compras.
-    """
+def calcular_detalle_cripto(ticker, cantidad_actual, precios, historial, info_cripto):
+    # ... (Esta función no necesita cambios)
     cantidad_actual = Decimal(str(cantidad_actual))
     precio_actual = precios.get(ticker, Decimal("0"))
     valor_usdt = (cantidad_actual * precio_actual)
@@ -30,6 +27,7 @@ def calcular_detalle_cripto(ticker, cantidad_actual, precios, historial):
 
     return {
         "ticker": ticker,
+        "nombre": info_cripto.get('nombre', ticker),
         "cantidad": cantidad_actual,
         "valor_usdt": valor_usdt,
         "precio_actual": precio_actual,
@@ -40,30 +38,37 @@ def calcular_detalle_cripto(ticker, cantidad_actual, precios, historial):
     }
 
 def estado_actual_completo():
-    """
-    Calcula un resumen financiero completo del portafolio, incluyendo campos
-    pre-formateados para la UI.
-    """
     billetera = cargar_billetera()
-    precios = {ticker: obtener_precio(ticker) or Decimal("0") for ticker in billetera.keys()}
     historial = cargar_historial()
+    
+    todas_las_cotizaciones = cargar_datos_cotizaciones()
+    info_map = {c.get('ticker'): c for c in todas_las_cotizaciones}
+    
+    precios = {ticker: obtener_precio(ticker) or Decimal("0") for ticker in billetera.keys()}
 
-    detalles = [
-        calcular_detalle_cripto(ticker, cantidad, precios, historial)
-        for ticker, cantidad in billetera.items()
-    ]
+    detalles = []
+    for ticker, cantidad in billetera.items():
+        # ---> INICIO DE LA CORRECCIÓN PARA USDT <---
+        if ticker == "USDT":
+            # Caso especial para USDT: no está en la lista de Coingecko, así que le asignamos el nombre manualmente.
+            info_cripto = {'nombre': 'Tether', 'ticker': 'USDT'}
+        else:
+            # Para todas las demás monedas, buscamos su información en el mapa.
+            info_cripto = info_map.get(ticker, {'nombre': ticker}) # Fallback al ticker si no se encuentra
+        # ---> FIN DE LA CORRECCIÓN <---
 
-    total_usdt = sum(d["valor_usdt"] for d in detalles)
+        detalle_calculado = calcular_detalle_cripto(ticker, cantidad, precios, historial, info_cripto)
+        detalles.append(detalle_calculado)
+
+    total_usdt = sum(d["valor_usdt"] for d in detalles if d["valor_usdt"] is not None)
     division_por_cero_segura = lambda num, den: num / den if den != 0 else Decimal("0")
     
     for detalle in detalles:
         porcentaje_billetera = division_por_cero_segura(detalle["valor_usdt"], total_usdt) * Decimal("100")
         
-        # Añadir campos de datos crudos adicionales
         detalle["porcentaje"] = porcentaje_billetera
         detalle["es_polvo"] = detalle["valor_usdt"] < Decimal("0.001")
         
-        # Añadir campos formateados para la UI
         if detalle["ticker"] == 'USDT':
             detalle["cantidad_formatted"] = formato_valor_monetario(detalle["cantidad"], simbolo="")
         else:
@@ -75,7 +80,6 @@ def estado_actual_completo():
         detalle["porcentaje_ganancia_formatted"] = formato_porcentaje(detalle["porcentaje_ganancia"])
         detalle["porcentaje_formatted"] = formato_porcentaje(porcentaje_billetera)
 
-        # Convertir todos los Decimal a string para serialización JSON segura
         for k, v in detalle.items():
             if isinstance(v, Decimal):
                 detalle[k] = str(v)
