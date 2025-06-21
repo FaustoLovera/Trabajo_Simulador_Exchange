@@ -1,29 +1,35 @@
-// Orquesta la inicialización y la lógica principal de la página de inicio (listado de cotizaciones).
+// frontend/static/js/pages/indexPage.js
+
 import { triggerActualizacionDatos } from '../services/apiService.js';
 import { renderTabla } from '../components/tablaCotizacionesUI.js';
 
 const UPDATE_INTERVAL_MS = 15000; // 15 segundos
 
 /**
- * Configura la actualización automática de la tabla de cotizaciones.
+ * Función unificada para actualizar datos y renderizar la tabla.
  */
-function inicializarActualizadorAutomatico() {
-    setInterval(async () => {
-        console.log("⏳ Solicitando actualización de datos...");
+async function actualizarYRenderizar() {
+    console.log("🔄 Actualizando y renderizando cotizaciones...");
+    try {
+        // Primero, le pedimos al backend que se actualice desde la API externa.
         await triggerActualizacionDatos();
+        // Luego, renderizamos la tabla con los datos frescos.
         await renderTabla();
-    }, UPDATE_INTERVAL_MS);
+        console.log("✅ Tabla de cotizaciones actualizada.");
+    } catch (error) {
+        console.error("❌ Falló el ciclo de actualización:", error);
+        // Opcional: podrías mostrar un mensaje de error en la UI aquí.
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Asegurarse de que estamos en la página correcta verificando la existencia de la tabla.
     if (document.getElementById('tabla-datos')) {
         console.log("🚀 Inicializando página de cotizaciones.");
         
-        // Carga inicial de la tabla
-        renderTabla();
+        // 1. Ejecuta la actualización INMEDIATAMENTE al cargar la página.
+        actualizarYRenderizar();
         
-        // Inicia el ciclo de actualización automática
-        inicializarActualizadorAutomatico();
+        // 2. Luego, establece el intervalo para futuras actualizaciones.
+        setInterval(actualizarYRenderizar, UPDATE_INTERVAL_MS);
     }
 });

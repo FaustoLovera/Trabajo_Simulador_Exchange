@@ -77,35 +77,45 @@
                 </div>
                 <div class="btn-group mb-3 w-100" role="group" id="toggle-trade-type">
                     <input type="hidden" name="accion" id="accion" value="comprar">
-                    <button type="button" class="btn w-50 btn-success active boton-comprar" data-action="comprar">Comprar</button>
-                    <button type="button" class="btn w-50 btn-outline-secondary boton-vender" data-action="vender">Vender</button>
+                    <button type="button" class="btn w-50 btn-success active boton-comprar"
+                        data-action="comprar">Comprar</button>
+                    <button type="button" class="btn w-50 btn-outline-secondary boton-vender"
+                        data-action="vender">Vender</button>
                 </div>
                 <div class="mb-3">
                     <label class="form-label d-block mb-2">Tipo de orden</label>
                     <div class="btn-group w-100" role="group">
-                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-mercado" value="mercado" autocomplete="off" checked required>
+                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-mercado" value="mercado"
+                            autocomplete="off" checked required>
                         <label class="btn btn-outline-primary rounded-start-pill" for="tipo-mercado">Mercado</label>
-                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-limite" value="limite" autocomplete="off">
+                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-limite" value="limite"
+                            autocomplete="off">
                         <label class="btn btn-outline-primary" for="tipo-limite">Límite</label>
-                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-stop-limit" value="stop-limit" autocomplete="off">
+                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-stop-limit" value="stop-limit"
+                            autocomplete="off">
                         <label class="btn btn-outline-primary rounded-end-pill" for="tipo-stop-limit">Stop-Limit</label>
                     </div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label d-block mb-2">Ingresar por</label>
                     <div class="btn-group w-100" role="group">
-                        <input type="radio" class="btn-check" name="modo-ingreso" id="modo-monto" value="monto" autocomplete="off" checked required>
-                        <label class="btn btn-outline-primary rounded-start-pill" for="modo-monto">Monto (Cripto)</label>
-                        <input type="radio" class="btn-check" name="modo-ingreso" id="modo-total" value="total" autocomplete="off">
+                        <input type="radio" class="btn-check" name="modo-ingreso" id="modo-monto" value="monto"
+                            autocomplete="off" checked required>
+                        <label class="btn btn-outline-primary rounded-start-pill" for="modo-monto">Monto
+                            (Cripto)</label>
+                        <input type="radio" class="btn-check" name="modo-ingreso" id="modo-total" value="total"
+                            autocomplete="off">
                         <label class="btn btn-outline-primary rounded-end-pill" for="modo-total">Total (USD)</label>
                     </div>
                 </div>
                 <div class="mb-3">
                     <label for="monto" class="form-label">Monto</label>
-                    <input type="number" class="form-control" id="monto" placeholder="0.00" name="monto" required min="0.00000001" step="any">
+                    <input type="number" class="form-control" id="monto" placeholder="0.00" name="monto" required
+                        min="0.00000001" step="any">
                 </div>
                 <div class="mb-3">
-                    <input type="range" class="form-range" min="0" max="100" step="1" id="slider-monto" value="0" name="slider">
+                    <input type="range" class="form-range" min="0" max="100" step="1" id="slider-monto" value="0"
+                        name="slider">
                     <div class="d-flex justify-content-between text-white-50 small">
                         <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
                     </div>
@@ -113,7 +123,8 @@
                 <div class="mb-3 text-end text-secondary">
                     <small>Disponible: <span id="saldo-disponible">--</span></small>
                 </div>
-                <button type="submit" class="btn w-100 btn-success boton-confirmar" id="boton-confirmar">CONFIRMAR</button>
+                <button type="submit" class="btn w-100 btn-success boton-confirmar"
+                    id="boton-confirmar">CONFIRMAR</button>
             </form>
         </div>
 
@@ -132,7 +143,9 @@
                             </tr>
                         </thead>
                         <tbody id="tabla-historial">
-                            <tr><td colspan="5" class="text-center text-muted py-3">Cargando historial...</td></tr>
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-3">Cargando historial...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -140,15 +153,11 @@
         </div>
     </div>
 
-    <!-- ===== SECCIÓN SCRIPTS (ORDEN CORREGIDO) ===== -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    
-    <!-- La librería del gráfico DEBE cargarse ANTES de nuestro script que la utiliza -->
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
-
-    <!-- Nuestro script principal modular, que ahora orquesta todo -->
     <script type="module" src="{{ url_for('static', filename='js/pages/tradingPage.js') }}"></script>
+
 </body>
 
 </html>

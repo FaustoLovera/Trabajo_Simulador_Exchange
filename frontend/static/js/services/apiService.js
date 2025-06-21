@@ -52,4 +52,4 @@ export const fetchVelas = () =>
  * Solicita al backend que actualice los datos de las cotizaciones desde la fuente externa.
  */
 export const triggerActualizacionDatos = () => 
-    _fetchData('/api/cotizaciones/actualizar', { method: 'POST' }, 'La solicitud para actualizar datos falló');
+    _fetchData('/api/actualizar', {}, 'La solicitud para actualizar datos falló');
