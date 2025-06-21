@@ -8,7 +8,20 @@ from config import HISTORIAL_PATH
 def cargar_historial():
     """
     Carga el historial de transacciones desde el archivo JSON.
-    Si el archivo no existe, está vacío o corrupto, devuelve una lista vacía.
+
+    Lee el archivo especificado en `HISTORIAL_PATH`. Si el archivo no existe,
+    está vacío o contiene JSON mal formado, devuelve una lista vacía para
+    prevenir errores en la aplicación.
+
+    Returns:
+        list[dict]: Una lista de diccionarios, donde cada uno representa una
+                    transacción guardada. Devuelve una lista vacía si la
+                    carga falla.
+
+    Example:
+        >>> historial = cargar_historial()
+        >>> print(historial)
+        [{'id': 1, 'timestamp': '...', 'tipo': 'compra', ...}]
     """
     if not os.path.exists(HISTORIAL_PATH) or os.path.getsize(HISTORIAL_PATH) == 0:
         return []
@@ -24,22 +37,41 @@ def cargar_historial():
 
 
 def guardar_en_historial(
-    tipo_operacion,
-    moneda_origen,
-    cantidad_origen,
-    moneda_destino,
-    cantidad_destino,
-    valor_usd,
+    tipo_operacion: str,
+    moneda_origen: str,
+    cantidad_origen: Decimal,
+    moneda_destino: str,
+    cantidad_destino: Decimal,
+    valor_usd: Decimal,
 ):
     """
     Guarda una nueva operación en el historial de transacciones.
+
+    Carga el historial existente, crea un nuevo registro de operación y lo
+    añade al principio de la lista. Finalmente, guarda la lista actualizada
+    en el archivo JSON.
+
+    Args:
+        tipo_operacion (str): El tipo de operación (ej. "compra", "venta").
+        moneda_origen (str): Ticker de la moneda de origen (ej. "USDT").
+        cantidad_origen (Decimal): La cantidad de la moneda de origen.
+        moneda_destino (str): Ticker de la moneda de destino (ej. "BTC").
+        cantidad_destino (Decimal): La cantidad de la moneda de destino.
+        valor_usd (Decimal): El valor total de la transacción en USD.
+
+    Example:
+        >>> guardar_en_historial(
+                "compra", "USDT", Decimal("100"), "BTC", Decimal("0.0015"), Decimal("100")
+            )
+        # Esto añadirá una nueva entrada al archivo historial.json
     """
-    # Asegurarse de que el directorio de datos exista
+    # Asegura que el directorio del historial exista.
     os.makedirs(os.path.dirname(HISTORIAL_PATH), exist_ok=True)
 
     historial = cargar_historial()
 
-    # Crear el diccionario para la nueva operación
+    # Crea el diccionario para la nueva operación.
+    # Las cantidades Decimal se convierten a string para preservar la precisión.
     operacion = {
         "id": len(historial) + 1,
         "timestamp": datetime.now().isoformat(),
@@ -49,9 +81,9 @@ def guardar_en_historial(
         "valor_usd": str(valor_usd.quantize(Decimal("0.01"))),
     }
 
-    # Añadir la nueva operación al principio de la lista
+    # Añade la nueva operación al principio de la lista para mostrarla primero.
     historial.insert(0, operacion)
 
-    # Escribir la lista completa de nuevo en el archivo
+    # Guarda la lista completa de nuevo en el archivo.
     with open(HISTORIAL_PATH, "w", encoding="utf-8") as f:
         json.dump(historial, f, indent=4)

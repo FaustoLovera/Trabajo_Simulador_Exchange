@@ -1,14 +1,33 @@
+"""
+Servicio para la lógica de negocio de operaciones de trading (swap).
+
+Este módulo contiene toda la lógica para procesar, validar y ejecutar un
+intercambio de criptomonedas. Está diseñado para ser llamado desde la capa de
+vistas (rutas), recibiendo datos de un formulario y orquestando los pasos
+necesarios para completar la operación.
+"""
+
 from decimal import Decimal, InvalidOperation
+from typing import Tuple
+
 from backend.acceso_datos.datos_billetera import cargar_billetera, guardar_billetera
 from backend.acceso_datos.datos_cotizaciones import obtener_precio
 from backend.acceso_datos.datos_historial import guardar_en_historial
 
-# --- FUNCIÓN DE PROCESAMIENTO DEL FORMULARIO ---
-
-def procesar_operacion_trading(formulario):
+def procesar_operacion_trading(formulario: dict) -> Tuple[bool, str]:
     """
-    TRADUCTOR: Recibe el formulario, lo valida y lo convierte en una llamada
-    a la lógica de negocio principal (`realizar_swap`).
+    Valida y traduce los datos de un formulario de trading a una operación de swap.
+
+    Esta función actúa como una capa de adaptación entre la vista y la lógica de
+    negocio. Extrae, valida y convierte los datos del formulario antes de
+    invocar a la función principal `realizar_swap`.
+
+    Args:
+        formulario (dict): Un diccionario con los datos del formulario de trading.
+                           Ej: {'ticker': 'BTC', 'accion': 'comprar', 'monto': '100', ...}
+
+    Returns:
+        Tuple[bool, str]: Una tupla con un booleano de éxito y un mensaje para el usuario.
     """
     try:
         ticker_principal = formulario["ticker"].upper()
@@ -21,7 +40,6 @@ def procesar_operacion_trading(formulario):
     if monto_form <= 0:
         return False, "❌ El monto debe ser un número positivo."
 
-    # Determina las monedas de la operación basándose en la acción
     if accion == "comprar":
         moneda_origen = formulario.get("moneda-pago", "USDT").upper()
         moneda_destino = ticker_principal
@@ -34,28 +52,24 @@ def procesar_operacion_trading(formulario):
     if moneda_origen == moneda_destino:
         return False, "❌ La moneda de origen y destino no pueden ser la misma."
 
-    # Llama a la lógica principal con los datos ya limpios y preparados
     return realizar_swap(moneda_origen, moneda_destino, monto_form, modo_ingreso, accion)
 
-
-# --- FUNCIONES AUXILIARES INTERNAS (LÓGICA DE NEGOCIO) ---
-
-def _calcular_detalles_swap(accion, modo_ingreso, monto_form, precio_origen_usdt, precio_destino_usdt):
+def _calcular_detalles_swap(accion: str, modo_ingreso: str, monto_form: Decimal, precio_origen_usdt: Decimal, precio_destino_usdt: Decimal) -> Tuple[bool, dict | str]:
     """
     Calcula las cantidades de origen, destino y el valor total en USD del swap.
-    Esta es una función interna y pura que solo realiza cálculos.
+
+    Es una función interna y pura que solo realiza cálculos sin efectos secundarios.
 
     Returns:
-        tuple: (True, {'origen': cant, 'destino': cant, 'valor_usd': val}) o (False, "error").
+        Tuple[bool, dict | str]: `(True, {'origen': ..., 'destino': ..., 'valor_usd': ...})` en caso de éxito,
+                                 o `(False, "mensaje de error")` si falla.
     """
-    # Validación de entrada específica para esta lógica
     if accion == 'vender' and modo_ingreso == 'total':
         return False, "❌ Al vender, debe ingresar la cantidad en modo 'Monto' (Cripto)."
 
     if accion not in ['comprar', 'vender']:
         return False, "❌ Acción de trading desconocida."
 
-    # Lógica de cálculo
     if accion == 'comprar':
         if modo_ingreso == 'monto':  # Usuario ingresa la cantidad de CRIPTO a recibir
             cantidad_destino = monto_form
@@ -70,15 +84,13 @@ def _calcular_detalles_swap(accion, modo_ingreso, monto_form, precio_origen_usdt
         valor_total_usd = cantidad_origen * precio_origen_usdt
         cantidad_destino = valor_total_usd / precio_destino_usdt
 
-    detalles = {
+    return True, {
         "origen": cantidad_origen,
         "destino": cantidad_destino,
         "valor_usd": valor_total_usd
     }
-    return True, detalles
 
-
-def _validar_saldo_suficiente(billetera, moneda_origen, cantidad_requerida):
+def _validar_saldo_suficiente(billetera: dict, moneda_origen: str, cantidad_requerida: Decimal) -> Tuple[bool, str | None]:
     """Verifica si hay suficiente saldo en la billetera para la operación."""
     saldo_disponible = billetera.get(moneda_origen, Decimal("0"))
     if cantidad_requerida > saldo_disponible:
@@ -86,9 +98,18 @@ def _validar_saldo_suficiente(billetera, moneda_origen, cantidad_requerida):
         return False, mensaje_error
     return True, None
 
+def _actualizar_billetera_y_guardar(billetera: dict, moneda_origen: str, cantidad_origen: Decimal, moneda_destino: str, cantidad_destino: Decimal):
+    """
+    Actualiza los saldos en la billetera y persiste los cambios.
 
-def _actualizar_billetera_y_guardar(billetera, moneda_origen, cantidad_origen, moneda_destino, cantidad_destino):
-    """Resta la moneda de origen, suma la de destino y guarda el estado final."""
+    Resta la cantidad de la moneda de origen y suma la de destino. Si el saldo
+    restante es insignificante ("polvo"), lo elimina. Finalmente, guarda el
+    estado actualizado de la billetera.
+
+    Side Effects:
+        - Modifica el diccionario `billetera`.
+        - Llama a `guardar_billetera` para escribir en el archivo.
+    """
     billetera[moneda_origen] -= cantidad_origen
     
     # Si el saldo es muy pequeño ("polvo"), se elimina la moneda de la billetera
@@ -99,9 +120,13 @@ def _actualizar_billetera_y_guardar(billetera, moneda_origen, cantidad_origen, m
     
     guardar_billetera(billetera)
 
+def _registrar_operacion_historial(moneda_origen: str, cantidad_origen: Decimal, moneda_destino: str, cantidad_destino: Decimal, valor_usd: Decimal):
+    """
+    Determina el tipo de operación y la guarda en el historial.
 
-def _registrar_operacion_historial(moneda_origen, cantidad_origen, moneda_destino, cantidad_destino, valor_usd):
-    """Determina el tipo de operación y la guarda en el historial."""
+    Side Effects:
+        - Llama a `guardar_en_historial` para escribir en el archivo.
+    """
     if moneda_origen == "USDT":
         tipo_operacion = "compra"
     elif moneda_destino == "USDT":
@@ -118,14 +143,17 @@ def _registrar_operacion_historial(moneda_origen, cantidad_origen, moneda_destin
         valor_usd,
     )
 
-
-# --- FUNCIÓN ORQUESTADORA PRINCIPAL ---
-
-def realizar_swap(moneda_origen, moneda_destino, monto_form, modo_ingreso, accion):
+def realizar_swap(moneda_origen: str, moneda_destino: str, monto_form: Decimal, modo_ingreso: str, accion: str) -> Tuple[bool, str]:
     """
     Orquesta la operación de swap completa: obtiene precios, calcula, valida y ejecuta.
+
+    Esta es la función principal de la lógica de negocio. Sigue una secuencia de
+    pasos para asegurar que la operación sea válida y se complete correctamente.
+
+    Returns:
+        Tuple[bool, str]: Una tupla con un booleano de éxito y un mensaje para el usuario.
     """
-    # 1. Obtener precios
+    # 1. Obtener precios actuales
     precio_origen_usdt = obtener_precio(moneda_origen)
     precio_destino_usdt = obtener_precio(moneda_destino)
 

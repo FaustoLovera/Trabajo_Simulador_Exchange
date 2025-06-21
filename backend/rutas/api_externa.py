@@ -1,8 +1,14 @@
+"""
+Define los endpoints de la API externa de la aplicación.
+
+Este módulo contiene las rutas que exponen datos del mercado de criptomonedas,
+como cotizaciones y datos de velas (candlestick), para ser consumidos por el frontend
+u otros clientes.
+"""
+
 from flask import Blueprint, jsonify
-import json
 from backend.servicios.api_cotizaciones import obtener_datos_criptos_coingecko, obtener_velas_de_api
 from backend.acceso_datos.datos_cotizaciones import cargar_datos_cotizaciones
-from config import VELAS_PATH
 
 bp = Blueprint("api_externa", __name__, url_prefix="/api")
 
@@ -10,25 +16,49 @@ bp = Blueprint("api_externa", __name__, url_prefix="/api")
 @bp.route("/actualizar")
 def actualizar():
     """
-    Actualiza SOLO los datos de cotizaciones de criptomonedas desde CoinGecko.
-    Las velas ahora se obtienen bajo demanda.
+    Endpoint para forzar la actualización de los datos de cotizaciones desde CoinGecko.
+
+    Al ser llamado, este endpoint invoca al servicio que obtiene los precios más
+    recientes de las criptomonedas y los guarda localmente.
+
+    Returns:
+        Response: Un objeto JSON que confirma el estado de la operación.
+            Ejemplo: `{"estado": "ok", "cantidad_criptos": 100}`
     """
-    print("--- PING: Endpoint /api/actualizar ALCANZADO ---") 
+    print("--- PING: Endpoint /api/actualizar ALCANZADO ---")
     datos_criptos = obtener_datos_criptos_coingecko()
-    # Ya no llamamos a obtener_velas_binance() aquí.
     return jsonify({"estado": "ok", "cantidad_criptos": len(datos_criptos)})
 
 
 @bp.route("/cotizaciones")
 def get_cotizaciones():
-    """Retorna la lista completa de cotizaciones en formato JSON."""
+    """
+    Retorna la lista completa de cotizaciones almacenadas localmente.
+
+    Returns:
+        Response: Un objeto JSON que contiene una lista de todas las criptomonedas
+                  y sus datos de cotización.
+                  Ejemplo: `[{"ticker": "BTC", "precio_usd": "65000.00", ...}]`
+    """
     return jsonify(cargar_datos_cotizaciones())
 
 
 @bp.route("/velas/<string:ticker>/<string:interval>")
-def obtener_datos_velas_por_ticker(ticker, interval):
+def obtener_datos_velas_por_ticker(ticker: str, interval: str):
     """
-    Ruta dinámica que retorna datos de velas para un ticker y un intervalo.
+    Obtiene los datos de velas (candlestick) para un par y un intervalo específicos.
+
+    Esta ruta dinámica consulta a una API externa para obtener los datos históricos
+    de precios (OHLCV) necesarios para graficar las velas.
+
+    Args:
+        ticker (str): El símbolo del par a consultar (ej. "BTCUSDT").
+        interval (str): El intervalo de tiempo para las velas (ej. "1h", "4h", "1d").
+
+    Returns:
+        Response: Un objeto JSON con una lista de listas, donde cada sublista
+                  representa una vela. En caso de error, retorna una lista vacía.
+                  Ejemplo: `[[1622505600000, "49000.00", ...], ...]`
     """
     try:
         datos = obtener_velas_de_api(ticker, interval)

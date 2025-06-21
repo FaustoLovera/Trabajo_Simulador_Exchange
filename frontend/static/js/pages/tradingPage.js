@@ -1,4 +1,10 @@
-// frontend/static/js/pages/tradingPage.js
+/**
+ * @module pages/tradingPage
+ * @description Orquesta toda la lógica de la página de trading. Se encarga de la inicialización,
+ * la gestión del estado, la interacción del usuario y la comunicación con otros módulos
+ * como el gráfico, el formulario y los servicios de API.
+ */
+
 import { DOMElements } from '../components/domElements.js';
 import { UIState } from '../components/uiState.js';
 import { UIUpdater } from '../components/uiUpdater.js';
@@ -7,113 +13,107 @@ import { initializeChart, updateChartData } from '../components/chartRenderer.js
 import { fetchCotizaciones, fetchEstadoBilletera, fetchHistorial, fetchVelas } from '../services/apiService.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Variables para mantener el estado actual del gráfico (qué ticker y qué temporalidad se está mostrando).
+    /** @type {string} El ticker de la criptomoneda actualmente seleccionada en el gráfico. */
     let currentTicker = 'BTC';
+    /** @type {string} La temporalidad (intervalo) actual del gráfico (ej. '1d', '1h'). */
     let currentInterval = '1d';
-    // Bandera para evitar la carga concurrente del gráfico.
+    /** @type {boolean} Bandera para prevenir cargas concurrentes de datos para el gráfico. */
     let isChartLoading = false;
 
     /**
-     * Actualiza la interfaz de usuario según el modo de trading (compra/venta).
-     * @param {string} mode - El modo de operación ('comprar' o 'vender').
+     * Configura la interfaz de usuario para el modo de operación especificado (compra o venta).
+     * @param {'comprar' | 'vender'} mode - El modo de trading a activar.
      */
     function setTradeMode(mode) {
-        DOMElements.inputAccion.val(mode); 
-        
+        DOMElements.inputAccion.val(mode);
+
         UIUpdater.actualizarBotones();
         UIUpdater.actualizarVisibilidadCampos();
-        
+
         let tickerForBalance = '';
         if (UIState.esModoCompra()) {
-            // Al comprar, el selector principal muestra todas las criptos disponibles (excepto USDT).
+            // En modo COMPRA, el selector principal muestra todas las criptos disponibles para comprar.
             const cryptosWithoutUSDT = window.allCryptos.filter(c => c.ticker !== 'USDT');
             FormLogic.popularSelector(DOMElements.selectorPrincipal, cryptosWithoutUSDT, 'BTC');
-            // El saldo a mostrar es el del token que se va a pagar.
+            // El saldo a mostrar es el de la moneda con la que se paga (ej. USDT).
             tickerForBalance = UIState.getTickerPago();
         } else {
-            // Al vender, el selector principal muestra solo las criptos que el usuario posee.
-            // Si no tiene ninguna, o si 'ownedCoins' aún no se ha cargado, manejamos el caso.
+            // En modo VENTA, el selector principal muestra solo las criptos que el usuario posee.
             if (!window.ownedCoins || window.ownedCoins.length === 0) {
-                console.warn("WARN: window.ownedCoins no está disponible o está vacío al intentar configurar el modo de venta.");
-                tickerForBalance = null; // No se puede mostrar un saldo si no hay monedas propias.
+                console.warn("No se encontraron monedas en propiedad para configurar el modo de venta.");
+                tickerForBalance = null; // No se puede mostrar saldo si no hay monedas.
             } else {
-                // Si hay monedas, usa la primera como predeterminada y la muestra.
                 const defaultTicker = window.ownedCoins[0].ticker;
                 tickerForBalance = FormLogic.popularSelector(DOMElements.selectorPrincipal, window.ownedCoins, defaultTicker);
             }
         }
-        
+
         UIUpdater.mostrarSaldo(tickerForBalance);
         UIUpdater.actualizarLabelMonto();
         UIUpdater.resetSlider();
     }
 
     /**
-     * Función centralizada para obtener datos de velas y actualizar el gráfico.
-     * @param {string} ticker El ticker de la criptomoneda (ej. 'BTC').
-     * @param {string} interval La temporalidad del gráfico (ej. '1d', '15m').
+     * Obtiene los datos de velas para un par y temporalidad específicos y actualiza el gráfico.
+     * Utiliza una bandera (`isChartLoading`) para evitar peticiones concurrentes.
+     * @async
+     * @param {string} ticker - El ticker de la criptomoneda (ej. 'BTC').
+     * @param {string} interval - La temporalidad del gráfico (ej. '1d', '15m').
      */
     async function actualizarGrafico(ticker, interval) {
-        // Evita múltiples llamadas simultáneas si el usuario cambia rápido.
         if (isChartLoading) {
-            console.log("Ignorando petición de gráfico, ya hay una en curso.");
+            console.log("Petición de actualización de gráfico ignorada: carga en curso.");
             return;
         }
         isChartLoading = true;
+        console.log(`Solicitando datos de velas para ${ticker} en intervalo ${interval}...`);
         try {
-            console.log(`📈 Pidiendo velas para ${ticker} en ${interval}...`);
             const nuevosDatosVelas = await fetchVelas(ticker, interval);
-            updateChartData(nuevosDatosVelas); // Actualiza el gráfico con los nuevos datos.
+            updateChartData(nuevosDatosVelas);
         } catch (error) {
-            console.error(`❌ Error al actualizar el gráfico para ${ticker}/${interval}:`, error);
-            updateChartData([]); // Muestra el mensaje de error si falla la carga.
+            console.error(`Error al actualizar el gráfico para ${ticker}/${interval}:`, error);
+            updateChartData([]); // En caso de error, limpia el gráfico y muestra un mensaje.
         } finally {
-            isChartLoading = false; // Permite nuevas peticiones una vez completado.
+            isChartLoading = false; // Restablece la bandera para permitir futuras peticiones.
         }
     }
 
     /**
-     * Configura todos los event listeners para los elementos interactivos de la página.
+     * Configura todos los manejadores de eventos para los elementos interactivos de la página.
      */
     function setupEventListeners() {
-        // Listeners para cambiar el modo de trading (Comprar/Vender).
         DOMElements.botonComprar.on('click', () => setTradeMode('comprar'));
         DOMElements.botonVender.on('click', () => setTradeMode('vender'));
 
-        // Listener para cuando cambia la criptomoneda seleccionada.
         DOMElements.selectorPrincipal.on('change', () => {
-            currentTicker = UIState.getTickerPrincipal(); // Actualiza el ticker global
-            UIUpdater.actualizarLabelMonto(); // Actualiza la etiqueta del monto
-            // Si estamos en modo de venta, muestra el saldo de la nueva criptomoneda.
+            currentTicker = UIState.getTickerPrincipal();
+            UIUpdater.actualizarLabelMonto();
             if (!UIState.esModoCompra()) {
                 UIUpdater.mostrarSaldo(currentTicker);
             }
-            // Pide y actualiza el gráfico con el nuevo ticker.
             actualizarGrafico(currentTicker, currentInterval);
         });
 
-        // Listener para los botones de temporalidad (5m, 15m, 1h, etc.).
+        // Delega el evento de clic para los botones de temporalidad.
         $('#timeframe-selector').on('click', '.timeframe-btn', function() {
             const $btn = $(this);
-            // Si el botón ya está activo, no hacer nada.
             if ($btn.hasClass('active')) return;
 
-            // Actualiza el estilo visual para marcar el botón activo.
             $('#timeframe-selector .timeframe-btn').removeClass('active');
             $btn.addClass('active');
 
-            // Actualiza el intervalo global y pide los nuevos datos para el gráfico.
             currentInterval = $btn.data('interval');
             actualizarGrafico(currentTicker, currentInterval);
         });
 
-        // Listeners para los otros campos del formulario que afectan la UI pero no el gráfico.
         DOMElements.selectorPagarCon.on('change', () => {
             UIUpdater.actualizarLabelMonto();
             if (UIState.esModoCompra()) UIUpdater.mostrarSaldo(UIState.getTickerPago());
         });
+
         DOMElements.selectorRecibirEn.on('change', UIUpdater.actualizarLabelMonto);
         DOMElements.radioModoIngreso.on('change', UIUpdater.actualizarLabelMonto);
+
         DOMElements.sliderMonto.on('input', () => {
             const calculatedValue = FormLogic.calcularMontoSlider();
             UIUpdater.setInputMonto(calculatedValue.toFixed(8));
@@ -121,54 +121,57 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Función principal de inicialización de la página de trading.
-     * Carga todos los datos necesarios, inicializa componentes y configura listeners.
+     * Función principal que inicializa la página de trading.
+     * Carga datos críticos en paralelo, renderiza componentes y configura los listeners.
+     * @async
      */
     async function initialize() {
+        console.log("Inicializando página de trading...");
         try {
-            // 1. Cargar todos los datos necesarios en paralelo.
+            // Carga todos los datos necesarios de forma concurrente para optimizar el tiempo de carga.
             const [cotizaciones, estadoBilletera, historial, velas] = await Promise.all([
                 fetchCotizaciones(),
                 fetchEstadoBilletera(),
                 fetchHistorial(),
-                fetchVelas(currentTicker, currentInterval) // Carga inicial para 'BTC' y temporalidad '1D'.
+                fetchVelas(currentTicker, currentInterval) // Carga inicial para BTC en 1D.
             ]);
-            
-            // 2. Poblar variables globales con los datos obtenidos.
+
+            // Almacena los datos en el objeto `window` para acceso global dentro de la página.
             window.allCryptos = cotizaciones;
             window.ownedCoins = estadoBilletera.filter(moneda => parseFloat(moneda.cantidad) > 0);
-            
-            // 3. Renderizar componentes que dependen de estos datos.
+
+            // Renderiza los componentes que dependen de los datos cargados.
             UIUpdater.renderHistorial(historial);
-            initializeChart(velas); // Inicializa el gráfico con los datos de velas.
-            
-            // 4. Inicializar componentes de terceros (Select2) para los selectores.
+            initializeChart(velas);
+
+            // Inicializa la biblioteca Select2 en los selectores para mejorar su apariencia y funcionalidad.
             [DOMElements.selectorPrincipal, DOMElements.selectorPagarCon, DOMElements.selectorRecibirEn].forEach(sel => {
-                sel.select2({ 
+                sel.select2({
                     width: '100%',
-                    dropdownCssClass: 'text-dark', // Estilo para el dropdown
-                    theme: "bootstrap-5"           // Usa el tema de Bootstrap 5 para coherencia
+                    dropdownCssClass: 'text-dark',
+                    theme: "bootstrap-5"
                 });
             });
 
-            // 5. Poblar los selectores con los datos cargados.
+            // Popula los selectores con las opciones correspondientes.
             FormLogic.popularSelector(DOMElements.selectorPagarCon, window.ownedCoins, 'USDT');
             FormLogic.popularSelector(DOMElements.selectorRecibirEn, window.allCryptos, 'USDT');
-            
-            // 6. Configurar todos los event listeners.
+
             setupEventListeners();
-            // Establecer el estado inicial de la interfaz (modo 'comprar').
+            
+            // Establece el estado inicial de la UI en modo 'comprar'.
             setTradeMode('comprar');
-            // Asegurarse de que el botón '1D' de temporalidad esté activo visualmente al inicio.
+            
+            // Marca visualmente la temporalidad '1d' como activa.
             $('#timeframe-selector .timeframe-btn[data-interval="1d"]').addClass('active');
 
+            console.log("Página de trading inicializada correctamente.");
         } catch (error) {
-            // Si algo falla en la carga inicial de datos, mostrar un mensaje de error global.
-            console.error('Error fatal durante la inicialización:', error);
-            UIUpdater.mostrarMensajeError('No se pudieron cargar los datos esenciales para la página de trading. Por favor, recarga la página.');
+            console.error('Error fatal durante la inicialización de la página de trading:', error);
+            UIUpdater.mostrarMensajeError('No se pudieron cargar los datos esenciales. Por favor, recarga la página.');
         }
     }
 
-    // Iniciar el proceso de inicialización cuando el DOM esté listo.
+    // Inicia todo el proceso de inicialización.
     initialize();
 });
