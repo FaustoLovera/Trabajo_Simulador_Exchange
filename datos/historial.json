@@ -1,30 +1,16 @@
 [
     {
-        "id": 2,
-        "timestamp": "2025-06-21T18:08:52.735940",
-        "tipo": "venta",
-        "origen": {
-            "ticker": "ETH",
-            "cantidad": "1.00000000"
-        },
-        "destino": {
-            "ticker": "USDT",
-            "cantidad": "2401.84000000"
-        },
-        "valor_usd": "2401.84"
-    },
-    {
         "id": 1,
-        "timestamp": "2025-06-21T18:08:21.204002",
+        "timestamp": "2025-06-21T19:23:59.244546",
         "tipo": "compra",
         "origen": {
             "ticker": "USDT",
-            "cantidad": "2401.84000000"
+            "cantidad": "508.22500000"
         },
         "destino": {
-            "ticker": "ETH",
-            "cantidad": "1.00000000"
+            "ticker": "BTC",
+            "cantidad": "0.00500000"
         },
-        "valor_usd": "2401.84"
+        "valor_usd": "508.22"
     }
 ]

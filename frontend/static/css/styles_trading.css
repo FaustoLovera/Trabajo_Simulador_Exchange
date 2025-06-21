@@ -1,6 +1,11 @@
 :root {
     --color-verde: rgb(31, 191, 113);
     --color-rojo: rgb(226, 33, 52);
+    --color-azul-activo: #0d6efd; /* Azul de Bootstrap para botones activos */
+    --color-fondo-base: #343a40; /* Un gris oscuro para fondos de input/select */
+    --color-borde: #6c757d; /* Un gris más claro para bordes */
+    --color-texto: #f8f9fa; /* Texto casi blanco */
+    --border-radius-suave: 0.375rem; /* El radio de borde por defecto de Bootstrap */
 }
 
 * {
@@ -11,7 +16,7 @@
 
 body {
     font-family: Arial, sans-serif;
-    background-color: #303030 !important;
+    background-color: #1e1e1e !important; /* Un fondo un poco más oscuro que antes */
     color: #f0c000;
 }
 
@@ -20,74 +25,130 @@ body {
     overflow: hidden;
     width: 100%;
     max-width: 100%;
-    min-height: 500px; /* Asegura que el contenedor tenga altura incluso si el gráfico está vacío */
+    min-height: 500px;
 }
 
-.text-verde {
-    color: var(--color-verde);
+/* --- ESTILOS UNIFICADOS PARA EL FORMULARIO --- */
+
+/* Estilo base para todos los controles de formulario */
+.form-control,
+.form-select,
+.select2-container--bootstrap-5 .select2-selection {
+    background-color: var(--color-fondo-base) !important;
+    color: var(--color-texto) !important;
+    border: 1px solid var(--color-borde) !important;
+    border-radius: var(--border-radius-suave) !important;
+    box-shadow: none !important; /* Eliminar sombras por defecto */
 }
 
-.text-rojo {
-    color: var(--color-rojo);
+/* Placeholder text color */
+.form-control::placeholder {
+    color: #999;
 }
 
-/* FORMULARIO TRADING */
-
-.form-control {
-    background-color: #444 !important;
-    color: #fff !important;
-    border-color: #555;
+/* Estilo para los grupos de botones (Tipo de orden, Ingresar por, Timeframes) */
+.btn-group .btn-outline-primary,
+.btn-group .btn-outline-secondary {
+    color: var(--color-texto);
+    border-color: var(--color-borde);
 }
 
-.form-select {
-    background-color: #444 !important;
-    color: #fff !important;
-    border-color: #555;
+/* Estilo para el botón ACTIVO en los grupos */
+.btn-group .btn-check:checked + .btn-outline-primary,
+.btn-group .btn.active {
+    background-color: var(--color-azul-activo);
+    border-color: var(--color-azul-activo);
+    color: var(--color-texto);
+}
+.btn-group .timeframe-btn.active {
+    background-color: var(--color-azul-activo) !important;
+    border-color: var(--color-azul-activo) !important;
 }
 
-/* CAMBIO DE COLOR DEL PUNTO DEL SLIDER THUMB DINÁMICO */
+/* --- ESTILOS PERSONALIZADOS PARA SELECT2 --- */
 
-/* Chrome/Safari */
-input[type='range'].slider-compra::-webkit-slider-thumb {
+/* Contenedor principal de Select2 */
+.select2-container--bootstrap-5 .select2-selection {
+    height: calc(1.5em + 0.75rem + 2px); /* Altura estándar de Bootstrap */
+    padding: 0.375rem 0.75rem;
+    line-height: 1.5;
+}
+
+/* Flecha del dropdown de Select2 */
+.select2-container--bootstrap-5 .select2-selection__arrow b {
+    border-color: var(--color-texto) transparent transparent transparent !important;
+}
+
+/* Estilos para el Dropdown (la lista que se abre) */
+.select2-dropdown {
+    background-color: var(--color-fondo-base) !important;
+    border: 1px solid var(--color-borde) !important;
+    border-radius: var(--border-radius-suave) !important;
+}
+
+/* Campo de búsqueda dentro del dropdown */
+.select2-search__field {
+    background-color: #495057 !important;
+    color: var(--color-texto) !important;
+    border: 1px solid var(--color-borde) !important;
+    border-radius: var(--border-radius-suave);
+}
+
+/* Opciones de la lista */
+.select2-results__option {
+    color: var(--color-texto) !important;
+}
+
+/* Opción seleccionada actualmente en la lista */
+.select2-results__option--selected {
+    background-color: #5a6268 !important;
+}
+
+/* Opción bajo el cursor del ratón (hover) */
+.select2-results__option--highlighted {
+    background-color: var(--color-azul-activo) !important;
+    color: var(--color-texto) !important;
+}
+
+/* --- LÓGICA DE BOTONES DE COMPRA/VENTA (SIN CAMBIOS DE LÓGICA, SÓLO ESTÉTICA) --- */
+.boton-comprar.active {
     background-color: var(--color-verde) !important;
+    border-color: var(--color-verde) !important;
 }
-
-input[type='range'].slider-venta::-webkit-slider-thumb {
+.boton-vender.active {
     background-color: var(--color-rojo) !important;
+    border-color: var(--color-rojo) !important;
+}
+.btn-outline-secondary {
+    background-color: transparent;
+    border-color: var(--color-borde);
+}
+.btn-outline-secondary:hover {
+    background-color: var(--color-fondo-base);
 }
 
-/* Firefox */
-input[type='range'].slider-compra::-moz-range-thumb {
-    background-color: var(--color-verde) !important;
-}
-
-input[type='range'].slider-venta::-moz-range-thumb {
-    background-color: var(--color-rojo) !important;
-}
-
-/* === ESTILOS PARA EL OVERLAY DE ERROR DEL GRÁFICO === */
+/* --- OVERLAY DE ERROR (SIN CAMBIOS) --- */
 .chart-overlay {
-    /* Posición absoluta para cubrir el contenedor padre (que tiene position: relative) */
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-
-    /* Estilos para centrar el texto vertical y horizontalmente */
     display: flex;
     align-items: center;
     justify-content: center;
-
-    /* Estilos visuales para que se vea bien */
-    background-color: rgba(30, 30, 30, 0.85); /* Fondo oscuro semi-transparente */
-    color: #f0c000; /* Color de texto del tema */
+    background-color: rgba(30, 30, 30, 0.85);
+    color: #f0c000;
     font-size: 1.2rem;
     font-weight: 500;
     text-align: center;
     padding: 20px;
-    z-index: 10; /* Asegura que esté por encima del contenido del gráfico */
-    border-radius: 8px; /* Bordes redondeados */
-    /* Transición suave para aparecer y desaparecer */
-    transition: opacity 0.3s ease-in-out; 
+    z-index: 10;
+    border-radius: 8px;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered,
+.form-control::placeholder {
+    color: var(--color-texto) !important;
 }
