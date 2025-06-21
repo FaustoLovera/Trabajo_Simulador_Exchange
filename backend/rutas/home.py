@@ -9,22 +9,12 @@ bp = Blueprint("home", __name__)
 def index():
     """
     Página principal del simulador de exchange.
-
-    ---
-    responses:
-      200:
-        description: Renderiza la página principal.
-        content:
-          text/html:
-            example: "<html><body>Simulador de exchange</body></html>"
-      500:
-        description: Error al obtener datos de cotizaciones.
     """
     try:
         obtener_datos_criptos_coingecko()
         recargar_cache_precios()
         print("👉 Datos de cotizaciones actualizados.")
-    except Exception as e:
+    except (KeyError, TypeError) as e:
         print(f"⚠️ Error al actualizar cotizaciones: {e}")
     
     return render_template("index.html")

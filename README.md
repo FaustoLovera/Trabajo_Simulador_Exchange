@@ -45,21 +45,29 @@ En este panel se verán tres secciones diferentes que contemplan lo necesario pa
 
 ## 🧠 Cómo funciona el sistema
 
-El sistema está diseñado bajo una arquitectura modular que separa responsabilidades:
+El sistema está diseñado bajo una arquitectura desacoplada que separa claramente las responsabilidades del backend y del frontend:
 
-- **Rutas (`rutas/`)**: contienen los blueprints de Flask, que responden a las URLs y renderizan las plantillas HTML.
-- **Servicios (`servicios/`)**: implementan la lógica de negocio (por ejemplo, compra y venta de criptomonedas, cálculos de balances, renderizado dinámico de fragmentos).
-- **Acceso a datos (`acceso_datos/`)**: se encargan de leer y escribir archivos JSON, simulando una base de datos local.
-- **Frontend (`frontend/`)**: contiene el HTML, CSS y JavaScript para la interfaz del usuario, incluyendo gráficos interactivos y recarga dinámica de datos.
+- **Backend (Python/Flask)**: Actúa como una API pura de JSON. Sus responsabilidades son:
+    - **`rutas/`**: Define los endpoints de la API (`/api/...`) que exponen los datos y la lógica de negocio en formato JSON. También sirve el contenedor HTML inicial de cada página.
+    - **`servicios/`**: Contiene toda la lógica de negocio (cálculos de billetera, procesamiento de órdenes, formato de datos) y prepara los datos para ser enviados como JSON.
+    - **`acceso_datos/`**: Gestiona la lectura y escritura de los archivos `.json` que actúan como base de datos.
+    - **`utils/`**: Proporciona funciones de utilidad, como formateadores de datos que se aplican en el backend.
 
-### Flujo general
+- **Frontend (JavaScript)**: Es un cliente dinámico que consume la API del backend.
+    - **Autónomo**: Cada página carga su propio HTML y luego utiliza JavaScript para buscar todos los datos que necesita de los endpoints `/api/...`.
+    - **Renderizado en el cliente**: Todo el renderizado y la manipulación del DOM (actualización de tablas, saldos, gráficos) se realiza en el navegador, creando una experiencia de usuario fluida y rápida sin recargas de página.
+    - **Estructura modular en `js/`**:
+        - **`pages/`**: Contiene la lógica de inicialización y orquestación para cada página principal (ej. `tradingPage.js`).
+        - **`components/`**: Módulos encargados de actualizar partes específicas de la interfaz (ej. `uiUpdater.js`, `tablaCotizacionesUI.js`).
+        - **`services/`**: Gestiona la comunicación con la API del backend.
 
-1. Al ingresar a la app, se cargan cotizaciones reales desde CoinGecko.
-2. El usuario puede:
-   - Consultar cotizaciones (actualizadas cada 15 segundos).
-   - Ingresar al panel de trading y operar.
-   - Visualizar su billetera y el historial de operaciones.
-3. Toda la información es persistida automáticamente en archivos `.json`.
+### Flujo desacoplado
+
+1.  El usuario navega a una URL (ej. `/trading`).
+2.  Flask sirve un archivo HTML mínimo (`trading.html`) que actúa como un esqueleto.
+3.  El archivo JavaScript asociado a esa página (`tradingPage.js`) se ejecuta.
+4.  El script de JS realiza llamadas a los endpoints de la API del backend (`/api/cotizaciones`, `/api/historial`, etc.) para obtener los datos en formato JSON.
+5.  Una vez recibidos los datos, JavaScript actualiza dinámicamente el DOM para mostrar la información al usuario.
 
 ## 🗃️ Estructura del proyecto
 
@@ -68,46 +76,40 @@ simulador_exchange/
 ├── backend/
 │   ├── app.py                      # Servidor Flask y punto de entrada
 │   ├── config.py                   # Configuración del sistema y constantes globales
-│   ├── rutas/                      # Blueprints que definen las vistas
+│   ├── rutas/                      # Blueprints que definen las vistas y API endpoints
 │   │   ├── __init__.py
 │   │   ├── home.py
 │   │   ├── trading_vista.py
 │   │   ├── billetera_vista.py
-│   │   └── api_externa.py
+│   │   └── api_cotizaciones_vista.py
 │   ├── servicios/                  # Lógica de negocio de cada módulo
 │   │   ├── api_cotizaciones.py
-│   │   ├── cotizaciones.py
 │   │   ├── estado_billetera.py
-│   │   ├── trading_logica.py
 │   │   └── velas_logica.py
-│   ├── acceso_datos/              # Acceso y manipulación de archivos .json
+│   ├── acceso_datos/               # Acceso y manipulación de archivos .json
 │   │   ├── datos_billetera.py
 │   │   ├── datos_cotizaciones.py
 │   │   └── datos_historial.py
-│   └── utils/                     # Utilidades auxiliares
-│       └── formateo_decimales.py
+│   └── utils/                      # Utilidades auxiliares
+│       └── formatters.py
 │
 ├── frontend/
-│   ├── templates/                 # Plantillas HTML renderizadas por Flask
+│   ├── templates/                  # Plantillas HTML (contenedores iniciales)
 │   │   ├── index.html
 │   │   ├── billetera.html
-│   │   ├── trading.html
-│   │   ├── fragmento_billetera.html
-│   │   ├── fragmento_formulario_trading.html
-│   │   ├── fragmento_historial.html
-│   │   ├── fragmento_mensajes_flash.html
-│   │   └── fragmento_tabla.html
-│   └── static/                    # Archivos estáticos
+│   │   └── trading.html
+│   └── static/                     # Archivos estáticos
 │       ├── css/
 │       │   ├── styles_index.css
 │       │   └── styles_trading.css
 │       ├── img/
 │       │   └── logo_BlocX.png
-│       └── js/
-│           ├── funciones.js
-│           └── grafico_velas.js
+│       └── js/                     # Lógica del cliente
+│           ├── components/         # Módulos para actualizar la UI
+│           ├── pages/              # Scripts de orquestación por página
+│           └── services/           # Servicios de comunicación con la API
 │
-├── datos/                         # Archivos de persistencia
+├── datos/                          # Archivos de persistencia
 │   ├── billetera.json
 │   ├── datos_cotizaciones.json
 │   ├── datos_velas.json

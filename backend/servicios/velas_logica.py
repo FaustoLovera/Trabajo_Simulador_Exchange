@@ -19,7 +19,7 @@ def guardar_datos_cotizaciones(data):
                 default=lambda o: float(o) if isinstance(o, Decimal) else o,
             )
         print("✅ Datos guardados correctamente")
-    except Exception as e:
+    except (IOError, TypeError) as e:
         print("❌ Error al guardar el archivo:", e)
 
 
@@ -45,5 +45,5 @@ def guardar_datos_velas(data):
                 default=lambda o: float(o) if isinstance(o, Decimal) else o,
             )
         print("✅ Datos guardados correctamente")
-    except Exception as e:
+    except (IOError, TypeError) as e:
         print("❌ Error al guardar el archivo:", e)

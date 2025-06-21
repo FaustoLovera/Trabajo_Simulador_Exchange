@@ -1,27 +1,13 @@
-/**
- * Obtiene el estado financiero completo de la billetera desde la API.
- * Los datos ya vienen pre-formateados desde el backend.
- * @returns {Promise<Array>}
- */
-async function fetchEstadoBilletera() {
-    try {
-        const response = await fetch('/api/billetera/estado-completo');
-        if (!response.ok) {
-            throw new Error('Error al cargar estado de la billetera');
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('❌ Error al obtener el estado de la billetera:', error);
-        return [];
-    }
-}
+// Orquesta la inicialización y la lógica principal de la página de la billetera.
+import { fetchEstadoBilletera } from '../services/apiService.js';
+import { UIUpdater } from '../components/uiUpdater.js';
 
 /**
  * Crea una fila HTML para la tabla de la billetera a partir de un objeto de cripto.
  * @param {object} cripto - El objeto que contiene los datos de la cripto.
  * @returns {string} El string HTML para la fila <tr>.
  */
-function createFilaBilleteraHTML(cripto) {
+function createBilleteraRowHTML(cripto) {
     // La lógica de color se basa en el valor numérico crudo.
     const colorGanancia = parseFloat(cripto.ganancia_perdida) >= 0 ? 'positivo' : 'negativo';
     
@@ -50,17 +36,24 @@ async function renderBilletera() {
     }
 
     console.log("🔄 Cargando datos de la billetera...");
-    const datosBilletera = await fetchEstadoBilletera();
+    try {
+        const datosBilletera = await fetchEstadoBilletera();
 
-    if (datosBilletera.length === 0) {
-        cuerpoTabla.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Tu billetera está vacía.</td></tr>';
-        return;
+        if (datosBilletera.length === 0) {
+            cuerpoTabla.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Tu billetera está vacía.</td></tr>';
+            return;
+        }
+
+        const tablaHTML = datosBilletera.map(createBilleteraRowHTML).join('');
+        cuerpoTabla.innerHTML = tablaHTML;
+        console.log("✅ Billetera renderizada correctamente.");
+    } catch (error) {
+        console.error('❌ Error al renderizar la billetera:', error);
+        // Muestra el error en la consola, en la UI global y en la tabla misma.
+        UIUpdater.mostrarMensajeError('No se pudieron cargar los datos de la billetera. Por favor, intenta recargar la página.');
+        cuerpoTabla.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Error al cargar los datos.</td></tr>';
     }
-
-    const tablaHTML = datosBilletera.map(createFilaBilleteraHTML).join('');
-    cuerpoTabla.innerHTML = tablaHTML;
-    console.log("✅ Billetera renderizada correctamente.");
 }
 
 // Iniciar el proceso cuando el DOM esté listo.
-document.addEventListener('DOMContentLoaded', renderBilletera);
+document.addEventListener('DOMContentLoaded', () => {renderBilletera()});

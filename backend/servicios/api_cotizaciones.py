@@ -1,38 +1,13 @@
 from decimal import Decimal
 import requests
-from backend.servicios.velas_logica import (
-    guardar_datos_cotizaciones,
-    guardar_datos_velas,
-)
+from backend.servicios.velas_logica import guardar_datos_cotizaciones, guardar_datos_velas
 from config import COINGECKO_URL, BINANCE_URL, CANTIDAD_CRIPTOMONEDAS, CANTIDAD_VELAS
-
+from backend.utils.formatters import formato_numero_grande, formato_porcentaje, formato_valor_monetario
 
 def obtener_datos_criptos_coingecko():
     """
     Obtiene información del mercado de criptomonedas desde la API pública de CoinGecko.
-
-    Esta función consulta la API de CoinGecko para recuperar los 100 activos principales
-    ordenados por capitalización de mercado, incluyendo su precio actual, variaciones
-    porcentuales, volumen de trading y suministro circulante. Los datos obtenidos se procesan
-    y almacenan localmente mediante la función `guardar_datos_cotizaciones`.
-
-    Returns:
-        List[Dict]: Una lista de diccionarios, donde cada uno representa una criptomoneda con:
-            - id (int): Índice incremental
-            - nombre (str): Nombre de la criptomoneda
-            - ticker (str): Ticker en mayúsculas
-            - logo (str): URL del logo del activo
-            - precio_usd (float): Precio actual en USD
-            - 1h_% (float): Variación porcentual en 1 hora
-            - 24h_% (float): Variación porcentual en 24 horas
-            - 7d_% (float): Variación porcentual en 7 días
-            - market_cap (float): Capitalización de mercado
-            - volumen_24h (float): Volumen de trading en 24h
-            - circulating_supply (float): Suministro circulante
-
-    Notas:
-        Si ocurre un error de conexión o una respuesta inválida, la función retorna
-        un diccionario con una clave "error" describiendo el problema.
+    Añade campos formateados para que la UI pueda renderizarlos directamente.
     """
     params = {
         "vs_currency": "usd",
@@ -45,42 +20,45 @@ def obtener_datos_criptos_coingecko():
 
     try:
         respuesta = requests.get(COINGECKO_URL, params)
+        respuesta.raise_for_status()  # Lanza una excepción para errores HTTP (4xx o 5xx)
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener datos de CoinGecko: {str(e)}")
-        return {"error": "Error al obtener datos de CoinGecko"}
-    if respuesta.status_code != 200:
-        print(
-            f"❌ Error en la respuesta de CoinGecko: Status code {respuesta.status_code}"
-        )
-        return {"error": "Respuesta inválida de la API"}
+        return []
 
-    print(f"✅ Estado de la respuesta: {respuesta.status_code}")
+    print(f"✅ Estado de la respuesta CoinGecko: {respuesta.status_code}")
 
-    datos = respuesta.json()
-    resultado = list(
-        map(
-            lambda par: {
-                "id": par[0],
-                "nombre": par[1].get("name"),
-                "ticker": par[1].get("symbol", "").upper(),
-                "logo": par[1].get("image"),
-                "precio_usd": Decimal(str(par[1].get("current_price"))),
-                "1h_%": Decimal(
-                    str(par[1].get("price_change_percentage_1h_in_currency"))
-                ),
-                "24h_%": Decimal(
-                    str(par[1].get("price_change_percentage_24h_in_currency"))
-                ),
-                "7d_%": Decimal(
-                    str(par[1].get("price_change_percentage_7d_in_currency"))
-                ),
-                "market_cap": Decimal(str(par[1].get("market_cap"))),
-                "volumen_24h": Decimal(str(par[1].get("total_volume"))),
-                "circulating_supply": Decimal(str(par[1].get("circulating_supply"))),
-            },
-            enumerate(datos, start=1),
-        )
-    )
+    try:
+        datos = respuesta.json()
+        resultado = [
+            {
+                "id": i,
+                "nombre": dato.get("name"),
+                "ticker": dato.get('symbol', '').upper(),
+                "logo": dato.get("image"),
+                
+                # Datos crudos
+                "precio_usd": str(Decimal(str(dato.get("current_price", 0)))),
+                "1h_%": str(Decimal(str(dato.get("price_change_percentage_1h_in_currency", 0)))),
+                "24h_%": str(Decimal(str(dato.get("price_change_percentage_24h_in_currency", 0)))),
+                "7d_%": str(Decimal(str(dato.get("price_change_percentage_7d_in_currency", 0)))),
+                "market_cap": str(Decimal(str(dato.get("market_cap", 0)))),
+                "volumen_24h": str(Decimal(str(dato.get("total_volume", 0)))),
+                "circulating_supply": str(Decimal(str(dato.get("circulating_supply", 0)))),
+
+                # Datos pre-formateados para la UI
+                "precio_usd_formatted": formato_valor_monetario(Decimal(str(dato.get("current_price", 0))), decimales=2),
+                "1h_%_formatted": formato_porcentaje(Decimal(str(dato.get("price_change_percentage_1h_in_currency", 0)))),
+                "24h_%_formatted": formato_porcentaje(Decimal(str(dato.get("price_change_percentage_24h_in_currency", 0)))),
+                "7d_%_formatted": formato_porcentaje(Decimal(str(dato.get("price_change_percentage_7d_in_currency", 0)))),
+                "market_cap_formatted": formato_numero_grande(Decimal(str(dato.get("market_cap", 0)))),
+                "volumen_24h_formatted": formato_numero_grande(Decimal(str(dato.get("total_volume", 0)))),
+                "circulating_supply_formatted": f"{Decimal(str(dato.get('circulating_supply', 0))):,.0f} {dato.get('symbol', '').upper()}"
+            }
+            for i, dato in enumerate(datos, start=1)
+        ]
+    except (KeyError, TypeError, ValueError) as e:
+        print(f"❌ Error al procesar los datos de CoinGecko: {str(e)}")
+        return []
 
     print(f"💡 Total de criptos procesadas: {len(resultado)}")
     guardar_datos_cotizaciones(resultado)
@@ -89,25 +67,7 @@ def obtener_datos_criptos_coingecko():
 
 def obtener_velas_binance():
     """
-    Obtiene datos históricos de velas (Klines) diarias del par BTC/USDT desde la API pública de Binance.
-
-    Esta función consulta la API de Binance para recuperar las últimas velas diarias,
-    equivalente aproximadamente a un año de datos históricos. Cada vela contiene precios
-    de apertura, máximo, mínimo, cierre y volumen negociado. Los datos se procesan y almacenan
-    localmente mediante la función `guardar_datos_velas`.
-
-    Returns:
-        List[Dict]: Una lista de diccionarios, donde cada uno representa una vela diaria con:
-            - time (int): Timestamp de apertura en segundos
-            - open (float): Precio de apertura
-            - high (float): Precio máximo
-            - low (float): Precio mínimo
-            - close (float): Precio de cierre
-            - volume (float): Volumen negociado
-
-    Notas:
-        Si ocurre un error de conexión o una respuesta inválida, la función retorna
-        un diccionario con una clave "error" describiendo el problema.
+    Obtiene datos históricos de velas (Klines) diarias del par BTC/USDT.
     """
     params = {
         "symbol": "BTCUSDT",
@@ -116,33 +76,26 @@ def obtener_velas_binance():
     }
     try:
         respuesta = requests.get(BINANCE_URL, params)
+        respuesta.raise_for_status()
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener datos de Binance: {str(e)}")
-        return {"error": "Error al obtener datos de Binance"}
-
-    if respuesta.status_code != 200:
-        print(
-            f"❌ Error en la respuesta de Binance: Status code {respuesta.status_code}"
-        )
-        return {"error": "Respuesta inválida de la API Binance"}
+        return []
 
     print(f"✅ Estado de la respuesta Binance: {respuesta.status_code}")
 
     datos = respuesta.json()
-    resultado = []
-
-    for vela in datos:
-        resultado.append(
-            {
-                "time": int(vela[0] / 1000),  # Timestamp en segundos
-                "open": Decimal(str(vela[1])),
-                "high": Decimal(str(vela[2])),
-                "low": Decimal(str(vela[3])),
-                "close": Decimal(str(vela[4])),
-                "volume": Decimal(str(vela[5])),
-            }
-        )
-
+    resultado = [
+        {
+            "time": int(vela[0] / 1000),
+            "open": str(Decimal(vela[1])),
+            "high": str(Decimal(vela[2])),
+            "low": str(Decimal(vela[3])),
+            "close": str(Decimal(vela[4])),
+            "volume": str(Decimal(vela[5])),
+        }
+        for vela in datos
+    ]
+    
     print(f"💡 Total de velas procesadas: {len(resultado)}")
     guardar_datos_velas(resultado)
     return resultado

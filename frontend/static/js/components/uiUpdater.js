@@ -1,7 +1,7 @@
+// Contiene funciones para actualizar dinámicamente la interfaz de usuario.
 import { DOMElements } from './domElements.js';
 import { UIState } from './uiState.js';
 
-// Contiene todas las funciones que modifican visualmente el DOM.
 export const UIUpdater = {
     actualizarBotones() {
         const esCompra = UIState.esModoCompra();
@@ -45,8 +45,9 @@ export const UIUpdater = {
             DOMElements.spanSaldoDisponible.text('--');
             return;
         }
-        const saldo = window.billetera[ticker] || '0.00';
-        const saldoFormateado = parseFloat(saldo).toFixed(8);
+        // Busca la moneda en el estado completo para obtener el saldo formateado.
+        const moneda = window.monedasPropias.find(m => m.ticker === ticker);
+        const saldoFormateado = moneda ? moneda.cantidad_formatted : '0.00000000';
         DOMElements.spanSaldoDisponible.text(`${saldoFormateado} ${ticker}`);
     },
 
@@ -68,25 +69,42 @@ export const UIUpdater = {
         }
 
         const historialHTML = historialData.map((item) => {
-            const fecha = new Date(item.timestamp).toLocaleDateString();
-            const hora = new Date(item.timestamp).toLocaleTimeString();
             const claseTipo = item.tipo === 'compra' ? 'text-success' : 'text-danger';
-            const par = item.tipo === 'compra' ? `${item.destino.ticker}/${item.origen.ticker}` : `${item.origen.ticker}/${item.destino.ticker}`;
-            const cantidad = item.tipo === 'compra' ? item.destino.cantidad : item.origen.cantidad;
-            const tickerCantidad = item.tipo === 'compra' ? item.destino.ticker : item.origen.ticker;
-            const valorFormateado = parseFloat(item.valor_usd).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
             return `
                 <tr>
-                    <td class="text-start ps-3">${fecha} <span class="text-white-50">${hora}</span></td>
-                    <td class="fw-bold">${par}</td>
-                    <td class="${claseTipo}">${item.tipo.charAt(0).toUpperCase() + item.tipo.slice(1)}</td>
-                    <td>${parseFloat(cantidad).toFixed(8)} ${tickerCantidad}</td>
-                    <td>${valorFormateado}</td>
+                    <td class="text-start ps-3">${item.fecha_formatted}</td>
+                    <td class="fw-bold">${item.par_formatted}</td>
+                    <td class="${claseTipo}">${item.tipo_formatted}</td>
+                    <td>${item.cantidad_formatted}</td>
+                    <td>${item.valor_total_formatted}</td>
                 </tr>
             `;
         }).join('');
 
         tablaHistorial.html(historialHTML);
+    },
+
+    /**
+     * Muestra un mensaje de error en un contenedor de alertas en la parte superior de la página.
+     * @param {string} mensaje - El mensaje de error a mostrar.
+     * @param {string} [containerSelector='#error-container'] - El selector del contenedor donde se mostrará el error.
+     */
+    mostrarMensajeError(mensaje, containerSelector = '#error-container') {
+        const errorContainer = $(containerSelector);
+        if (!errorContainer.length) {
+            console.error(`Error container '${containerSelector}' not found.`);
+            return;
+        }
+
+        const alertHTML = `
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                ${mensaje}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+
+        // Limpia mensajes anteriores y añade el nuevo para evitar acumulación.
+        errorContainer.html(alertHTML);
     },
 };

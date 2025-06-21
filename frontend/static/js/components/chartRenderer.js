@@ -1,33 +1,14 @@
-/**
- * Busca los datos de las velas en la API.
- * @returns {Promise<Array>}
- */
-async function fetchVelasData() {
-    try {
-        const response = await fetch('/api/velas');
-        if (!response.ok) {
-            throw new Error(`Error del servidor: ${response.statusText}`);
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('❌ Error al obtener los datos de las velas:', error);
-        return [];
-    }
-}
-
-/**
- * Inicializa y renderiza el gráfico de velas en el contenedor especificado.
- */
-export async function initializeChart() {
-    console.log('📈 Inicializando gráfico de velas...');
+// Manages the creation and updating of the candlestick chart.
+export function initializeChart(data) {
+    console.log('📈 Initializing candlestick chart...');
     const chartContainer = document.getElementById('chart');
     if (!chartContainer) {
-        console.warn("Elemento #chart no encontrado. No se puede renderizar el gráfico.");
+        console.warn("Element #chart not found. Cannot render chart.");
         return;
     }
 
     if (!window.LightweightCharts) {
-        console.error("La librería LightweightCharts no está cargada. Asegúrate de que se carga antes que este script.");
+        console.error("LightweightCharts library is not loaded. Make sure it loads before this script.");
         return;
     }
 
@@ -55,8 +36,7 @@ export async function initializeChart() {
     });
     volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
-    const data = await fetchVelasData();
-    if (data.length > 0) {
+    if (data && data.length > 0) {
         const candleData = data.map(item => ({
             time: item.time, open: Number(item.open), high: Number(item.high), low: Number(item.low), close: Number(item.close)
         }));

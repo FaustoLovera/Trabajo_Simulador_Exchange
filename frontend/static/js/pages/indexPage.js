@@ -1,5 +1,5 @@
-// Este es el punto de entrada para la página de cotizaciones (index.html).
-import { triggerActualizacionDatos } from '../services/cotizacionesApiService.js';
+// Orquesta la inicialización y la lógica principal de la página de inicio (listado de cotizaciones).
+import { triggerActualizacionDatos } from '../services/apiService.js';
 import { renderTabla } from '../components/tablaCotizacionesUI.js';
 
 const UPDATE_INTERVAL_MS = 15000; // 15 segundos
@@ -15,10 +15,7 @@ function inicializarActualizadorAutomatico() {
     }, UPDATE_INTERVAL_MS);
 }
 
-/**
- * Función principal que se ejecuta al cargar la página.
- */
-function main() {
+document.addEventListener('DOMContentLoaded', () => {
     // Asegurarse de que estamos en la página correcta verificando la existencia de la tabla.
     if (document.getElementById('tabla-datos')) {
         console.log("🚀 Inicializando página de cotizaciones.");
@@ -29,7 +26,4 @@ function main() {
         // Inicia el ciclo de actualización automática
         inicializarActualizadorAutomatico();
     }
-}
-
-// Ejecutar la función principal
-main();
+});

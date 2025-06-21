@@ -1,7 +1,7 @@
+// Encapsula la lógica de negocio del formulario de trading.
 import { DOMElements } from './domElements.js';
-import { UIState } from './uiState.js'; // Esta ruta era incorrecta, ahora está bien.
+import { UIState } from './uiState.js';
 
-// Contiene la lógica de negocio del formulario, como poblar selectores y cálculos.
 export const FormLogic = {
     popularSelector(selector, lista, valorPorDefecto) {
         selector.empty();
@@ -18,7 +18,9 @@ export const FormLogic = {
         const esCompra = UIState.esModoCompra();
         
         const tickerDeSaldo = esCompra ? UIState.getTickerPago() : UIState.getTickerPrincipal();
-        const saldoDisponible = parseFloat(window.billetera[tickerDeSaldo] || '0');
+        // Asumiendo que window.monedasPropias contiene los saldos.
+        const moneda = window.monedasPropias.find(m => m.ticker === tickerDeSaldo);
+        const saldoDisponible = moneda ? parseFloat(moneda.saldo) : 0;
         
         if (!tickerDeSaldo) return 0;
 

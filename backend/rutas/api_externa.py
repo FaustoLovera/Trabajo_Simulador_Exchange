@@ -27,6 +27,6 @@ def obtener_datos_velas():
         with open(VELAS_PATH, "r") as archivo:
             datos = json.load(archivo)
         return jsonify(datos)
-    except Exception as e:
+    except (FileNotFoundError, IOError, json.JSONDecodeError) as e:
         print("❌ Error leyendo datos_velas.json:", e)
         return jsonify({"error": "No se pudo leer el archivo"}), 500

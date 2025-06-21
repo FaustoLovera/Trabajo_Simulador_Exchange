@@ -36,6 +36,9 @@
         </div>
     </nav>
 
+    <!-- Contenedor para mensajes de error -->
+    <div id="error-container" class="container-fluid mt-3"></div>
+
     <main class="container my-4">
         <div class="text-center">
             <h2 class="text-warning mb-4">Billetera</h2>
@@ -63,9 +66,8 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="{{ url_for('static', filename='js/pages/billeteraPage.js') }}"></script>
     
-    <!-- Carga del nuevo script para la página de billetera -->
-    <script type="module" src="{{ url_for('static', filename='js/billeteraPage.js') }}"></script>
 </body>
 
 </html>

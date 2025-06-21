@@ -1,6 +1,6 @@
+// Gestiona el estado de la interfaz de usuario, como el modo de operación (compra/venta).
 import { DOMElements } from './domElements.js';
 
-// Mantiene y provee el estado actual de la UI, desacoplando la lógica de la lectura directa del DOM.
 export const UIState = {
     esModoCompra() {
         return DOMElements.inputAccion.val() === 'comprar';

@@ -1,4 +1,4 @@
-// Centraliza todos los selectores del DOM en un único objeto para fácil acceso y mantenimiento.
+// Almacena referencias a los elementos del DOM para un acceso rápido y centralizado.
 export const DOMElements = {
     form: $('#formulario-trading'),
     selectorPrincipal: $('#cripto'),

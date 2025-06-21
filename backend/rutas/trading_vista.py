@@ -3,7 +3,6 @@
 from flask import Blueprint, request, redirect, url_for, render_template, flash
 
 from backend.servicios.trading_logica import procesar_operacion_trading
-from backend.servicios.trading_models import preparar_vista_trading
 
 bp = Blueprint("trading", __name__)
 
@@ -11,9 +10,7 @@ bp = Blueprint("trading", __name__)
 # RUTA GET para MOSTRAR la página de trading
 @bp.route("/trading", methods=["GET"])
 def mostrar_trading_page():
-    """Muestra la interfaz principal de trading."""
-    contexto = preparar_vista_trading()
-    return render_template("trading.html", **contexto)
+    return render_template("trading.html")
 
 
 # RUTA POST para PROCESAR la operación de trading
