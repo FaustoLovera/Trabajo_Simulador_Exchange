@@ -1,75 +1,112 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Si no es la página de trading, no hacer nada.
-    if (!document.getElementById('formulario-trading')) return;
+    const form = document.getElementById('formulario-trading');
+    if (!form) return;
 
-    // 1. SELECCIÓN DE ELEMENTOS
+    // --- ELEMENTOS DEL DOM ---
     const selectorPrincipal = $('#cripto');
     const selectorPagarCon = $('#moneda-pago');
     const selectorRecibirEn = $('#moneda-recibir');
+    const botonComprar = $('.boton-comprar');
+    const botonVender = $('.boton-vender');
+    const botonConfirmar = $('.boton-confirmar');
+    const inputAccion = $('#accion');
+    const campoPagarCon = $('#campo-pagar-con');
+    const campoRecibirEn = $('#campo-recibir-en');
+    const spanSaldoDisponible = $('#saldo-disponible');
 
-    const botonComprar = document.querySelector('.boton-comprar');
-    const botonVender = document.querySelector('.boton-vender');
-    const botonConfirmar = document.querySelector('.boton-confirmar');
-    const inputAccion = document.getElementById('accion'); // El campo oculto
-    
-    const campoPagarCon = document.getElementById('campo-pagar-con');
-    const campoRecibirEn = document.getElementById('campo-recibir-en');
-    
-    // Inicialización de Select2
-    selectorPrincipal.select2({ theme: "bootstrap-5", width: '100%' });
-    selectorPagarCon.select2({ theme: "bootstrap-5", width: '100%' });
-    selectorRecibirEn.select2({ theme: "bootstrap-5", width: '100%' });
+    // --- INICIALIZACIÓN DE SELECT2 ---
+    [selectorPrincipal, selectorPagarCon, selectorRecibirEn].forEach(sel => {
+        sel.select2({ width: '100%', dropdownCssClass: 'text-dark' });
+    });
 
-    // 2. FUNCIÓN PARA POBLAR SELECTORES
+    // --- FUNCIONES AUXILIARES ---
+
     function popularSelector(selector, lista, valorPorDefecto) {
         selector.empty();
-        lista.forEach(moneda => {
-            const option = new Option(moneda.nombre, moneda.ticker);
-            selector.append(option);
-        });
-        if (valorPorDefecto && lista.some(m => m.ticker === valorPorDefecto)) {
-            selector.val(valorPorDefecto).trigger('change');
+        lista.forEach(({ nombre, ticker }) => selector.append(new Option(nombre, ticker)));
+        
+        const valorFinal = (valorPorDefecto && lista.some(m => m.ticker === valorPorDefecto)) ? valorPorDefecto : (lista.length > 0 ? lista[0].ticker : null);
+
+        if (valorFinal) {
+            selector.val(valorFinal).trigger('change');
         } else {
-            selector.trigger('change');
+            selector.trigger('change'); // Dispara el evento incluso si no hay valor
         }
+        return valorFinal; // Devuelve el valor que se ha establecido
     }
 
-    // 3. FUNCIONES PARA CAMBIAR DE MODO
-    function activarModoCompra() {
-        inputAccion.value = 'comprar'; // Asegura que el valor sea 'comprar'
-        
-        botonConfirmar.textContent = 'COMPRAR';
-        botonComprar.classList.add('btn-success', 'active');
-        botonComprar.classList.remove('btn-outline-secondary');
-        botonVender.classList.remove('btn-danger', 'active');
-        botonVender.classList.add('btn-outline-secondary');
-        botonConfirmar.className = 'btn w-100 btn-success boton-confirmar';
-
-        popularSelector(selectorPrincipal, todasLasCriptos, 'BTC');
-
-        campoPagarCon.style.display = 'block';
-        campoRecibirEn.style.display = 'none';
+    // Función para mostrar el saldo. Recibe el ticker explícitamente.
+    function mostrarSaldo(ticker) {
+        if (!ticker) {
+            spanSaldoDisponible.text('--');
+            return;
+        }
+        const saldo = billetera[ticker] || '0.00';
+        const saldoFormateado = parseFloat(saldo).toFixed(8);
+        spanSaldoDisponible.text(`${saldoFormateado} ${ticker}`);
     }
 
-    function activarModoVenta() {
-        inputAccion.value = 'vender'; // Asegura que el valor sea 'vender'
-        
-        botonConfirmar.textContent = 'VENDER';
-        botonVender.classList.add('btn-danger', 'active');
-        botonVender.classList.remove('btn-outline-secondary');
-        botonComprar.classList.remove('btn-success', 'active');
-        botonComprar.classList.add('btn-outline-secondary');
-        botonConfirmar.className = 'btn w-100 btn-danger boton-confirmar';
-        
-        popularSelector(selectorPrincipal, monedasPropias, monedasPropias.length > 0 ? monedasPropias[0].ticker : null);
 
-        campoPagarCon.style.display = 'none';
-        campoRecibirEn.style.display = 'block';
+    // --- LÓGICA DE CONTROL DEL FORMULARIO ---
+
+    function cambiarModo(modo) {
+        const esCompra = modo === 'comprar';
+        inputAccion.val(modo);
+        
+        // Actualizar la interfaz visual
+        botonConfirmar.text(esCompra ? 'COMPRAR' : 'VENDER').toggleClass('btn-success', esCompra).toggleClass('btn-danger', !esCompra);
+        botonComprar.toggleClass('active btn-success', esCompra).toggleClass('btn-outline-secondary', !esCompra);
+        botonVender.toggleClass('active btn-danger', !esCompra).toggleClass('btn-outline-secondary', esCompra);
+        
+        campoPagarCon.toggle(esCompra);
+        campoRecibirEn.toggle(!esCompra);
+
+        // Habilitar/deshabilitar los selectores
+        selectorPagarCon.prop('disabled', !esCompra);
+        selectorRecibirEn.prop('disabled', esCompra);
+        
+        // Poblar el selector principal y obtener el ticker seleccionado
+        let tickerParaSaldo = '';
+        if (esCompra) {
+            // Filtramos la lista para excluir 'USDT' antes de poblar el selector.
+            const criptosSinUSDT = todasLasCriptos.filter(cripto => cripto.ticker !== 'USDT');
+            popularSelector(selectorPrincipal, criptosSinUSDT, 'BTC');
+
+            // En modo compra, el saldo que importa es el de la moneda de pago
+            tickerParaSaldo = selectorPagarCon.val();
+        } else {
+            const tickerPorDefecto = monedasPropias.length > 0 ? monedasPropias[0].ticker : null;
+            // En modo venta, el saldo que importa es el de la moneda principal (que acabamos de establecer)
+            tickerParaSaldo = popularSelector(selectorPrincipal, monedasPropias, tickerPorDefecto);
+        }
+
+        // Llamamos a mostrarSaldo con el ticker que sabemos que es correcto AHORA MISMO.
+        mostrarSaldo(tickerParaSaldo);
     }
-
-    // 4. ASIGNACIÓN DE EVENTOS E INICIALIZACIÓN
-    botonComprar.addEventListener('click', activarModoCompra);
-    botonVender.addEventListener('click', activarModoVenta);
     
-    activarModoCompra();
+    // --- EVENT LISTENERS ---
+
+    botonComprar.on('click', () => cambiarModo('comprar'));
+    botonVender.on('click', () => cambiarModo('vender'));
+
+    // Los listeners ahora simplemente llaman a mostrarSaldo con el valor actual del selector.
+    selectorPrincipal.on('change', () => {
+        if (inputAccion.val() === 'vender') {
+             mostrarSaldo(selectorPrincipal.val());
+        }
+    });
+
+    selectorPagarCon.on('change', () => {
+        if (inputAccion.val() === 'comprar') {
+             mostrarSaldo(selectorPagarCon.val());
+        }
+    });
+
+    // --- INICIALIZACIÓN ---
+    // Poblar los selectores secundarios una sola vez al inicio
+    popularSelector(selectorPagarCon, monedasPropias, 'USDT');
+    popularSelector(selectorRecibirEn, todasLasCriptos, 'USDT');
+    
+    // Iniciar en modo compra
+    cambiarModo('comprar');
 });

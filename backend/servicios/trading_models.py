@@ -53,7 +53,8 @@ def preparar_vista_trading():
     return {
         "criptos": criptos_disponibles,
         "monedas_propias": monedas_propias,
-        "historial": historial_formateado,  # <-- ¡Usamos la nueva lista!
+        "historial": historial_formateado,
         "lista_todas_las_criptos_json": json.dumps(lista_todas_criptos_js),
         "lista_monedas_propias_json": json.dumps(lista_monedas_propias_js),
+        "billetera_json": json.dumps(billetera)
     }
