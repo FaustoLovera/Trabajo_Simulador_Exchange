@@ -4,19 +4,8 @@ from backend.servicios.cotizaciones import renderizar_fragmento_tabla
 from config import VELAS_PATH, COTIZACIONES_PATH
 import json
 
-bp = Blueprint("api_ruta", __name__)
+bp = Blueprint("api_externa", __name__, url_prefix="/api")
 
-@bp.route("/")
-def index():
-    """
-    Página principal de la API externa.
-    --- 
-    responses:
-      200:
-        description: Devuelve la página principal del simulador.
-    """
-    criptos = obtener_datos_criptos_coingecko()
-    return render_template("index.html", criptos=criptos)
 
 @bp.route("/actualizar")
 def actualizar():
@@ -32,6 +21,7 @@ def actualizar():
     datos = obtener_datos_criptos_coingecko()
     return jsonify({"estado": "ok", "cantidad": len(datos)})
 
+
 @bp.route("/datos_tabla")
 def datos_tabla():
     """
@@ -46,7 +36,8 @@ def datos_tabla():
     """
     return renderizar_fragmento_tabla()
 
-@bp.route("/api/velas")
+
+@bp.route("/velas")
 def obtener_datos_velas():
     """
     Retorna los datos de velas desde un archivo JSON.

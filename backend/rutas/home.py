@@ -3,6 +3,7 @@ from backend.servicios.api_cotizaciones import obtener_datos_criptos_coingecko
 
 bp = Blueprint("home", __name__)
 
+
 @bp.route("/")
 def index():
     """
@@ -20,7 +21,8 @@ def index():
     """
     try:
         obtener_datos_criptos_coingecko()
-        print("👉 Finalizó la obtención de datos.")
+        print("👉 Datos de cotizaciones actualizados.")
     except Exception as e:
-        print(f"⚠️ Error al obtener datos: {e}")
+        print(f"⚠️ Error al actualizar cotizaciones: {e}")
+    
     return render_template("index.html")

@@ -3,7 +3,7 @@
 from flask import Blueprint, request, redirect, url_for, render_template, flash
 
 from backend.servicios.trading_logica import procesar_operacion_trading
-from backend.servicios.trading_models import preparar_contexto_para_trading
+from backend.servicios.trading_models import preparar_vista_trading
 
 bp = Blueprint("trading", __name__)
 
@@ -12,7 +12,7 @@ bp = Blueprint("trading", __name__)
 @bp.route("/trading", methods=["GET"])
 def mostrar_trading_page():
     """Muestra la interfaz principal de trading."""
-    contexto = preparar_contexto_para_trading()
+    contexto = preparar_vista_trading()
     return render_template("trading.html", **contexto)
 
 
@@ -20,8 +20,11 @@ def mostrar_trading_page():
 @bp.route("/trading/operar", methods=["POST"])
 def procesar_trading_form():
     """Procesa los datos del formulario de trading."""
+    
+    print(">>> DATOS RECIBIDOS DEL FORMULARIO:", request.form)
+    
     exito, mensaje = procesar_operacion_trading(request.form)
     flash(mensaje, "success" if exito else "danger")
-    
+
     # Siempre redirige de vuelta a la página principal de trading
     return redirect(url_for("trading.mostrar_trading_page"))

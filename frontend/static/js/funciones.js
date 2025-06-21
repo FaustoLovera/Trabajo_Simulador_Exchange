@@ -1,55 +1,36 @@
-// Este archivo ahora solo contiene funciones globales usadas en otras partes del sitio.
-
 function cargarTabla() {
-    fetch('/datos_tabla')
+    fetch('/api/datos_tabla')
         .then((res) => res.text())
         .then((html) => {
-            console.log("📥 HTML recibido:", html);
-            const cuerpo = document.getElementById('tabla-datos');
-            if (cuerpo) {
-                cuerpo.innerHTML = html;
+            console.log("📥 HTML de la tabla de cotizaciones recibido.");
+            const cuerpoTabla = document.getElementById('tabla-datos');
+            if (cuerpoTabla) {
+                cuerpoTabla.innerHTML = html;
             }
         })
         .catch((error) => {
-            console.error('❌ Error al cargar los datos:', error);
+            console.error('❌ Error al cargar los datos de la tabla:', error);
         });
 }
 
 function actualizarDatosCada15Segundos() {
     setInterval(() => {
-        fetch('/actualizar')
+        fetch('/api/actualizar')
             .then((res) => res.json())
             .then((data) => {
-                console.log('✅ Datos actualizados:', data);
+                console.log('✅ Datos de cotizaciones actualizados:', data);
                 cargarTabla();
             })
             .catch((error) => {
-                console.error('❌ Error al actualizar datos:', error);
+                console.error('❌ Error al actualizar los datos:', error);
             });
-    }, 15000);
+    }, 15000); // Actualizar cada 15 segundos
 }
 
-// La lógica del `parInput` también se queda si se usa en otra página.
-function actualizarPar() {
-    const criptoSelect = document.getElementById("cripto");
-    const parInput = document.getElementById("par");
-    if (criptoSelect && parInput) {
-        parInput.value = criptoSelect.value + "USDT";
-    }
-}
-
-
-// Inicialización para las páginas que usen estas funciones
 document.addEventListener('DOMContentLoaded', () => {
-    // Estas funciones solo se ejecutarán si la página actual
-    // es la correcta (p.ej. la de Cotizaciones)
     if (document.getElementById('tabla-datos')) {
+        console.log("🚀 Inicializando carga de tabla de cotizaciones.");
         cargarTabla();
         actualizarDatosCada15Segundos();
-    }
-    if (document.getElementById('par')) {
-        const criptoSelect = document.getElementById("cripto");
-        actualizarPar();
-        criptoSelect.addEventListener("change", actualizarPar);
     }
 });

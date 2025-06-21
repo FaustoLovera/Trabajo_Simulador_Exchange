@@ -11,6 +11,7 @@ def obtener_todas_las_cotizaciones():
     except FileNotFoundError:
         return []
 
+
 def envolver_variacion_coloreada(valor, con_signo_dolar=False):
     clase = "positivo" if valor > 0 else "negativo"
     sufijo = (
@@ -62,7 +63,9 @@ def obtener_tabla_criptos():
         [
             cripto["id"],
             f"<img src='{cripto['logo']}' width='20' class='logo-cripto'> <span class='nombre-cripto'>{cripto['nombre']}</span> <span class='ticker-cripto'>({cripto['ticker']})</span>",
-            envolver_variacion_coloreada(Decimal(str(cripto["precio_usd"])), con_signo_dolar=True),
+            envolver_variacion_coloreada(
+                Decimal(str(cripto["precio_usd"])), con_signo_dolar=True
+            ),
             envolver_variacion_coloreada(Decimal(str(cripto["1h_%"]))),
             envolver_variacion_coloreada(Decimal(str(cripto["24h_%"]))),
             envolver_variacion_coloreada(Decimal(str(cripto["7d_%"]))),
@@ -80,6 +83,7 @@ def obtener_tabla_criptos():
 
     return tabla
 
+
 def renderizar_fragmento_tabla():
     """
     Renderiza el fragmento HTML de la tabla de cotizaciones.
@@ -91,11 +95,13 @@ def renderizar_fragmento_tabla():
         "text-start px-3",  # para #
         "text-start px-3",  # para Nombre
         "text-start px-3",  # para Precio
-        "text-end px-3",    # para 1h
-        "text-end px-3",    # para 24h
-        "text-end px-3",    # para 7d
-        "text-end px-3",    # para Cap. Mercado
-        "text-end px-3",    # para Volumen
-        "text-end px-3",    # para Suministro
+        "text-end px-3",  # para 1h
+        "text-end px-3",  # para 24h
+        "text-end px-3",  # para 7d
+        "text-end px-3",  # para Cap. Mercado
+        "text-end px-3",  # para Volumen
+        "text-end px-3",  # para Suministro
     ]
-    return render_template("fragmento_tabla.html", tabla=tabla, clases_por_columna=clases_por_columna)
+    return render_template(
+        "fragmento_tabla.html", tabla=tabla, clases_por_columna=clases_por_columna
+    )

@@ -1,6 +1,9 @@
 from decimal import Decimal
 import requests
-from backend.servicios.velas_logica import guardar_datos_cotizaciones, guardar_datos_velas
+from backend.servicios.velas_logica import (
+    guardar_datos_cotizaciones,
+    guardar_datos_velas,
+)
 from config import COINGECKO_URL, BINANCE_URL, CANTIDAD_CRIPTOMONEDAS, CANTIDAD_VELAS
 
 
@@ -54,27 +57,34 @@ def obtener_datos_criptos_coingecko():
     print(f"✅ Estado de la respuesta: {respuesta.status_code}")
 
     datos = respuesta.json()
-    resultado = list(map(
-        lambda par: {
-            "id": par[0],
-            "nombre": par[1].get("name"),
-            "ticker": par[1].get("symbol", "").upper(),
-            "logo": par[1].get("image"),
-            "precio_usd": Decimal(str(par[1].get("current_price"))),
-            "1h_%": Decimal(str(par[1].get("price_change_percentage_1h_in_currency"))),
-            "24h_%": Decimal(str(par[1].get("price_change_percentage_24h_in_currency"))),
-            "7d_%": Decimal(str(par[1].get("price_change_percentage_7d_in_currency"))),
-            "market_cap": Decimal(str(par[1].get("market_cap"))),
-            "volumen_24h": Decimal(str(par[1].get("total_volume"))),
-            "circulating_supply": Decimal(str(par[1].get("circulating_supply"))),
-        },
-        enumerate(datos, start=1)
-    ))
+    resultado = list(
+        map(
+            lambda par: {
+                "id": par[0],
+                "nombre": par[1].get("name"),
+                "ticker": par[1].get("symbol", "").upper(),
+                "logo": par[1].get("image"),
+                "precio_usd": Decimal(str(par[1].get("current_price"))),
+                "1h_%": Decimal(
+                    str(par[1].get("price_change_percentage_1h_in_currency"))
+                ),
+                "24h_%": Decimal(
+                    str(par[1].get("price_change_percentage_24h_in_currency"))
+                ),
+                "7d_%": Decimal(
+                    str(par[1].get("price_change_percentage_7d_in_currency"))
+                ),
+                "market_cap": Decimal(str(par[1].get("market_cap"))),
+                "volumen_24h": Decimal(str(par[1].get("total_volume"))),
+                "circulating_supply": Decimal(str(par[1].get("circulating_supply"))),
+            },
+            enumerate(datos, start=1),
+        )
+    )
 
     print(f"💡 Total de criptos procesadas: {len(resultado)}")
     guardar_datos_cotizaciones(resultado)
     return resultado
-
 
 
 def obtener_velas_binance():

@@ -1,58 +1,30 @@
 [
     {
-        "id": 4,
-        "timestamp": "2025-06-20T20:26:59.403998",
-        "tipo": "compra",
-        "origen": {
-            "ticker": "USDT",
-            "cantidad": "1042.65402846"
-        },
-        "destino": {
-            "ticker": "KCS",
-            "cantidad": "94.78672986"
-        },
-        "valor_usd": "1042.65"
-    },
-    {
-        "id": 3,
-        "timestamp": "2025-06-20T20:26:26.389535",
-        "tipo": "compra",
-        "origen": {
-            "ticker": "USDT",
-            "cantidad": "200.00000000"
-        },
-        "destino": {
-            "ticker": "XRP",
-            "cantidad": "94.78672986"
-        },
-        "valor_usd": "200.00"
-    },
-    {
         "id": 2,
-        "timestamp": "2025-06-20T20:26:04.398852",
-        "tipo": "compra",
+        "timestamp": "2025-06-20T21:28:46.873386",
+        "tipo": "venta",
         "origen": {
-            "ticker": "USDT",
-            "cantidad": "309.29700000"
+            "ticker": "BNB",
+            "cantidad": "10.00000000"
         },
         "destino": {
-            "ticker": "BTC",
-            "cantidad": "0.00300000"
+            "ticker": "USDT",
+            "cantidad": "6418.20000000"
         },
-        "valor_usd": "309.30"
+        "valor_usd": "6418.20"
     },
     {
         "id": 1,
-        "timestamp": "2025-06-20T20:02:24.008027",
+        "timestamp": "2025-06-20T21:17:08.637730",
         "tipo": "compra",
         "origen": {
             "ticker": "USDT",
-            "cantidad": "1100.00000000"
+            "cantidad": "6414.90000000"
         },
         "destino": {
-            "ticker": "KCS",
-            "cantidad": "100.00000000"
+            "ticker": "BNB",
+            "cantidad": "10.00000000"
         },
-        "valor_usd": "1100.00"
+        "valor_usd": "6414.90"
     }
 ]

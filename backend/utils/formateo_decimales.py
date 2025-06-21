@@ -7,6 +7,7 @@ def formato_valor(valor, decimales=2, umbral=0.0001, simbolo="$"):
     except (TypeError, ValueError):
         return "-"
 
+
 def formato_cantidad(valor, decimales=8, umbral=0.00000001):
     try:
         val = float(valor)
@@ -15,6 +16,7 @@ def formato_cantidad(valor, decimales=8, umbral=0.00000001):
         return f"{val:.{decimales}f}"
     except (TypeError, ValueError):
         return "-"
+
 
 def registrar_filtros(app):
     app.jinja_env.filters["formato_valor"] = formato_valor

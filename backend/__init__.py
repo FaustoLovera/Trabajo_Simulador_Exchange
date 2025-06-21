@@ -3,6 +3,7 @@ from config import FLASK_SECRET_KEY
 from backend.utils.formateo_decimales import registrar_filtros
 from backend.rutas import registrar_rutas
 
+
 def crear_app():
     app = Flask(
         __name__,

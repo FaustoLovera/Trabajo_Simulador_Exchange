@@ -12,7 +12,12 @@ def guardar_datos_cotizaciones(data):
 
     try:
         with open(COTIZACIONES_PATH, "w") as archivo:
-            json.dump(data, archivo, indent=4, default=lambda o: float(o) if isinstance(o, Decimal) else o)
+            json.dump(
+                data,
+                archivo,
+                indent=4,
+                default=lambda o: float(o) if isinstance(o, Decimal) else o,
+            )
         print("✅ Datos guardados correctamente")
     except Exception as e:
         print("❌ Error al guardar el archivo:", e)
@@ -33,7 +38,12 @@ def guardar_datos_velas(data):
 
     try:
         with open(VELAS_PATH, "w") as archivo:
-            json.dump(data, archivo, indent=4, default=lambda o: float(o) if isinstance(o, Decimal) else o)
+            json.dump(
+                data,
+                archivo,
+                indent=4,
+                default=lambda o: float(o) if isinstance(o, Decimal) else o,
+            )
         print("✅ Datos guardados correctamente")
     except Exception as e:
         print("❌ Error al guardar el archivo:", e)

@@ -6,6 +6,7 @@ from backend.acceso_datos.datos_billetera import cargar_billetera
 
 bp = Blueprint("billetera", __name__)
 
+
 @bp.route("/billetera")
 def mostrar_billetera():
     """
@@ -71,5 +72,7 @@ def render_fragmento_historial():
     historial = cargar_historial()
     for h in historial:
         h["color"] = "green" if h["tipo"] == "compra" else "red"
-        h["cantidad"] = str(Decimal(h["cantidad"]).quantize(Decimal("0.00000001"), rounding=ROUND_DOWN))
+        h["cantidad"] = str(
+            Decimal(h["cantidad"]).quantize(Decimal("0.00000001"), rounding=ROUND_DOWN)
+        )
     return render_template("fragmento_historial.html", historial=historial)

@@ -1,82 +1,75 @@
-// comportamientoFormulario.js (VERSIÓN FINAL Y ROBUSTA)
-
-// Esperamos a que tanto el HTML como las variables globales (todasLasCriptos) estén listos.
 document.addEventListener('DOMContentLoaded', () => {
+    // Si no es la página de trading, no hacer nada.
+    if (!document.getElementById('formulario-trading')) return;
 
     // 1. SELECCIÓN DE ELEMENTOS
-    const selectorPrincipal = $('#cripto'); // Usamos jQuery para consistencia con Select2
+    const selectorPrincipal = $('#cripto');
     const selectorPagarCon = $('#moneda-pago');
     const selectorRecibirEn = $('#moneda-recibir');
 
     const botonComprar = document.querySelector('.boton-comprar');
     const botonVender = document.querySelector('.boton-vender');
     const botonConfirmar = document.querySelector('.boton-confirmar');
+    const inputAccion = document.getElementById('accion'); // El campo oculto
+    
     const campoPagarCon = document.getElementById('campo-pagar-con');
     const campoRecibirEn = document.getElementById('campo-recibir-en');
     
-    // Inicializamos todos los selectores con el plugin Select2 desde el principio
-    selectorPrincipal.select2({ width: '100%' });
-    selectorPagarCon.select2({ width: '100%' });
-    selectorRecibirEn.select2({ width: '100%' });
+    // Inicialización de Select2
+    selectorPrincipal.select2({ theme: "bootstrap-5", width: '100%' });
+    selectorPagarCon.select2({ theme: "bootstrap-5", width: '100%' });
+    selectorRecibirEn.select2({ theme: "bootstrap-5", width: '100%' });
 
-
-    // 2. FUNCIÓN AUXILIAR PARA RELLENAR EL SELECTOR PRINCIPAL
-    function actualizarSelectorPrincipal(listaDeMonedas) {
-        if (!selectorPrincipal.length) return; // Chequea si el elemento existe
-
-        const valorSeleccionado = selectorPrincipal.val();
-        selectorPrincipal.empty(); // Vacía las opciones usando el método de jQuery
-
-        listaDeMonedas.forEach(moneda => {
-            const option = new Option(moneda.nombre, moneda.ticker, false, false);
-            selectorPrincipal.append(option);
+    // 2. FUNCIÓN PARA POBLAR SELECTORES
+    function popularSelector(selector, lista, valorPorDefecto) {
+        selector.empty();
+        lista.forEach(moneda => {
+            const option = new Option(moneda.nombre, moneda.ticker);
+            selector.append(option);
         });
-
-        // Intentar re-seleccionar el valor si aún es válido
-        if (listaDeMonedas.some(m => m.ticker === valorSeleccionado)) {
-            selectorPrincipal.val(valorSeleccionado);
+        if (valorPorDefecto && lista.some(m => m.ticker === valorPorDefecto)) {
+            selector.val(valorPorDefecto).trigger('change');
+        } else {
+            selector.trigger('change');
         }
-
-        // Disparamos el evento 'change' de Select2 para notificar a todos los scripts
-        selectorPrincipal.trigger('change');
     }
 
     // 3. FUNCIONES PARA CAMBIAR DE MODO
-    const activarModoCompra = () => {
-        // ... (código para cambiar estilos)
+    function activarModoCompra() {
+        inputAccion.value = 'comprar'; // Asegura que el valor sea 'comprar'
+        
         botonConfirmar.textContent = 'COMPRAR';
-        botonComprar.className = 'btn w-50 btn-success active boton-comprar';
-        botonVender.className = 'btn w-50 btn-outline-secondary boton-vender';
+        botonComprar.classList.add('btn-success', 'active');
+        botonComprar.classList.remove('btn-outline-secondary');
+        botonVender.classList.remove('btn-danger', 'active');
+        botonVender.classList.add('btn-outline-secondary');
         botonConfirmar.className = 'btn w-100 btn-success boton-confirmar';
 
-        actualizarSelectorPrincipal(todasLasCriptos); // Rellena con la lista completa
+        popularSelector(selectorPrincipal, todasLasCriptos, 'BTC');
 
-        if (campoPagarCon) campoPagarCon.style.display = 'block';
-        if (campoRecibirEn) campoRecibirEn.style.display = 'none';
-    };
+        campoPagarCon.style.display = 'block';
+        campoRecibirEn.style.display = 'none';
+    }
 
-    const activarModoVenta = () => {
-        // ... (código para cambiar estilos)
+    function activarModoVenta() {
+        inputAccion.value = 'vender'; // Asegura que el valor sea 'vender'
+        
         botonConfirmar.textContent = 'VENDER';
-        botonComprar.className = 'btn w-50 btn-outline-secondary boton-comprar';
-        botonVender.className = 'btn w-50 btn-danger active boton-vender';
+        botonVender.classList.add('btn-danger', 'active');
+        botonVender.classList.remove('btn-outline-secondary');
+        botonComprar.classList.remove('btn-success', 'active');
+        botonComprar.classList.add('btn-outline-secondary');
         botonConfirmar.className = 'btn w-100 btn-danger boton-confirmar';
         
-        actualizarSelectorPrincipal(monedasPropias); // Rellena solo con las monedas del usuario
+        popularSelector(selectorPrincipal, monedasPropias, monedasPropias.length > 0 ? monedasPropias[0].ticker : null);
 
-        if (campoPagarCon) campoPagarCon.style.display = 'none';
-        if (campoRecibirEn) campoRecibirEn.style.display = 'block';
-    };
+        campoPagarCon.style.display = 'none';
+        campoRecibirEn.style.display = 'block';
+    }
 
     // 4. ASIGNACIÓN DE EVENTOS E INICIALIZACIÓN
-    if (botonComprar && botonVender) {
-        botonComprar.addEventListener('click', activarModoCompra);
-        botonVender.addEventListener('click', activarModoVenta);
-    }
+    botonComprar.addEventListener('click', activarModoCompra);
+    botonVender.addEventListener('click', activarModoVenta);
     
-    // Estado inicial: se activa el modo compra, que a su vez llama a actualizarSelectorPrincipal
-    // y configura todo en el orden correcto.
     activarModoCompra();
-
-    // La lógica para el label de Monto/Total no cambia y puede permanecer aquí si lo deseas.
 });
