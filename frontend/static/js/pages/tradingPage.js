@@ -1,15 +1,12 @@
-import { DOMElements } from './domElements.js';
-import { UIState } from './uiState.js';
-import { UIUpdater } from './uiUpdater.js';
-import { FormLogic } from './formLogic.js';
+import { DOMElements } from '../components/domElements.js';
+import { UIState } from '../components/uiState.js';
+import { UIUpdater } from '../components/uiUpdater.js';
+import { FormLogic } from '../components/formLogic.js';
+import { initializeChart } from '../components/renderizarGraficoVelas.js';
 
 // Este es el punto de entrada principal. Orquesta todos los módulos.
 document.addEventListener('DOMContentLoaded', () => {
 
-    /**
-     * Obtiene los datos del historial de transacciones desde la API.
-     * @returns {Promise<Array>}
-     */
     async function fetchHistorial() {
         try {
             const response = await fetch('/api/historial');
@@ -17,14 +14,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return await response.json();
         } catch (error) {
             console.error("Error al cargar historial:", error);
-            return []; // Devuelve un array vacío en caso de error
+            return [];
         }
     }
     
-    // --- LÓGICA DE CONTROL DE ALTO NIVEL ---
     function cambiarModo(modo) {
         DOMElements.inputAccion.val(modo);
-        
         UIUpdater.actualizarBotones();
         UIUpdater.actualizarVisibilidadCampos();
         
@@ -43,23 +38,18 @@ document.addEventListener('DOMContentLoaded', () => {
         UIUpdater.resetSlider();
     }
 
-    // --- CONFIGURACIÓN DE EVENT LISTENERS ---
     function setupEventListeners() {
         DOMElements.botonComprar.on('click', () => cambiarModo('comprar'));
         DOMElements.botonVender.on('click', () => cambiarModo('vender'));
 
         DOMElements.selectorPrincipal.on('change', () => {
             UIUpdater.actualizarLabelMonto();
-            if (!UIState.esModoCompra()) {
-                UIUpdater.mostrarSaldo(UIState.getTickerPrincipal());
-            }
+            if (!UIState.esModoCompra()) UIUpdater.mostrarSaldo(UIState.getTickerPrincipal());
         });
 
         DOMElements.selectorPagarCon.on('change', () => {
             UIUpdater.actualizarLabelMonto();
-            if (UIState.esModoCompra()) {
-                UIUpdater.mostrarSaldo(UIState.getTickerPago());
-            }
+            if (UIState.esModoCompra()) UIUpdater.mostrarSaldo(UIState.getTickerPago());
         });
         
         DOMElements.selectorRecibirEn.on('change', UIUpdater.actualizarLabelMonto);
@@ -71,24 +61,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- INICIALIZACIÓN ---
     async function initialize() {
-        // Inicializar Select2 en todos los selectores
+        // Inicializar Select2
         [DOMElements.selectorPrincipal, DOMElements.selectorPagarCon, DOMElements.selectorRecibirEn].forEach(sel => {
             sel.select2({ width: '100%', dropdownCssClass: 'text-dark' });
         });
         
-        // Poblar selectores secundarios una sola vez
+        // Poblar selectores
         FormLogic.popularSelector(DOMElements.selectorPagarCon, window.monedasPropias, 'USDT');
         FormLogic.popularSelector(DOMElements.selectorRecibirEn, window.todasLasCriptos, 'USDT');
         
         setupEventListeners();
 
-        // Cargar y renderizar el historial de transacciones
+        // Cargar y renderizar datos asíncronos
         const historial = await fetchHistorial();
         UIUpdater.renderHistorial(historial);
         
-        // Iniciar en modo compra por defecto
+        initializeChart();
+        
         cambiarModo('comprar');
     }
 

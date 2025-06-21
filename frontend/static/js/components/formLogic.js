@@ -1,5 +1,5 @@
 import { DOMElements } from './domElements.js';
-import { UIState } from './uiState.js';
+import { UIState } from './uiState.js'; // Esta ruta era incorrecta, ahora está bien.
 
 // Contiene la lógica de negocio del formulario, como poblar selectores y cálculos.
 export const FormLogic = {

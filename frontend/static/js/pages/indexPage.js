@@ -1,6 +1,6 @@
 // Este es el punto de entrada para la página de cotizaciones (index.html).
-import { triggerActualizacionDatos } from './cotizacionesApiService.js';
-import { renderTabla } from './tablaCotizacionesUI.js';
+import { triggerActualizacionDatos } from '../services/cotizacionesApiService.js';
+import { renderTabla } from '../components/tablaCotizacionesUI.js';
 
 const UPDATE_INTERVAL_MS = 15000; // 15 segundos
 

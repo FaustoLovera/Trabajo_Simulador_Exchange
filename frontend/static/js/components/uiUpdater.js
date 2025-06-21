@@ -1,6 +1,5 @@
 import { DOMElements } from './domElements.js';
 import { UIState } from './uiState.js';
-import { formatoValor, formatoCantidad } from './formatters.js';
 
 // Contiene todas las funciones que modifican visualmente el DOM.
 export const UIUpdater = {
@@ -46,7 +45,6 @@ export const UIUpdater = {
             DOMElements.spanSaldoDisponible.text('--');
             return;
         }
-        // Asume que 'billetera' es una variable global disponible (desde el HTML)
         const saldo = window.billetera[ticker] || '0.00';
         const saldoFormateado = parseFloat(saldo).toFixed(8);
         DOMElements.spanSaldoDisponible.text(`${saldoFormateado} ${ticker}`);
@@ -65,35 +63,29 @@ export const UIUpdater = {
         if (!tablaHistorial.length) return;
 
         if (historialData.length === 0) {
-            tablaHistorial.html(
-                '<tr><td colspan="5" class="text-center text-muted py-3">No hay transacciones en el historial.</td></tr>'
-            );
+            tablaHistorial.html('<tr><td colspan="5" class="text-center text-muted py-3">No hay transacciones en el historial.</td></tr>');
             return;
         }
 
-        const historialHTML = historialData
-            .map((item) => {
-                const fecha = new Date(item.timestamp).toLocaleDateString();
-                const hora = new Date(item.timestamp).toLocaleTimeString();
-                const claseTipo = item.tipo === 'compra' ? 'text-success' : 'text-danger';
-                const par =
-                    item.tipo === 'compra'
-                        ? `${item.destino.ticker}/${item.origen.ticker}`
-                        : `${item.origen.ticker}/${item.destino.ticker}`;
-                const cantidad = item.tipo === 'compra' ? item.destino.cantidad : item.origen.cantidad;
-                const tickerCantidad = item.tipo === 'compra' ? item.destino.ticker : item.origen.ticker;
+        const historialHTML = historialData.map((item) => {
+            const fecha = new Date(item.timestamp).toLocaleDateString();
+            const hora = new Date(item.timestamp).toLocaleTimeString();
+            const claseTipo = item.tipo === 'compra' ? 'text-success' : 'text-danger';
+            const par = item.tipo === 'compra' ? `${item.destino.ticker}/${item.origen.ticker}` : `${item.origen.ticker}/${item.destino.ticker}`;
+            const cantidad = item.tipo === 'compra' ? item.destino.cantidad : item.origen.cantidad;
+            const tickerCantidad = item.tipo === 'compra' ? item.destino.ticker : item.origen.ticker;
+            const valorFormateado = parseFloat(item.valor_usd).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
-                return `
+            return `
                 <tr>
                     <td class="text-start ps-3">${fecha} <span class="text-white-50">${hora}</span></td>
                     <td class="fw-bold">${par}</td>
                     <td class="${claseTipo}">${item.tipo.charAt(0).toUpperCase() + item.tipo.slice(1)}</td>
-                    <td>${formatoCantidad(cantidad)} ${tickerCantidad}</td>
-                    <td>${formatoValor(item.valor_usd)}</td>
+                    <td>${parseFloat(cantidad).toFixed(8)} ${tickerCantidad}</td>
+                    <td>${valorFormateado}</td>
                 </tr>
             `;
-            })
-            .join('');
+        }).join('');
 
         tablaHistorial.html(historialHTML);
     },
