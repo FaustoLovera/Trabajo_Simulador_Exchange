@@ -1,22 +1,21 @@
-from flask import Blueprint, jsonify, render_template
-import os 
+from flask import Blueprint, jsonify
 import json
-from backend.servicios.api_cotizaciones import obtener_datos_criptos_coingecko, obtener_velas_binance
+from backend.servicios.api_cotizaciones import obtener_datos_criptos_coingecko, obtener_velas_de_api
 from backend.acceso_datos.datos_cotizaciones import cargar_datos_cotizaciones
 from config import VELAS_PATH
-
 
 bp = Blueprint("api_externa", __name__, url_prefix="/api")
 
 
 @bp.route("/actualizar")
 def actualizar():
-    """Actualiza los datos de criptomonedas y velas desde las APIs externas."""
-    # ---> AÑADE ESTA LÍNEA EXACTAMENTE AQUÍ <---
+    """
+    Actualiza SOLO los datos de cotizaciones de criptomonedas desde CoinGecko.
+    Las velas ahora se obtienen bajo demanda.
+    """
     print("--- PING: Endpoint /api/actualizar ALCANZADO ---") 
-    
     datos_criptos = obtener_datos_criptos_coingecko()
-    obtener_velas_binance()
+    # Ya no llamamos a obtener_velas_binance() aquí.
     return jsonify({"estado": "ok", "cantidad_criptos": len(datos_criptos)})
 
 
@@ -26,16 +25,14 @@ def get_cotizaciones():
     return jsonify(cargar_datos_cotizaciones())
 
 
-@bp.route("/velas")
-def obtener_datos_velas():
-    """Retorna los datos de velas desde un archivo JSON de forma segura."""
+@bp.route("/velas/<string:ticker>/<string:interval>")
+def obtener_datos_velas_por_ticker(ticker, interval):
+    """
+    Ruta dinámica que retorna datos de velas para un ticker y un intervalo.
+    """
     try:
-        if not os.path.exists(VELAS_PATH) or os.path.getsize(VELAS_PATH) == 0:
-            return jsonify([])
-
-        with open(VELAS_PATH, "r", encoding="utf-8") as archivo:
-            datos = json.load(archivo)
+        datos = obtener_velas_de_api(ticker, interval)
         return jsonify(datos)
-    except (IOError, json.JSONDecodeError) as e:
-        print("❌ Error leyendo datos_velas.json:", e)
-        return jsonify({"error": "No se pudo leer el archivo de velas"}), 500
+    except Exception as e:
+        print(f"❌ Error en la ruta de velas para {ticker}/{interval}: {e}")
+        return jsonify([])

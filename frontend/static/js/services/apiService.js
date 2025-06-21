@@ -1,3 +1,5 @@
+// frontend/static/js/services/apiService.js
+
 // Centraliza todas las llamadas a la API del backend en un solo lugar.
 
 /**
@@ -43,10 +45,11 @@ export const fetchHistorial = () =>
     _fetchData('/api/historial', {}, 'No se pudo cargar el historial');
 
 /**
- * Obtiene los datos de las velas (candlestick) para el gráfico.
+ * Obtiene los datos de las velas (candlestick) para un ticker específico.
+ * @param {string} ticker - El ticker de la criptomoneda (ej. 'BTC').
  */
-export const fetchVelas = () => 
-    _fetchData('/api/velas', {}, 'No se pudo cargar los datos de velas');
+export const fetchVelas = (ticker, interval) => 
+    _fetchData(`/api/velas/${ticker}/${interval}`, {}, `No se pudo cargar los datos de velas para ${ticker} (${interval})`);
 
 /**
  * Solicita al backend que actualice los datos de las cotizaciones desde la fuente externa.

@@ -1,9 +1,6 @@
 :root {
     --color-verde: rgb(31, 191, 113);
     --color-rojo: rgb(226, 33, 52);
-    /* --bs-dark-rgb: 30, 30, 30 !important;
-    --bs-body-bg: 44, 44, 44 !important;
-    --bs-border-width: 1px solid rgb(219, 71, 71) !important; */
 }
 
 * {
@@ -23,6 +20,7 @@ body {
     overflow: hidden;
     width: 100%;
     max-width: 100%;
+    min-height: 500px; /* Asegura que el contenedor tenga altura incluso si el gráfico está vacío */
 }
 
 .text-verde {
@@ -36,25 +34,60 @@ body {
 /* FORMULARIO TRADING */
 
 .form-control {
-    background-color: 44, 44, 44 !important;
+    background-color: #444 !important;
+    color: #fff !important;
+    border-color: #555;
+}
+
+.form-select {
+    background-color: #444 !important;
+    color: #fff !important;
+    border-color: #555;
 }
 
 /* CAMBIO DE COLOR DEL PUNTO DEL SLIDER THUMB DINÁMICO */
 
 /* Chrome/Safari */
 input[type='range'].slider-compra::-webkit-slider-thumb {
-    background-color: rgb(31, 191, 113) !important; /* verde */
+    background-color: var(--color-verde) !important;
 }
 
 input[type='range'].slider-venta::-webkit-slider-thumb {
-    background-color: rgb(226, 33, 52) !important; /* rojo */
+    background-color: var(--color-rojo) !important;
 }
 
 /* Firefox */
 input[type='range'].slider-compra::-moz-range-thumb {
-    background-color: rgb(31, 191, 113) !important;
+    background-color: var(--color-verde) !important;
 }
 
 input[type='range'].slider-venta::-moz-range-thumb {
-    background-color: rgb(226, 33, 52) !important;
+    background-color: var(--color-rojo) !important;
+}
+
+/* === ESTILOS PARA EL OVERLAY DE ERROR DEL GRÁFICO === */
+.chart-overlay {
+    /* Posición absoluta para cubrir el contenedor padre (que tiene position: relative) */
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    /* Estilos para centrar el texto vertical y horizontalmente */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    /* Estilos visuales para que se vea bien */
+    background-color: rgba(30, 30, 30, 0.85); /* Fondo oscuro semi-transparente */
+    color: #f0c000; /* Color de texto del tema */
+    font-size: 1.2rem;
+    font-weight: 500;
+    text-align: center;
+    padding: 20px;
+    z-index: 10; /* Asegura que esté por encima del contenido del gráfico */
+    border-radius: 8px; /* Bordes redondeados */
+    /* Transición suave para aparecer y desaparecer */
+    transition: opacity 0.3s ease-in-out; 
 }

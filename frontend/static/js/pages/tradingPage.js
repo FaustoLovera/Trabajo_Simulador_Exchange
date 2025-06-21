@@ -1,28 +1,22 @@
-// Orquesta la inicialización y la lógica principal de la página de trading.
+// frontend/static/js/pages/tradingPage.js
 import { DOMElements } from '../components/domElements.js';
 import { UIState } from '../components/uiState.js';
 import { UIUpdater } from '../components/uiUpdater.js';
 import { FormLogic } from '../components/formLogic.js';
-import { initializeChart } from '../components/chartRenderer.js';
+import { initializeChart, updateChartData } from '../components/chartRenderer.js';
 import { fetchCotizaciones, fetchEstadoBilletera, fetchHistorial, fetchVelas } from '../services/apiService.js';
 
-console.log("1. tradingPage.js - Script cargado e importaciones OK");
-
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("2. tradingPage.js - DOMContentLoaded se disparó");
+    // Variables para mantener el estado actual del gráfico
+    let currentTicker = 'BTC';
+    let currentInterval = '1d';
 
-    // Variables globales para almacenar datos
-    window.allCryptos = [];
-    // Declaración explícita de window.ownedCoins
-    window.ownedCoins = []; 
+    // Variable para evitar llamadas múltiples mientras se carga una.
+    let isChartLoading = false;
 
-    /**
-     * Actualiza la interfaz de usuario según el modo de trading (compra/venta).
-     * @param {string} mode - El modo de operación ('comprar' o 'vender').
-     */
+    // --- (función setTradeMode sin cambios) ---
     function setTradeMode(mode) {
-        DOMElements.inputAccion.val(mode); 
-        
+        DOMElements.inputAccion.val(mode);
         UIUpdater.actualizarBotones();
         UIUpdater.actualizarVisibilidadCampos();
         let tickerForBalance = '';
@@ -31,109 +25,118 @@ document.addEventListener('DOMContentLoaded', () => {
             FormLogic.popularSelector(DOMElements.selectorPrincipal, cryptosWithoutUSDT, 'BTC');
             tickerForBalance = UIState.getTickerPago();
         } else {
-            // Usamos window.ownedCoins aquí.
-            // Si window.ownedCoins es null o undefined o vacío, puede causar problemas.
-            // Añadimos una comprobación defensiva aquí.
-            if (!window.ownedCoins || window.ownedCoins.length === 0) {
-                console.warn("WARN: window.ownedCoins no está disponible o está vacío al intentar configurar el modo de venta.");
-                // Podríamos intentar poblar con algo genérico o simplemente no hacer nada.
-                // Por ahora, si no hay ownedCoins, no poblamos el selector principal.
-                tickerForBalance = null; // O manejarlo de otra forma
-            } else {
-                const defaultTicker = window.ownedCoins[0].ticker; // Accede al primer elemento si existe
-                tickerForBalance = FormLogic.popularSelector(DOMElements.selectorPrincipal, window.ownedCoins, defaultTicker);
-            }
+            const defaultTicker = window.ownedCoins.length > 0 ? window.ownedCoins[0].ticker : null;
+            tickerForBalance = FormLogic.popularSelector(DOMElements.selectorPrincipal, window.ownedCoins, defaultTicker);
         }
-        
         UIUpdater.mostrarSaldo(tickerForBalance);
         UIUpdater.actualizarLabelMonto();
         UIUpdater.resetSlider();
     }
+    // --- (fin de setTradeMode) ---
+    
+    /**
+     * Función centralizada para obtener datos de velas y actualizar el gráfico.
+     * @param {string} ticker El ticker de la criptomoneda.
+     * @param {string} interval La temporalidad del gráfico.
+     */
+    async function actualizarGrafico(ticker, interval) {
+        if (isChartLoading) {
+            console.log("Ignorando petición de gráfico, ya hay una en curso.");
+            return;
+        }
+        isChartLoading = true;
+        try {
+            console.log(`📈 Pidiendo velas para ${ticker} en ${interval}...`);
+            const nuevosDatosVelas = await fetchVelas(ticker, interval);
+            updateChartData(nuevosDatosVelas);
+        } catch (error) {
+            console.error(`❌ Error al actualizar el gráfico para ${ticker}/${interval}:`, error);
+            updateChartData([]); // Muestra el overlay de error
+        } finally {
+            isChartLoading = false; // Permite nuevas peticiones
+        }
+    }
 
     /**
-     * Configura todos los event listeners para los elementos interactivos del formulario y el gráfico.
+     * Configura todos los event listeners de la página.
      */
     function setupEventListeners() {
         DOMElements.botonComprar.on('click', () => setTradeMode('comprar'));
         DOMElements.botonVender.on('click', () => setTradeMode('vender'));
 
+        // Listener del selector principal de criptomoneda
         DOMElements.selectorPrincipal.on('change', () => {
+            currentTicker = UIState.getTickerPrincipal();
             UIUpdater.actualizarLabelMonto();
             if (!UIState.esModoCompra()) {
-                // Aquí también puede ser que window.ownedCoins no esté listo si el usuario cambia a venta muy rápido.
-                // Pero la protección en setTradeMode debería mitigar esto.
-                UIUpdater.mostrarSaldo(UIState.getTickerPrincipal());
+                UIUpdater.mostrarSaldo(currentTicker);
             }
+            actualizarGrafico(currentTicker, currentInterval);
         });
 
+        // Listener para los botones de temporalidad
+        $('#timeframe-selector').on('click', '.timeframe-btn', function() {
+            const $btn = $(this);
+            if ($btn.hasClass('active')) return;
+
+            $('.timeframe-btn').removeClass('active');
+            $btn.addClass('active');
+
+            currentInterval = $btn.data('interval');
+            actualizarGrafico(currentTicker, currentInterval);
+        });
+
+        // Listeners del formulario que no afectan al gráfico
         DOMElements.selectorPagarCon.on('change', () => {
             UIUpdater.actualizarLabelMonto();
             if (UIState.esModoCompra()) UIUpdater.mostrarSaldo(UIState.getTickerPago());
         });
-        
         DOMElements.selectorRecibirEn.on('change', UIUpdater.actualizarLabelMonto);
         DOMElements.radioModoIngreso.on('change', UIUpdater.actualizarLabelMonto);
-
         DOMElements.sliderMonto.on('input', () => {
             const calculatedValue = FormLogic.calcularMontoSlider();
-            UIUpdater.setInputMonto(calculatedValue.toFixed(8)); 
+            UIUpdater.setInputMonto(calculatedValue.toFixed(8));
         });
     }
 
+    /**
+     * Función principal de inicialización.
+     */
     async function initialize() {
-        console.log("3. tradingPage.js - Entrando en initialize()");
         try {
-            console.log("4. tradingPage.js - A punto de llamar a Promise.all");
             const [cotizaciones, estadoBilletera, historial, velas] = await Promise.all([
                 fetchCotizaciones(),
                 fetchEstadoBilletera(),
                 fetchHistorial(),
-                fetchVelas()
+                fetchVelas(currentTicker, currentInterval) // Carga inicial con las variables de estado
             ]);
-            console.log("5. tradingPage.js - Promise.all completado con ÉXITO");
             
             window.allCryptos = cotizaciones;
-            // CORRECCIÓN: Asegurarse de usar 'ownedCoins' y filtrar correctamente
             window.ownedCoins = estadoBilletera.filter(moneda => parseFloat(moneda.cantidad) > 0);
-            console.log(`6. tradingPage.js - Variables globales pobladas: allCryptos=${window.allCryptos.length}, ownedCoins=${window.ownedCoins.length}`);
-
+            
             UIUpdater.renderHistorial(historial);
             initializeChart(velas);
-            console.log("7. tradingPage.js - Historial y gráfico renderizados");
-
+            
             [DOMElements.selectorPrincipal, DOMElements.selectorPagarCon, DOMElements.selectorRecibirEn].forEach(sel => {
                 sel.select2({ 
                     width: '100%', 
-                    dropdownCssClass: 'text-dark', 
-                    theme: 'bootstrap-5' 
+                    dropdownCssClass: 'text-dark',
+                    theme: 'bootstrap-5'
                 });
             });
-            console.log("8. tradingPage.js - Select2 inicializado");
 
-            // 5. Poblar los selectores con los datos ya cargados
-            // Asegurarse de que window.ownedCoins está disponible ANTES de poblar el selector
-            if (window.ownedCoins) {
-                FormLogic.popularSelector(DOMElements.selectorPagarCon, window.ownedCoins, 'USDT');
-            } else {
-                console.warn("WARN: window.ownedCoins no está disponible al poblar selectorPagarCon.");
-                // Poblar con un valor por defecto si ownedCoins no existe
-                FormLogic.popularSelector(DOMElements.selectorPagarCon, [{ticker: 'USDT', nombre: 'USDT'}], 'USDT');
-            }
-            // Siempre poblar el selector Recibir en con allCryptos
-            if (window.allCryptos) {
-                FormLogic.popularSelector(DOMElements.selectorRecibirEn, window.allCryptos, 'USDT');
-            } else {
-                console.warn("WARN: window.allCryptos no está disponible al poblar selectorRecibirEn.");
-            }
-            console.log("9. tradingPage.js - Selectores poblados");
+            FormLogic.popularSelector(DOMElements.selectorPagarCon, window.ownedCoins, 'USDT');
+            FormLogic.popularSelector(DOMElements.selectorRecibirEn, window.allCryptos, 'USDT');
             
             setupEventListeners();
-            setTradeMode('comprar'); // Iniciar en modo compra por defecto
-            console.log("10. tradingPage.js - Listeners y modo de trading configurados. ¡Inicialización COMPLETA!");
+            setTradeMode('comprar');
+            // Asegurarse de que el botón '1D' esté activo visualmente en la carga inicial
+            $('#timeframe-selector .timeframe-btn[data-interval="1d"]').addClass('active');
+
 
         } catch (error) {
-            console.error('--- ERROR FATAL CAPTURADO EN INITIALIZE ---', error); 
-            UIUpdater.mostrarMensajeError('No se pudieron cargar los datos esenciales para la página de trading. Por favor, recarga la página.');
+            console.error('Error fatal durante la inicialización:', error);
+            UIUpdater.mostrarMensajeError('No se pudieron cargar los datos esenciales para la página de trading.');
         }
     }
 

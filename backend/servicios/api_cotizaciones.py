@@ -1,6 +1,9 @@
+# backend/servicios/api_cotizaciones.py
+
 from decimal import Decimal
 import requests
-from backend.servicios.velas_logica import guardar_datos_cotizaciones, guardar_datos_velas
+# NOTA: Ya no necesitamos 'guardar_datos_velas' aquí
+from backend.servicios.velas_logica import guardar_datos_cotizaciones
 from config import COINGECKO_URL, BINANCE_URL, CANTIDAD_CRIPTOMONEDAS, CANTIDAD_VELAS
 from backend.utils.formatters import formato_numero_grande, formato_porcentaje, formato_valor_monetario
 
@@ -20,7 +23,7 @@ def obtener_datos_criptos_coingecko():
 
     try:
         respuesta = requests.get(COINGECKO_URL, params)
-        respuesta.raise_for_status()  # Lanza una excepción para errores HTTP (4xx o 5xx)
+        respuesta.raise_for_status()
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener datos de CoinGecko: {str(e)}")
         return []
@@ -61,41 +64,43 @@ def obtener_datos_criptos_coingecko():
         return []
 
     print(f"💡 Total de criptos procesadas: {len(resultado)}")
+    # Solo guardamos los datos de cotizaciones.
     guardar_datos_cotizaciones(resultado)
     return resultado
 
 
-def obtener_velas_binance():
+def obtener_velas_de_api(ticker, interval):
     """
-    Obtiene datos históricos de velas (Klines) diarias del par BTC/USDT.
+    Obtiene datos históricos de velas (Klines) diarias para un par específico vs USDT.
+    Esta función es llamada directamente por la ruta del API.
     """
+    # Construimos el símbolo dinámicamente. Ej: 'BTC' -> 'BTCUSDT'
+    # La API de Binance espera el símbolo completo.
     params = {
-        "symbol": "BTCUSDT",
-        "interval": "1d",
+        "symbol": f"{ticker.upper()}USDT",
+        "interval": interval,
         "limit": CANTIDAD_VELAS,
     }
     try:
         respuesta = requests.get(BINANCE_URL, params)
         respuesta.raise_for_status()
     except requests.exceptions.RequestException as e:
-        print(f"❌ Error al obtener datos de Binance: {str(e)}")
+        print(f"❌ Error al obtener datos de Binance para {ticker} ({interval}): {str(e)}")
         return []
 
-    print(f"✅ Estado de la respuesta Binance: {respuesta.status_code}")
+    print(f"✅ Estado de la respuesta Binance para {ticker} ({interval}): {respuesta.status_code}")
 
     datos = respuesta.json()
+    # Si la respuesta es exitosa pero no hay datos, 'datos' podría no ser una lista.
+    if not isinstance(datos, list):
+        print(f"⚠️ Respuesta inesperada de Binance para {ticker} ({interval}): {datos}")
+        return []
     resultado = [
         {
-            "time": int(vela[0] / 1000),
-            "open": str(Decimal(vela[1])),
-            "high": str(Decimal(vela[2])),
-            "low": str(Decimal(vela[3])),
-            "close": str(Decimal(vela[4])),
-            "volume": str(Decimal(vela[5])),
+            "time": int(vela[0] / 1000), "open": str(Decimal(vela[1])),
+            "high": str(Decimal(vela[2])), "low": str(Decimal(vela[3])),
+            "close": str(Decimal(vela[4])), "volume": str(Decimal(vela[5])),
         }
         for vela in datos
     ]
-    
-    print(f"💡 Total de velas procesadas: {len(resultado)}")
-    guardar_datos_velas(resultado)
     return resultado
