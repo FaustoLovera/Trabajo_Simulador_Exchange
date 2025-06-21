@@ -73,9 +73,7 @@
                         <div id="campo-pagar-con" style="display: none;">
                             <label for="moneda-pago" class="form-label">Pagar con</label>
                             <select class="form-select" id="moneda-pago" name="moneda-pago">
-                                {% for ticker, cantidad in monedas_propias.items() %}
-                                <option value="{{ ticker }}">{{ ticker }}</option>
-                                {% endfor %}
+                                <!-- Las opciones se poblarán dinámicamente con JS -->
                             </select>
                         </div>
 
@@ -83,9 +81,7 @@
                         <div id="campo-recibir-en" style="display: none;">
                             <label for="moneda-recibir" class="form-label">Recibir en</label>
                             <select class="form-select" id="moneda-recibir" name="moneda-recibir">
-                                {% for cripto in criptos %}
-                                <option value="{{ cripto['ticker'] }}">{{ cripto['ticker'] }}</option>
-                                {% endfor %}
+                                <!-- Las opciones se poblarán dinámicamente con JS -->
                             </select>
                         </div>
                     </div>
@@ -104,13 +100,16 @@
                 <div class="mb-3">
                     <label class="form-label d-block mb-2">Tipo de orden</label>
                     <div class="btn-group w-100" role="group">
-                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-mercado" value="mercado" autocomplete="off" checked required>
+                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-mercado" value="mercado"
+                            autocomplete="off" checked required>
                         <label class="btn btn-outline-primary rounded-start-pill" for="tipo-mercado">Mercado</label>
 
-                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-limite" value="limite" autocomplete="off">
+                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-limite" value="limite"
+                            autocomplete="off">
                         <label class="btn btn-outline-primary" for="tipo-limite">Límite</label>
 
-                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-stop-limit" value="stop-limit" autocomplete="off">
+                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-stop-limit" value="stop-limit"
+                            autocomplete="off">
                         <label class="btn btn-outline-primary rounded-end-pill" for="tipo-stop-limit">Stop-Limit</label>
                     </div>
                 </div>
@@ -119,10 +118,13 @@
                 <div class="mb-3">
                     <label class="form-label d-block mb-2">Ingresar por</label>
                     <div class="btn-group w-100" role="group">
-                        <input type="radio" class="btn-check" name="modo-ingreso" id="modo-monto" value="monto" autocomplete="off" checked required>
-                        <label class="btn btn-outline-primary rounded-start-pill" for="modo-monto">Monto (Cripto)</label>
+                        <input type="radio" class="btn-check" name="modo-ingreso" id="modo-monto" value="monto"
+                            autocomplete="off" checked required>
+                        <label class="btn btn-outline-primary rounded-start-pill" for="modo-monto">Monto
+                            (Cripto)</label>
 
-                        <input type="radio" class="btn-check" name="modo-ingreso" id="modo-total" value="total" autocomplete="off">
+                        <input type="radio" class="btn-check" name="modo-ingreso" id="modo-total" value="total"
+                            autocomplete="off">
                         <label class="btn btn-outline-primary rounded-end-pill" for="modo-total">Total (USD)</label>
                     </div>
                 </div>
@@ -170,7 +172,10 @@
                             </tr>
                         </thead>
                         <tbody id="tabla-historial">
-                            {% include "fragmento_historial.html" %}
+                            <!-- El contenido será renderizado aquí por tradingPage.js -->
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-3">Cargando historial...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -180,16 +185,19 @@
 
     <!-- ===== SECCIÓN SCRIPTS ===== -->
     <script>
-        const todasLasCriptos = JSON.parse('{{ lista_todas_las_criptos_json|safe }}');
-        const monedasPropias = JSON.parse('{{ lista_monedas_propias_json|safe }}');
-        const billetera = JSON.parse('{{ billetera_json|safe }}');
+        // Estas variables ahora se asignan a window para ser accesibles globalmente por los módulos
+        window.todasLasCriptos = JSON.parse('{{ lista_todas_las_criptos_json|safe }}');
+        window.monedasPropias = JSON.parse('{{ lista_monedas_propias_json|safe }}');
+        window.billetera = JSON.parse('{{ billetera_json|safe }}');
     </script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script defer
         src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
-    <script defer src="{{ url_for('static', filename='js/grafico_velas.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/comportamientoFormulario.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/renderizarGraficoVelas.js') }}"></script>
+
+    <!-- ===> CARGA DEL NUEVO SCRIPT PRINCIPAL MODULAR <=== -->
+    <script type="module" src="{{ url_for('static', filename='js/tradingPage.js') }}"></script>
 </body>
 
 </html>

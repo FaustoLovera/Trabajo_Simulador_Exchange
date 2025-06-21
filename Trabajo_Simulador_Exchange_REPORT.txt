@@ -1,0 +1,3104 @@
+==================================================
+=== REPORTE DE CÓDIGO CONSOLIDADO ===
+Proyecto: Trabajo_Simulador_Exchange
+Ruta: /Users/andreiveis/UADE/2do cuatrimestre/05_Algoritmos y Estructura de datos I/Trabajo_Simulador_Exchange
+Generado el: Sat Jun 21 11:50:09 -03 2025
+==================================================
+
+--- INFORMACIÓN DEL REPOSITORIO GIT ---
+Rama actual: dev
+Último commit: fc300ba - FIX - Visualizador de disponible (andreiveisuade, 11 hours ago)
+---
+
+--- ESTRUCTURA DEL DIRECTORIO ---
+.
+├── .gitignore
+├── backend
+│   ├── __init__.py
+│   ├── acceso_datos
+│   │   ├── datos_billetera.py
+│   │   ├── datos_cotizaciones.py
+│   │   └── datos_historial.py
+│   ├── app.py
+│   ├── rutas
+│   │   ├── __init__.py
+│   │   ├── api_externa.py
+│   │   ├── billetera_vista.py
+│   │   ├── home.py
+│   │   └── trading_vista.py
+│   ├── servicios
+│   │   ├── __init__.py
+│   │   ├── api_cotizaciones.py
+│   │   ├── cotizaciones.py
+│   │   ├── estado_billetera.py
+│   │   ├── trading_logica.py
+│   │   ├── trading_models.py
+│   │   └── velas_logica.py
+│   ├── swagger.yaml
+│   └── utils
+│       └── formateo_decimales.py
+├── config.py
+├── documentacion.md
+├── frontend
+│   ├── static
+│   │   ├── css
+│   │   ├── img
+│   │   └── js
+│   └── templates
+│       ├── billetera.html
+│       ├── fragmento_billetera.html
+│       ├── fragmento_historial.html
+│       ├── fragmento_tabla.html
+│       ├── index.html
+│       └── trading.html
+├── README.md
+└── requirements.txt
+
+12 directories, 30 files
+---
+
+==================================================
+=== ARCHIVO: ./.gitignore ===
+==================================================
+
+# ARCHIVOS PROPIOS NUESTROS
+/datos/datos_cotizaciones.json
+/datos/datos_velas.json
+/datos/billetera.json
+/datos/historial_operaciones.json
+
+
+# Python
+__pycache__/
+backend/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.env
+.venv
+env/
+venv/
+ENV/
+.pytest_cache/
+.coverage
+coverage.xml
+*.cover
+.hypothesis/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+__MACOSX/
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+.project
+.classpath
+*.sublime-workspace
+*.sublime-project
+
+# Frontend
+node_modules/
+/dist
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env.local
+.env.*.local
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# System Files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+datos/billetera.json
+datos/datos_cotizaciones.json
+datos/datos_velas.json
+*.pyc
+# D2 files
+*.d2
+diagrama.png
+
+
+==================================================
+=== ARCHIVO: ./backend/__init__.py ===
+==================================================
+
+from flask import Flask
+from config import FLASK_SECRET_KEY
+from backend.utils.formateo_decimales import registrar_filtros
+from backend.rutas import registrar_rutas
+
+
+def crear_app():
+    app = Flask(
+        __name__,
+        static_folder="../frontend/static",
+        template_folder="../frontend/templates",
+    )
+
+    app.secret_key = FLASK_SECRET_KEY
+
+    registrar_filtros(app)
+    registrar_rutas(app)
+
+    return app
+
+
+==================================================
+=== ARCHIVO: ./backend/acceso_datos/datos_billetera.py ===
+==================================================
+
+import json
+import os
+from decimal import Decimal, InvalidOperation
+from config import BILLETERA_PATH, BALANCE_INICIAL_USDT
+
+
+def cargar_billetera():
+    """
+    Carga la billetera desde el archivo JSON de forma segura.
+    Si el archivo no existe, está vacío o corrupto, crea una billetera inicial.
+    """
+    os.makedirs(os.path.dirname(BILLETERA_PATH), exist_ok=True)
+
+    if not os.path.exists(BILLETERA_PATH) or os.path.getsize(BILLETERA_PATH) == 0:
+        billetera_inicial = {"USDT": Decimal(BALANCE_INICIAL_USDT)}
+        guardar_billetera(billetera_inicial)
+        return billetera_inicial
+
+    try:
+        with open(BILLETERA_PATH, "r", encoding="utf-8") as f:
+            datos_cargados = json.load(f)
+            # Convierte todos los valores a Decimal, manejando posibles errores
+            billetera = {}
+            for ticker, cantidad_str in datos_cargados.items():
+                try:
+                    billetera[ticker] = Decimal(str(cantidad_str))
+                except InvalidOperation:
+                    print(
+                        f"Advertencia: Valor inválido para {ticker} en billetera.json. Se usará 0."
+                    )
+                    billetera[ticker] = Decimal("0")
+            return billetera
+    except (json.JSONDecodeError, FileNotFoundError):
+        print(
+            f"Advertencia: Archivo '{BILLETERA_PATH}' corrupto. Se reiniciará la billetera."
+        )
+        billetera_inicial = {"USDT": Decimal(BALANCE_INICIAL_USDT)}
+        guardar_billetera(billetera_inicial)
+        return billetera_inicial
+
+
+def guardar_billetera(billetera):
+    """
+    Guarda el estado de la billetera en el archivo JSON.
+    Convierte los valores Decimal a string para preservar la precisión.
+    """
+    os.makedirs(os.path.dirname(BILLETERA_PATH), exist_ok=True)
+
+    # Prepara la billetera para ser guardada, convirtiendo Decimal a string
+    billetera_serializable = {
+        ticker: str(cantidad) for ticker, cantidad in billetera.items()
+    }
+
+    with open(BILLETERA_PATH, "w", encoding="utf-8") as f:
+        json.dump(billetera_serializable, f, indent=4)
+
+
+==================================================
+=== ARCHIVO: ./backend/acceso_datos/datos_cotizaciones.py ===
+==================================================
+
+import json
+import os
+from decimal import Decimal, InvalidOperation
+from config import COTIZACIONES_PATH
+
+
+def obtener_precio(ticker):
+    """
+    Obtiene el precio de un ticker específico desde el archivo de cotizaciones.
+    Devuelve el precio como un objeto Decimal, o None si no se encuentra.
+    """
+    cotizaciones = cargar_datos_cotizaciones()
+    ticker_lower = ticker.lower()
+
+    for cripto in cotizaciones:
+        if cripto.get("ticker", "").lower() == ticker_lower:
+            # Aseguramos que devolvemos un Decimal válido
+            try:
+                return Decimal(str(cripto.get("precio_usd")))
+            except (InvalidOperation, TypeError):
+                return Decimal("0")  # Devuelve 0 si el precio es inválido
+
+    return None  # Retorna None si el ticker no se encuentra en la lista
+
+
+def cargar_datos_cotizaciones():
+    """
+    Función interna y segura para cargar todas las cotizaciones.
+    Maneja archivos inexistentes o corruptos.
+    """
+    if not os.path.exists(COTIZACIONES_PATH) or os.path.getsize(COTIZACIONES_PATH) == 0:
+        return []
+
+    try:
+        with open(COTIZACIONES_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, FileNotFoundError):
+        return []
+
+
+==================================================
+=== ARCHIVO: ./backend/acceso_datos/datos_historial.py ===
+==================================================
+
+import json
+import os
+from datetime import datetime
+from decimal import Decimal
+from config import HISTORIAL_PATH
+
+
+def cargar_historial():
+    """
+    Carga el historial de transacciones desde el archivo JSON.
+    Si el archivo no existe, está vacío o corrupto, devuelve una lista vacía.
+    """
+    if not os.path.exists(HISTORIAL_PATH) or os.path.getsize(HISTORIAL_PATH) == 0:
+        return []
+
+    try:
+        with open(HISTORIAL_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, FileNotFoundError):
+        print(
+            f"Advertencia: No se pudo leer o el archivo '{HISTORIAL_PATH}' está corrupto."
+        )
+        return []
+
+
+def guardar_en_historial(
+    tipo_operacion,
+    moneda_origen,
+    cantidad_origen,
+    moneda_destino,
+    cantidad_destino,
+    valor_usd,
+):
+    """
+    Guarda una nueva operación en el historial de transacciones.
+    """
+    # Asegurarse de que el directorio de datos exista
+    os.makedirs(os.path.dirname(HISTORIAL_PATH), exist_ok=True)
+
+    historial = cargar_historial()
+
+    # Crear el diccionario para la nueva operación
+    operacion = {
+        "id": len(historial) + 1,
+        "timestamp": datetime.now().isoformat(),
+        "tipo": tipo_operacion,
+        "origen": {"ticker": moneda_origen, "cantidad": str(cantidad_origen)},
+        "destino": {"ticker": moneda_destino, "cantidad": str(cantidad_destino)},
+        "valor_usd": str(valor_usd.quantize(Decimal("0.01"))),
+    }
+
+    # Añadir la nueva operación al principio de la lista
+    historial.insert(0, operacion)
+
+    # Escribir la lista completa de nuevo en el archivo
+    with open(HISTORIAL_PATH, "w", encoding="utf-8") as f:
+        json.dump(historial, f, indent=4)
+
+
+==================================================
+=== ARCHIVO: ./backend/app.py ===
+==================================================
+
+from flask import render_template
+from . import crear_app
+from flasgger import Swagger
+
+app = crear_app()
+swagger = Swagger(app)
+
+# http://localhost:5000/apidocs
+# Para ver la documentacion interactiva
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
+
+==================================================
+=== ARCHIVO: ./backend/rutas/__init__.py ===
+==================================================
+
+from .home import bp as home_bp
+from .trading_vista import bp as trading_bp
+from .billetera_vista import bp as billetera_bp
+from .api_externa import bp as api_ruta_bp
+
+
+def registrar_rutas(app):
+    app.register_blueprint(home_bp)
+    app.register_blueprint(trading_bp)
+    app.register_blueprint(billetera_bp)
+    app.register_blueprint(api_ruta_bp)
+
+
+==================================================
+=== ARCHIVO: ./backend/rutas/api_externa.py ===
+==================================================
+
+from flask import Blueprint, jsonify, render_template
+from backend.servicios.api_cotizaciones import obtener_datos_criptos_coingecko
+from backend.servicios.cotizaciones import renderizar_fragmento_tabla
+from config import VELAS_PATH, COTIZACIONES_PATH
+import json
+
+bp = Blueprint("api_externa", __name__, url_prefix="/api")
+
+
+@bp.route("/actualizar")
+def actualizar():
+    """
+    Actualiza los datos de criptomonedas desde CoinGecko.
+    ---
+    responses:
+      200:
+        description: Devuelve estado ok y la cantidad de criptomonedas obtenidas.
+        examples:
+          application/json: { "estado": "ok", "cantidad": 50 }
+    """
+    datos = obtener_datos_criptos_coingecko()
+    return jsonify({"estado": "ok", "cantidad": len(datos)})
+
+
+@bp.route("/datos_tabla")
+def datos_tabla():
+    """
+    Retorna el fragmento HTML de la tabla de cotizaciones.
+    ---
+    responses:
+      200:
+        description: Fragmento HTML de la tabla renderizado.
+        content:
+          text/html:
+            example: "<tr><td>BTC</td><td>63500</td></tr>"
+    """
+    return renderizar_fragmento_tabla()
+
+
+@bp.route("/velas")
+def obtener_datos_velas():
+    """
+    Retorna los datos de velas desde un archivo JSON.
+    ---
+    responses:
+      200:
+        description: Datos de velas en formato JSON.
+        content:
+          application/json:
+            example:
+              [
+                {"timestamp": 1714939200, "open": 65000, "close": 65500, "high": 66000, "low": 64500, "volume": 1200}
+              ]
+      500:
+        description: Error al leer el archivo.
+    """
+    try:
+        with open(VELAS_PATH, "r") as archivo:
+            datos = json.load(archivo)
+        return jsonify(datos)
+    except Exception as e:
+        print("❌ Error leyendo datos_velas.json:", e)
+        return jsonify({"error": "No se pudo leer el archivo"}), 500
+
+
+==================================================
+=== ARCHIVO: ./backend/rutas/billetera_vista.py ===
+==================================================
+
+from flask import Blueprint, render_template, jsonify
+from decimal import Decimal, ROUND_DOWN
+from backend.servicios.estado_billetera import estado_actual_completo
+from backend.acceso_datos.datos_historial import cargar_historial
+from backend.acceso_datos.datos_billetera import cargar_billetera
+
+bp = Blueprint("billetera", __name__)
+
+
+@bp.route("/billetera")
+def mostrar_billetera():
+    """
+    Muestra el estado completo de la billetera en una tabla HTML.
+    ---
+    responses:
+      200:
+        description: Renderiza la vista de billetera.
+        content:
+          text/html:
+            example: "<table><tr><td>BTC</td><td>0.5</td></tr></table>"
+    """
+    datos_billetera = estado_actual_completo()
+    return render_template("billetera.html", datos=datos_billetera)
+
+
+@bp.route("/estado")
+def estado():
+    """
+    Devuelve el contenido actual de la billetera en formato JSON.
+    ---
+    responses:
+      200:
+        description: JSON con los saldos actuales.
+        content:
+          application/json:
+            example: { "BTC": 0.5, "ETH": 2.0 }
+    """
+    return jsonify(cargar_billetera())
+
+
+@bp.route("/api/billetera")
+def render_fragmento_billetera():
+    """
+    Devuelve un fragmento HTML con los datos detallados de la billetera.
+    ---
+    responses:
+      200:
+        description: Fragmento HTML renderizado con estilo de ganancia/pérdida.
+        content:
+          text/html:
+            example: "<tr><td>BTC</td><td style='color:green'>+5%</td></tr>"
+    """
+    datos = estado_actual_completo()
+    for d in datos:
+        d["color_ganancia"] = "green" if d["ganancia_perdida"] >= 0 else "red"
+        d["color_porcentaje"] = "green" if d["porcentaje_ganancia"] >= 0 else "red"
+    return render_template("fragmento_billetera.html", datos=datos)
+
+
+@bp.route("/api/historial")
+def render_fragmento_historial():
+    """
+    Devuelve un fragmento HTML con el historial de transacciones.
+    ---
+    responses:
+      200:
+        description: Fragmento HTML con historial de compras y ventas.
+        content:
+          text/html:
+            example: "<tr><td>compra</td><td>BTC</td><td>0.1</td></tr>"
+    """
+    historial = cargar_historial()
+    for h in historial:
+        h["color"] = "green" if h["tipo"] == "compra" else "red"
+        h["cantidad"] = str(
+            Decimal(h["cantidad"]).quantize(Decimal("0.00000001"), rounding=ROUND_DOWN)
+        )
+    return render_template("fragmento_historial.html", historial=historial)
+
+
+==================================================
+=== ARCHIVO: ./backend/rutas/home.py ===
+==================================================
+
+from flask import Blueprint, render_template
+from backend.servicios.api_cotizaciones import obtener_datos_criptos_coingecko
+
+bp = Blueprint("home", __name__)
+
+
+@bp.route("/")
+def index():
+    """
+    Página principal del simulador de exchange.
+
+    ---
+    responses:
+      200:
+        description: Renderiza la página principal.
+        content:
+          text/html:
+            example: "<html><body>Simulador de exchange</body></html>"
+      500:
+        description: Error al obtener datos de cotizaciones.
+    """
+    try:
+        obtener_datos_criptos_coingecko()
+        print("👉 Datos de cotizaciones actualizados.")
+    except Exception as e:
+        print(f"⚠️ Error al actualizar cotizaciones: {e}")
+    
+    return render_template("index.html")
+
+
+==================================================
+=== ARCHIVO: ./backend/rutas/trading_vista.py ===
+==================================================
+
+# backend/rutas/trading_vista.py (VERSIÓN CON RUTAS SEPARADAS)
+
+from flask import Blueprint, request, redirect, url_for, render_template, flash
+
+from backend.servicios.trading_logica import procesar_operacion_trading
+from backend.servicios.trading_models import preparar_vista_trading
+
+bp = Blueprint("trading", __name__)
+
+
+# RUTA GET para MOSTRAR la página de trading
+@bp.route("/trading", methods=["GET"])
+def mostrar_trading_page():
+    """Muestra la interfaz principal de trading."""
+    contexto = preparar_vista_trading()
+    return render_template("trading.html", **contexto)
+
+
+# RUTA POST para PROCESAR la operación de trading
+@bp.route("/trading/operar", methods=["POST"])
+def procesar_trading_form():
+    """Procesa los datos del formulario de trading."""
+    
+    print(">>> DATOS RECIBIDOS DEL FORMULARIO:", request.form)
+    
+    exito, mensaje = procesar_operacion_trading(request.form)
+    flash(mensaje, "success" if exito else "danger")
+
+    # Siempre redirige de vuelta a la página principal de trading
+    return redirect(url_for("trading.mostrar_trading_page"))
+
+
+==================================================
+=== ARCHIVO: ./backend/servicios/__init__.py ===
+==================================================
+
+
+
+==================================================
+=== ARCHIVO: ./backend/servicios/api_cotizaciones.py ===
+==================================================
+
+from decimal import Decimal
+import requests
+from backend.servicios.velas_logica import (
+    guardar_datos_cotizaciones,
+    guardar_datos_velas,
+)
+from config import COINGECKO_URL, BINANCE_URL, CANTIDAD_CRIPTOMONEDAS, CANTIDAD_VELAS
+
+
+def obtener_datos_criptos_coingecko():
+    """
+    Obtiene información del mercado de criptomonedas desde la API pública de CoinGecko.
+
+    Esta función consulta la API de CoinGecko para recuperar los 100 activos principales
+    ordenados por capitalización de mercado, incluyendo su precio actual, variaciones
+    porcentuales, volumen de trading y suministro circulante. Los datos obtenidos se procesan
+    y almacenan localmente mediante la función `guardar_datos_cotizaciones`.
+
+    Returns:
+        List[Dict]: Una lista de diccionarios, donde cada uno representa una criptomoneda con:
+            - id (int): Índice incremental
+            - nombre (str): Nombre de la criptomoneda
+            - ticker (str): Ticker en mayúsculas
+            - logo (str): URL del logo del activo
+            - precio_usd (float): Precio actual en USD
+            - 1h_% (float): Variación porcentual en 1 hora
+            - 24h_% (float): Variación porcentual en 24 horas
+            - 7d_% (float): Variación porcentual en 7 días
+            - market_cap (float): Capitalización de mercado
+            - volumen_24h (float): Volumen de trading en 24h
+            - circulating_supply (float): Suministro circulante
+
+    Notas:
+        Si ocurre un error de conexión o una respuesta inválida, la función retorna
+        un diccionario con una clave "error" describiendo el problema.
+    """
+    params = {
+        "vs_currency": "usd",
+        "order": "market_cap_desc",
+        "per_page": CANTIDAD_CRIPTOMONEDAS,
+        "page": 1,
+        "sparkline": "false",
+        "price_change_percentage": "1h,24h,7d",
+    }
+
+    try:
+        respuesta = requests.get(COINGECKO_URL, params)
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error al obtener datos de CoinGecko: {str(e)}")
+        return {"error": "Error al obtener datos de CoinGecko"}
+    if respuesta.status_code != 200:
+        print(
+            f"❌ Error en la respuesta de CoinGecko: Status code {respuesta.status_code}"
+        )
+        return {"error": "Respuesta inválida de la API"}
+
+    print(f"✅ Estado de la respuesta: {respuesta.status_code}")
+
+    datos = respuesta.json()
+    resultado = list(
+        map(
+            lambda par: {
+                "id": par[0],
+                "nombre": par[1].get("name"),
+                "ticker": par[1].get("symbol", "").upper(),
+                "logo": par[1].get("image"),
+                "precio_usd": Decimal(str(par[1].get("current_price"))),
+                "1h_%": Decimal(
+                    str(par[1].get("price_change_percentage_1h_in_currency"))
+                ),
+                "24h_%": Decimal(
+                    str(par[1].get("price_change_percentage_24h_in_currency"))
+                ),
+                "7d_%": Decimal(
+                    str(par[1].get("price_change_percentage_7d_in_currency"))
+                ),
+                "market_cap": Decimal(str(par[1].get("market_cap"))),
+                "volumen_24h": Decimal(str(par[1].get("total_volume"))),
+                "circulating_supply": Decimal(str(par[1].get("circulating_supply"))),
+            },
+            enumerate(datos, start=1),
+        )
+    )
+
+    print(f"💡 Total de criptos procesadas: {len(resultado)}")
+    guardar_datos_cotizaciones(resultado)
+    return resultado
+
+
+def obtener_velas_binance():
+    """
+    Obtiene datos históricos de velas (Klines) diarias del par BTC/USDT desde la API pública de Binance.
+
+    Esta función consulta la API de Binance para recuperar las últimas velas diarias,
+    equivalente aproximadamente a un año de datos históricos. Cada vela contiene precios
+    de apertura, máximo, mínimo, cierre y volumen negociado. Los datos se procesan y almacenan
+    localmente mediante la función `guardar_datos_velas`.
+
+    Returns:
+        List[Dict]: Una lista de diccionarios, donde cada uno representa una vela diaria con:
+            - time (int): Timestamp de apertura en segundos
+            - open (float): Precio de apertura
+            - high (float): Precio máximo
+            - low (float): Precio mínimo
+            - close (float): Precio de cierre
+            - volume (float): Volumen negociado
+
+    Notas:
+        Si ocurre un error de conexión o una respuesta inválida, la función retorna
+        un diccionario con una clave "error" describiendo el problema.
+    """
+    params = {
+        "symbol": "BTCUSDT",
+        "interval": "1d",
+        "limit": CANTIDAD_VELAS,
+    }
+    try:
+        respuesta = requests.get(BINANCE_URL, params)
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error al obtener datos de Binance: {str(e)}")
+        return {"error": "Error al obtener datos de Binance"}
+
+    if respuesta.status_code != 200:
+        print(
+            f"❌ Error en la respuesta de Binance: Status code {respuesta.status_code}"
+        )
+        return {"error": "Respuesta inválida de la API Binance"}
+
+    print(f"✅ Estado de la respuesta Binance: {respuesta.status_code}")
+
+    datos = respuesta.json()
+    resultado = []
+
+    for vela in datos:
+        resultado.append(
+            {
+                "time": int(vela[0] / 1000),  # Timestamp en segundos
+                "open": Decimal(str(vela[1])),
+                "high": Decimal(str(vela[2])),
+                "low": Decimal(str(vela[3])),
+                "close": Decimal(str(vela[4])),
+                "volume": Decimal(str(vela[5])),
+            }
+        )
+
+    print(f"💡 Total de velas procesadas: {len(resultado)}")
+    guardar_datos_velas(resultado)
+    return resultado
+
+
+==================================================
+=== ARCHIVO: ./backend/servicios/cotizaciones.py ===
+==================================================
+
+from decimal import Decimal
+import json
+from config import COTIZACIONES_PATH
+from flask import render_template
+
+
+def obtener_todas_las_cotizaciones():
+    try:
+        with open(COTIZACIONES_PATH) as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return []
+
+
+def envolver_variacion_coloreada(valor, con_signo_dolar=False):
+    clase = "positivo" if valor > 0 else "negativo"
+    sufijo = (
+        (lambda v: "$ " if v > 0 else "-$ ")(valor)
+        if con_signo_dolar
+        else (lambda v: " %" if v > 0 else "% ")(valor)
+    )
+    flecha = (
+        (
+            "<span class='flecha-verde'>▲</span>"
+            if valor > 0
+            else "<span class='flecha-roja'>▼</span>"
+        )
+        if not con_signo_dolar
+        else ""
+    )
+
+    valor_redondeado = f"{valor:,.2f}"
+
+    if con_signo_dolar:
+        contenido = f"{sufijo}{valor_redondeado}"
+    else:
+        contenido = f"{valor_redondeado}{sufijo}"
+
+    return f"<span class='{clase}'>{flecha} {contenido}</span>"
+
+
+def formatear_numero(n, escala_manual=None):
+    if n is None:
+        return "-"
+
+    if escala_manual:
+        escalas = {"T": 1e12, "B": 1e9, "M": 1e6}
+        return f"{n / Decimal(str(escalas[escala_manual])):,.2f} {escala_manual}"
+
+    for valor, simbolo in [(1e12, "T"), (1e9, "B"), (1e6, "M")]:
+        if n >= valor:
+            return f"{n / Decimal(str(valor)):,.2f} {simbolo}"
+    return f"{n:.2f}"
+
+
+def obtener_tabla_criptos():
+    from config import COTIZACIONES_PATH
+
+    with open(COTIZACIONES_PATH) as f:
+        datos = json.load(f)
+
+    tabla = [
+        [
+            cripto["id"],
+            f"<img src='{cripto['logo']}' width='20' class='logo-cripto'> <span class='nombre-cripto'>{cripto['nombre']}</span> <span class='ticker-cripto'>({cripto['ticker']})</span>",
+            envolver_variacion_coloreada(
+                Decimal(str(cripto["precio_usd"])), con_signo_dolar=True
+            ),
+            envolver_variacion_coloreada(Decimal(str(cripto["1h_%"]))),
+            envolver_variacion_coloreada(Decimal(str(cripto["24h_%"]))),
+            envolver_variacion_coloreada(Decimal(str(cripto["7d_%"]))),
+            *map(
+                formatear_numero,
+                [
+                    Decimal(str(cripto["market_cap"])),
+                    Decimal(str(cripto["volumen_24h"])),
+                    Decimal(str(cripto["circulating_supply"])),
+                ],
+            ),
+        ]
+        for cripto in datos
+    ]
+
+    return tabla
+
+
+def renderizar_fragmento_tabla():
+    """
+    Renderiza el fragmento HTML de la tabla de cotizaciones.
+    Returns:
+        str: HTML renderizado de la tabla de cotizaciones
+    """
+    tabla = obtener_tabla_criptos()
+    clases_por_columna = [
+        "text-start px-3",  # para #
+        "text-start px-3",  # para Nombre
+        "text-start px-3",  # para Precio
+        "text-end px-3",  # para 1h
+        "text-end px-3",  # para 24h
+        "text-end px-3",  # para 7d
+        "text-end px-3",  # para Cap. Mercado
+        "text-end px-3",  # para Volumen
+        "text-end px-3",  # para Suministro
+    ]
+    return render_template(
+        "fragmento_tabla.html", tabla=tabla, clases_por_columna=clases_por_columna
+    )
+
+
+==================================================
+=== ARCHIVO: ./backend/servicios/estado_billetera.py ===
+==================================================
+
+from flask import render_template
+from decimal import Decimal
+from backend.acceso_datos.datos_billetera import cargar_billetera
+from backend.acceso_datos.datos_historial import cargar_historial
+from backend.acceso_datos.datos_cotizaciones import obtener_precio
+
+
+# En backend/servicios/estado_billetera.py
+
+
+def calcular_detalle_cripto(ticker, cantidad_actual, precios, historial):
+    """
+    Calcula el estado financiero de una criptomoneda en base a su cantidad actual, el precio de mercado
+    y el historial de compras.
+    """
+    cantidad_actual = Decimal(str(cantidad_actual))
+    precio_actual = precios.get(ticker, Decimal("0")).quantize(Decimal("0.000001"))
+    valor_usdt = (cantidad_actual * precio_actual).quantize(Decimal("0.01"))
+
+    # Filtra las operaciones de compra donde el 'ticker' que estamos analizando fue el DESTINO.
+    compras = [
+        op
+        for op in historial
+        if op.get("tipo") == "compra" and op.get("destino", {}).get("ticker") == ticker
+    ]
+
+    # Usamos .get() para evitar errores si alguna operación antigua no tiene el formato nuevo.
+    cantidad_comprada = sum(
+        Decimal(str(op.get("destino", {}).get("cantidad", "0"))) for op in compras
+    )
+    total_invertido = sum(Decimal(str(op.get("valor_usd", "0"))) for op in compras)
+
+    # El resto de la función no necesita cambios...
+    division_por_0_segura = lambda num, den: num / den if den != 0 else Decimal("0")
+
+    precio_promedio = (
+        division_por_0_segura(total_invertido, cantidad_comprada).quantize(
+            Decimal("0.000001")
+        )
+        if cantidad_comprada
+        else Decimal("0")
+    )
+    invertido_actual = (cantidad_actual * precio_promedio).quantize(Decimal("0.01"))
+
+    ganancia = (valor_usdt - invertido_actual).quantize(Decimal("0.01"))
+    porcentaje_ganancia = (
+        division_por_0_segura(ganancia, invertido_actual) * Decimal("100")
+        if invertido_actual != 0
+        else Decimal("0")
+    )
+
+    return {
+        "ticker": ticker,
+        "cantidad": cantidad_actual,
+        "valor_usdt": valor_usdt,
+        "precio_actual": precio_actual,
+        "precio_promedio": precio_promedio,
+        "invertido": invertido_actual,
+        "ganancia_perdida": ganancia,
+        "porcentaje_ganancia": porcentaje_ganancia,
+    }
+
+
+def estado_actual_completo():
+    """
+    Calcula un resumen financiero completo del portafolio de criptomonedas actual.
+
+    Este resumen incluye, para cada activo con saldo significativo (> 0.000001):
+    - Cantidad disponible
+    - Valor de mercado en USDT
+    - Precio promedio de compra
+    - Monto invertido
+    - Ganancia/pérdida neta y en porcentaje
+    - Porcentaje de participación en el portafolio total
+
+    Returns:
+        List[Dict]: Lista de diccionarios, cada uno representando una criptomoneda con su detalle financiero.
+    """
+
+    # Cargar los datos actuales desde archivos locales
+    billetera = {k: Decimal(str(v)) for k, v in cargar_billetera().items()}
+    if "USDT" in billetera:
+        billetera["USDT"] = billetera["USDT"].quantize(Decimal("0.01"))
+
+    # Obtener precios para cada cripto en la billetera
+    precios = {
+        ticker: obtener_precio(ticker) or Decimal("0") for ticker in billetera.keys()
+    }
+    historial = cargar_historial()
+
+    billetera_filtrada = billetera
+
+    # Calcular el detalle financiero de cada criptomoneda
+    detalles = list(
+        map(
+            lambda par: calcular_detalle_cripto(par[0], par[1], precios, historial),
+            billetera_filtrada.items(),
+        )
+    )
+
+    # Calcular el valor total en USDT del portafolio
+    total_usdt = sum(Decimal(str(d["valor_usdt"])) for d in detalles)
+
+    # Función para calcular el porcentaje que representa cada cripto sobre el total
+    calcular_porcentaje = lambda valor_usdt: (
+        ((Decimal(str(valor_usdt)) / total_usdt) * Decimal("100")).quantize(
+            Decimal("0.01")
+        )
+        if total_usdt > 0
+        else Decimal("0")
+    )
+
+    # Asignar el porcentaje correspondiente a cada criptomoneda y los colores
+    for detalle_cripto in detalles:
+        detalle_cripto["porcentaje"] = calcular_porcentaje(detalle_cripto["valor_usdt"])
+        detalle_cripto["color_ganancia"] = (
+            "green" if detalle_cripto["ganancia_perdida"] >= 0 else "red"
+        )
+        detalle_cripto["color_porcentaje"] = (
+            "green" if detalle_cripto["porcentaje_ganancia"] >= 0 else "red"
+        )
+        detalle_cripto["es_polvo"] = detalle_cripto["valor_usdt"] < Decimal("0.001")
+        # Truncamiento a 8 decimales eliminado, se mantiene la cantidad tal cual
+        detalle_cripto["cantidad"] = detalle_cripto["cantidad"]
+
+    return detalles
+
+
+==================================================
+=== ARCHIVO: ./backend/servicios/trading_logica.py ===
+==================================================
+
+from decimal import Decimal, InvalidOperation
+from backend.acceso_datos.datos_billetera import cargar_billetera, guardar_billetera
+from backend.acceso_datos.datos_cotizaciones import obtener_precio
+from backend.acceso_datos.datos_historial import guardar_en_historial
+
+# --- FUNCIÓN DE PROCESAMIENTO DEL FORMULARIO ---
+
+def procesar_operacion_trading(formulario):
+    """
+    TRADUCTOR: Recibe el formulario, lo valida y lo convierte en una llamada
+    a la lógica de negocio principal (`realizar_swap`).
+    """
+    try:
+        ticker_principal = formulario["ticker"].upper()
+        accion = formulario["accion"]
+        monto_form = Decimal(formulario["monto"])
+        modo_ingreso = formulario["modo-ingreso"]
+    except (KeyError, InvalidOperation, TypeError):
+        return False, "❌ Error en los datos del formulario."
+
+    if monto_form <= 0:
+        return False, "❌ El monto debe ser un número positivo."
+
+    # Determina las monedas de la operación basándose en la acción
+    if accion == "comprar":
+        moneda_origen = formulario.get("moneda-pago", "USDT").upper()
+        moneda_destino = ticker_principal
+    elif accion == "vender":
+        moneda_origen = ticker_principal
+        moneda_destino = formulario.get("moneda-recibir", "USDT").upper()
+    else:
+        return False, "❌ Acción no válida."
+
+    if moneda_origen == moneda_destino:
+        return False, "❌ La moneda de origen y destino no pueden ser la misma."
+
+    # Llama a la lógica principal con los datos ya limpios y preparados
+    return realizar_swap(moneda_origen, moneda_destino, monto_form, modo_ingreso, accion)
+
+
+# --- FUNCIONES AUXILIARES INTERNAS (LÓGICA DE NEGOCIO) ---
+
+def _calcular_detalles_swap(accion, modo_ingreso, monto_form, precio_origen_usdt, precio_destino_usdt):
+    """
+    Calcula las cantidades de origen, destino y el valor total en USD del swap.
+    Esta es una función interna y pura que solo realiza cálculos.
+
+    Returns:
+        tuple: (True, {'origen': cant, 'destino': cant, 'valor_usd': val}) o (False, "error").
+    """
+    # Validación de entrada específica para esta lógica
+    if accion == 'vender' and modo_ingreso == 'total':
+        return False, "❌ Al vender, debe ingresar la cantidad en modo 'Monto' (Cripto)."
+
+    if accion not in ['comprar', 'vender']:
+        return False, "❌ Acción de trading desconocida."
+
+    # Lógica de cálculo
+    if accion == 'comprar':
+        if modo_ingreso == 'monto':  # Usuario ingresa la cantidad de CRIPTO a recibir
+            cantidad_destino = monto_form
+            valor_total_usd = cantidad_destino * precio_destino_usdt
+            cantidad_origen = valor_total_usd / precio_origen_usdt
+        else:  # 'total', usuario ingresa la cantidad de FIAT a gastar
+            cantidad_origen = monto_form
+            valor_total_usd = cantidad_origen * precio_origen_usdt
+            cantidad_destino = valor_total_usd / precio_destino_usdt
+    else:  # accion == 'vender'
+        cantidad_origen = monto_form
+        valor_total_usd = cantidad_origen * precio_origen_usdt
+        cantidad_destino = valor_total_usd / precio_destino_usdt
+
+    detalles = {
+        "origen": cantidad_origen,
+        "destino": cantidad_destino,
+        "valor_usd": valor_total_usd
+    }
+    return True, detalles
+
+
+def _validar_saldo_suficiente(billetera, moneda_origen, cantidad_requerida):
+    """Verifica si hay suficiente saldo en la billetera para la operación."""
+    saldo_disponible = billetera.get(moneda_origen, Decimal("0"))
+    if cantidad_requerida > saldo_disponible:
+        mensaje_error = f"❌ Saldo insuficiente. Tienes {saldo_disponible:.8f} {moneda_origen}."
+        return False, mensaje_error
+    return True, None
+
+
+def _actualizar_billetera_y_guardar(billetera, moneda_origen, cantidad_origen, moneda_destino, cantidad_destino):
+    """Resta la moneda de origen, suma la de destino y guarda el estado final."""
+    billetera[moneda_origen] -= cantidad_origen
+    
+    # Si el saldo es muy pequeño ("polvo"), se elimina la moneda de la billetera
+    if billetera[moneda_origen] <= Decimal("1e-8"):
+        billetera.pop(moneda_origen, None)
+
+    billetera[moneda_destino] = billetera.get(moneda_destino, Decimal("0")) + cantidad_destino
+    
+    guardar_billetera(billetera)
+
+
+def _registrar_operacion_historial(moneda_origen, cantidad_origen, moneda_destino, cantidad_destino, valor_usd):
+    """Determina el tipo de operación y la guarda en el historial."""
+    if moneda_origen == "USDT":
+        tipo_operacion = "compra"
+    elif moneda_destino == "USDT":
+        tipo_operacion = "venta"
+    else:
+        tipo_operacion = "intercambio"
+        
+    guardar_en_historial(
+        tipo_operacion,
+        moneda_origen,
+        cantidad_origen.quantize(Decimal("0.00000001")),
+        moneda_destino,
+        cantidad_destino.quantize(Decimal("0.00000001")),
+        valor_usd,
+    )
+
+
+# --- FUNCIÓN ORQUESTADORA PRINCIPAL ---
+
+def realizar_swap(moneda_origen, moneda_destino, monto_form, modo_ingreso, accion):
+    """
+    Orquesta la operación de swap completa: obtiene precios, calcula, valida y ejecuta.
+    """
+    # 1. Obtener precios
+    precio_origen_usdt = obtener_precio(moneda_origen)
+    precio_destino_usdt = obtener_precio(moneda_destino)
+
+    if precio_origen_usdt is None or precio_destino_usdt is None or precio_destino_usdt.is_zero():
+        return False, "❌ No se pudo obtener la cotización para realizar el swap."
+
+    # 2. Calcular los detalles del swap
+    exito_calculo, resultado = _calcular_detalles_swap(
+        accion, modo_ingreso, monto_form, precio_origen_usdt, precio_destino_usdt
+    )
+    if not exito_calculo:
+        return False, resultado  # resultado aquí es el mensaje de error
+
+    cantidad_origen = resultado["origen"]
+    cantidad_destino = resultado["destino"]
+    valor_total_usd = resultado["valor_usd"]
+
+    # 3. Cargar billetera y validar saldo
+    billetera = cargar_billetera()
+    exito_validacion, mensaje_error = _validar_saldo_suficiente(billetera, moneda_origen, cantidad_origen)
+    if not exito_validacion:
+        return False, mensaje_error
+
+    # 4. Ejecutar la operación (si todo es válido hasta ahora)
+    _actualizar_billetera_y_guardar(billetera, moneda_origen, cantidad_origen, moneda_destino, cantidad_destino)
+    
+    # 5. Registrar en el historial
+    _registrar_operacion_historial(moneda_origen, cantidad_origen, moneda_destino, cantidad_destino, valor_total_usd)
+
+    # 6. Devolver mensaje de éxito
+    mensaje_exito = f"✅ Swap exitoso: {cantidad_origen:.8f} {moneda_origen} → {cantidad_destino:.8f} {moneda_destino}."
+    return True, mensaje_exito
+
+==================================================
+=== ARCHIVO: ./backend/servicios/trading_models.py ===
+==================================================
+
+# backend/servicios/trading_models.py
+from flask import json
+from .velas_logica import cargar_datos_cotizaciones
+from ..acceso_datos.datos_billetera import cargar_billetera
+from ..acceso_datos.datos_historial import cargar_historial
+from .api_cotizaciones import obtener_velas_binance
+
+
+def preparar_vista_trading():
+    """
+    Orquesta la carga y preparación de todos los datos necesarios para la vista de trading.
+    """
+    # 1. Carga de datos crudos
+    obtener_velas_binance()
+    criptos_disponibles = cargar_datos_cotizaciones()
+    billetera = cargar_billetera()
+    historial_crudo = cargar_historial()
+
+    # 2. Pre-procesamos el historial en Python para añadir fecha y hora formateadas
+    historial_formateado = []
+    for item in historial_crudo:
+        timestamp_str = item.get("timestamp")
+        if timestamp_str and "T" in timestamp_str:
+            # Separamos la cadena en fecha y hora
+            partes = timestamp_str.split("T")
+            fecha = partes[0]
+            hora = partes[1].split(".")[0]  # Quitamos los microsegundos
+
+            # Añadimos las nuevas claves al diccionario de la transacción
+            item["fecha_formateada"] = fecha
+            item["hora_formateada"] = hora
+        else:
+            # Si el timestamp no existe o tiene un formato inesperado
+            item["fecha_formateada"] = "Fecha N/A"
+            item["hora_formateada"] = ""
+
+        historial_formateado.append(item)
+
+    # 3. Transformación de datos para la vista
+    monedas_propias = {
+        ticker: saldo for ticker, saldo in billetera.items() if saldo > 0
+    }
+
+    lista_todas_criptos_js = [
+        {"ticker": c.get("ticker", "").upper(), "nombre": c.get("nombre", "N/A")}
+        for c in criptos_disponibles
+    ]
+    lista_monedas_propias_js = [
+        {"ticker": ticker, "nombre": ticker} for ticker in monedas_propias.keys()
+    ]
+
+    # 4. Devolvemos el contexto completo, usando el historial ya procesado
+    return {
+        "criptos": criptos_disponibles,
+        "monedas_propias": monedas_propias,
+        "historial": historial_formateado,
+        "lista_todas_las_criptos_json": json.dumps(lista_todas_criptos_js),
+        "lista_monedas_propias_json": json.dumps(lista_monedas_propias_js),
+        "billetera_json": json.dumps(billetera)
+    }
+
+
+==================================================
+=== ARCHIVO: ./backend/servicios/velas_logica.py ===
+==================================================
+
+import json
+import os
+from decimal import Decimal
+from config import COTIZACIONES_PATH, VELAS_PATH
+
+
+def guardar_datos_cotizaciones(data):
+    os.makedirs(os.path.dirname(COTIZACIONES_PATH), exist_ok=True)
+    print("💾 Guardando datos en datos_cotizaciones.json...")
+    print(f"Cantidad de criptos a guardar: {len(data)}")
+    print("📁 Guardando en:", os.path.abspath(COTIZACIONES_PATH))
+
+    try:
+        with open(COTIZACIONES_PATH, "w") as archivo:
+            json.dump(
+                data,
+                archivo,
+                indent=4,
+                default=lambda o: float(o) if isinstance(o, Decimal) else o,
+            )
+        print("✅ Datos guardados correctamente")
+    except Exception as e:
+        print("❌ Error al guardar el archivo:", e)
+
+
+def cargar_datos_cotizaciones():
+    if not os.path.exists(COTIZACIONES_PATH):
+        return []
+    with open(COTIZACIONES_PATH, "r") as archivo:
+        return json.load(archivo)
+
+
+def guardar_datos_velas(data):
+    os.makedirs(os.path.dirname(VELAS_PATH), exist_ok=True)
+    print("💾 Guardando datos en datos_velas.json...")
+    print(f"Cantidad de velas a guardar: {len(data)}")
+    print("📁 Guardando en:", os.path.abspath(VELAS_PATH))
+
+    try:
+        with open(VELAS_PATH, "w") as archivo:
+            json.dump(
+                data,
+                archivo,
+                indent=4,
+                default=lambda o: float(o) if isinstance(o, Decimal) else o,
+            )
+        print("✅ Datos guardados correctamente")
+    except Exception as e:
+        print("❌ Error al guardar el archivo:", e)
+
+
+==================================================
+=== ARCHIVO: ./backend/swagger.yaml ===
+==================================================
+
+openapi: 3.0.0
+info:
+  title: Simulador de Exchange
+  description: API para simular operaciones de compra/venta de criptomonedas.
+  version: "1.0.0"
+  contact:
+    name: Tu Nombre
+    email: tunombre@email.com
+
+servers:
+  - url: http://localhost:5000
+    description: Servidor local
+
+paths:
+  /:
+    get:
+      summary: Página principal
+      responses:
+        '200':
+          description: Página principal renderizada
+
+  /trading:
+    get:
+      summary: Muestra la interfaz de trading
+      responses:
+        '200':
+          description: Página de trading renderizada
+    post:
+      summary: Procesa una operación de compra o venta
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                tipo:
+                  type: string
+                  example: "compra"
+                ticker:
+                  type: string
+                  example: "BTC"
+                cantidad:
+                  type: string
+                  example: "0.1"
+      responses:
+        '302':
+          description: Redirecciona con resultado
+
+  /billetera:
+    get:
+      summary: Vista HTML con el estado de la billetera
+      responses:
+        '200':
+          description: Renderiza billetera.html
+
+  /estado:
+    get:
+      summary: Devuelve el estado actual de la billetera en JSON
+      responses:
+        '200':
+          description: Datos de billetera
+
+  /api/billetera:
+    get:
+      summary: Fragmento HTML con detalle financiero
+      responses:
+        '200':
+          description: Fragmento HTML generado
+
+  /api/historial:
+    get:
+      summary: Fragmento HTML del historial de transacciones
+      responses:
+        '200':
+          description: Historial renderizado
+
+  /actualizar:
+    get:
+      summary: Actualiza las cotizaciones desde CoinGecko
+      responses:
+        '200':
+          description: Devuelve estado y cantidad
+
+  /datos_tabla:
+    get:
+      summary: Devuelve fragmento de tabla de cotizaciones
+      responses:
+        '200':
+          description: Tabla HTML renderizada
+
+  /api/velas:
+    get:
+      summary: Retorna los datos de velas desde archivo local
+      responses:
+        '200':
+          description: JSON de velas
+        '500':
+          description: Error de lectura
+
+==================================================
+=== ARCHIVO: ./backend/utils/formateo_decimales.py ===
+==================================================
+
+def formato_valor(valor, decimales=2, umbral=0.0001, simbolo="$"):
+    try:
+        val = float(valor)
+        if 0 < abs(val) < umbral:
+            return f"&lt; {simbolo}{umbral:.{decimales}f}"
+        return f"{simbolo}{val:.{decimales}f}"
+    except (TypeError, ValueError):
+        return "-"
+
+
+def formato_cantidad(valor, decimales=8, umbral=0.00000001):
+    try:
+        val = float(valor)
+        if 0 < abs(val) < umbral:
+            return f"&lt; {umbral:.{decimales}f}"
+        return f"{val:.{decimales}f}"
+    except (TypeError, ValueError):
+        return "-"
+
+
+def registrar_filtros(app):
+    app.jinja_env.filters["formato_valor"] = formato_valor
+    app.jinja_env.filters["formato_cantidad"] = formato_cantidad
+
+
+==================================================
+=== ARCHIVO: ./config.py ===
+==================================================
+
+import os
+from decimal import getcontext, ROUND_HALF_DOWN
+
+# Base del proyecto y carpeta de datos
+PROYECTO_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DATA_DIR = os.path.join(PROYECTO_DIR, "datos")
+os.makedirs(BASE_DATA_DIR, exist_ok=True)
+
+# Rutas de archivos JSON
+COTIZACIONES_PATH = os.path.join(BASE_DATA_DIR, "cotizaciones.json")
+BILLETERA_PATH = os.path.join(BASE_DATA_DIR, "billetera.json")
+HISTORIAL_PATH = os.path.join(BASE_DATA_DIR, "historial.json")
+VELAS_PATH = os.path.join(BASE_DATA_DIR, "velas.json")
+
+# Configuración general
+BALANCE_INICIAL_USDT = "10000"
+FLASK_SECRET_KEY = os.environ.get("FLASK_SECRET_KEY", "clave_por_defecto_insegura")
+
+# URLs de APIs
+COINGECKO_URL = "https://api.coingecko.com/api/v3/coins/markets"
+BINANCE_URL = "https://api.binance.com/api/v3/klines"
+
+# Parámetros de scraping
+CANTIDAD_CRIPTOMONEDAS = 100
+CANTIDAD_VELAS = 250
+
+# Decimal global
+getcontext().prec = 28
+getcontext().rounding = ROUND_HALF_DOWN
+
+
+==================================================
+=== ARCHIVO: ./documentacion.md ===
+==================================================
+
+**TPO_simulador_exchange** es un simulador de exchange de criptomonedas desarrollado en Python y Flask, orientado a prácticas académicas. Permite consultar cotizaciones en tiempo real, realizar operaciones de compra/venta simuladas y visualizar el estado de la billetera del usuario.
+
+---
+
+## 📦 Instalación
+
+1. Clonar el repositorio:
+
+```bash
+git clone https://github.com/FaustoLovera/Trabajo_Simulador_Exchange.git
+cd TPO_simulador_exchange
+```
+
+2. Crear entorno virtual:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate  # en Windows: .venv\Scripts\activate
+```
+
+3. Instalar dependencias:
+
+```bash
+pip install -r requirements.txt
+```
+
+4. Ejecutar la aplicación:
+
+```bash
+python -m backend.app
+```
+
+---
+
+## 🗂️ Estructura principal del backend
+
+```
+backend/
+├── app.py                  # Punto de entrada principal de la app
+├── __init__.py             # Configuración de Flask, Swagger y registros
+├── rutas/                  # Blueprints y vistas del sistema
+│   ├── __init__.py         # Inicialización de blueprints
+│   ├── home.py             # Ruta principal
+│   ├── trading_vista.py    # Interfaz de compra/venta
+│   ├── billetera_vista.py  # Vista para la billetera
+│   └── api_externa.py      # Rutas para datos externos
+├── servicios/              # Lógica de negocio: consultas API, cálculo, etc.
+│   ├── api_cotizaciones.py # Consulta cotizaciones a CoinGecko
+│   ├── trading_logica.py   # Lógica principal de operaciones de trading
+│   ├── velas_logica.py     # Consulta y guarda datos de velas de Binance
+│   ├── cotizaciones.py     # Procesa y ordena cotizaciones
+│   └── estado_billetera.py # Cálculo de estadísticas y visualización de billetera
+├── acceso_datos/           # Lectura y escritura de archivos JSON
+│   ├── datos_billetera.py
+│   ├── datos_historial.py
+│   └── datos_cotizaciones.py
+frontend/
+├── templates/              # Plantillas HTML (Jinja2)
+├── static/                 # CSS, JS e imágenes estáticas
+```
+
+---
+
+## 🚀 Funcionalidad básica
+
+1. **Ver cotizaciones**: Se consultan desde la API de CoinGecko.
+2. **Operar**: Se simula la compra o venta de criptomonedas.
+3. **Billetera**: Se visualiza el balance actual y el historial de operaciones.
+
+---
+
+## 🔧 Configuración
+
+El archivo `config.py` centraliza:
+
+- Las rutas a archivos JSON (`datos/`)
+- Clave secreta de Flask
+- URLs de APIs externas (CoinGecko y Binance)
+- Parámetros de scraping
+- Configuración global de `Decimal`
+
+---
+
+## 📌 Notas
+
+- El proyecto está diseñado para ejecutarse en **entorno local**.
+- A futuro se planea incorporar tests automáticos.
+- La documentación Swagger está disponible en `http://localhost:5000/apidocs`.
+
+---
+
+# 🧩 Descripción de módulos clave
+
+### `backend/app.py`
+
+Punto de entrada principal de la aplicación.
+
+- Crea la instancia Flask mediante `crear_app()` (importado desde `__init__.py`).
+- Configura Swagger para la documentación interactiva.
+- Ejecuta el servidor solo si el archivo se ejecuta directamente (bloque `if __name__ == "__main__"`).
+
+---
+
+### `backend/__init__.py`
+
+- Define la función `crear_app()` que:
+  - Crea la app Flask.
+  - Registra los blueprints desde `backend.rutas`.
+  - Configura la clave secreta desde `config.py`.
+
+---
+
+### `backend/rutas/home.py`
+
+- Define un blueprint `bp` que maneja la ruta principal (`/`).
+- Puede incluir lógicas complementarias al `index`.
+
+---
+
+### `backend/rutas/trading_vista.py`
+
+- Define un blueprint `bp` para las rutas de compra y venta.
+- Utiliza lógica de `trading_logica.py` y lectura de archivos desde `acceso_datos/`.
+- Encargado de procesar operaciones y mostrar la billetera.
+
+---
+
+### `backend/servicios/api_cotizaciones.py`
+
+- Contiene funciones para obtener cotizaciones de criptomonedas desde la API de CoinGecko.
+- Incluye funciones auxiliares para ordenar o filtrar datos antes de usarlos en la app.
+
+---
+
+### `backend/servicios/trading_logica.py`
+
+- Lógica principal de las operaciones de trading:
+  - Cálculo de compra/venta.
+  - Verificación de saldos.
+  - Cálculo de precio promedio y ganancias/perdidas.
+
+---
+
+### `backend/servicios/velas_logica.py`
+
+- Obtiene y guarda datos de velas (candlestick) desde la API de Binance.
+- Sirve como base para análisis técnico o visualización de gráficos (a futuro).
+
+---
+
+### `backend/acceso_datos/datos_billetera.py`
+
+- Lectura y escritura de la billetera en `datos/billetera.json`.
+- Gestiona saldos de criptomonedas y USDT.
+
+---
+
+### `backend/acceso_datos/datos_historial.py`
+
+- Maneja el historial de operaciones guardado en `datos/historial.json`.
+- Permite consultar o registrar movimientos.
+
+---
+
+### `config.py`
+
+- Define rutas absolutas a los archivos del sistema (`cotizaciones.json`, `billetera.json`, etc.).
+- Contiene claves, parámetros, URLs de API y configuración global de decimales.
+
+---
+
+### `backend/rutas/billetera_vista.py`
+
+- Muestra y actualiza visualmente el estado de la billetera.
+- Utiliza fragmentos HTML renderizados desde el backend.
+
+---
+
+### `backend/rutas/api_externa.py`
+
+- Expone rutas de la API que devuelven datos en formato JSON (probablemente para frontend dinámico o AJAX).
+
+---
+
+### `backend/servicios/cotizaciones.py`
+
+- Procesamiento y filtrado adicional de cotizaciones antes de ser mostradas.
+
+---
+
+### `backend/servicios/estado_billetera.py`
+
+- Cálculo de estadísticas y visualización del estado general de la billetera.
+
+---
+
+### `backend/utils/formateo_decimales.py`
+
+- Centraliza el formateo consistente de decimales para mostrar precios y saldos en la interfaz.
+
+---
+
+### `backend/swagger.yaml`
+
+- Archivo de definición OpenAPI (YAML) para Swagger. Describe rutas, parámetros y respuestas esperadas.
+
+
+---
+
+# Inicio Proyecto
+
+## app.py
+
+## Explicación paso a paso de `app.py`
+
+Este archivo es el punto de entrada del proyecto. Se encarga de crear la app de Flask, activar Swagger para documentación y definir una ruta principal.
+
+---
+
+### 1. Importaciones
+
+```python
+from flask import render_template
+```
+Importa la función `render_template` que permite mostrar archivos HTML en el navegador.
+
+```python
+from backend.servicios.api_cotizaciones import obtener_datos_criptos_coingecko
+```
+Importa una función que consulta precios de criptomonedas desde CoinGecko.
+
+```python
+from . import crear_app
+```
+Importa la función `crear_app()` que configura y devuelve la app Flask. Está definida en `__init__.py`.
+
+```python
+from flasgger import Swagger
+```
+Importa `Swagger`, una herramienta que genera documentación interactiva para la API.
+
+---
+
+### 2. Creación de la app y Swagger
+
+```python
+app = crear_app()
+```
+Llama a `crear_app()` y devuelve una instancia de Flask ya configurada.
+
+```python
+swagger = Swagger(app)
+```
+Activa Swagger sobre la app. La documentación estará disponible en `http://localhost:5000/apidocs`.
+
+---
+
+> Nota: anteriormente esta ruta estaba definida directamente en `app.py`, pero ahora forma parte del blueprint `home` definido en `rutas/home.py`.
+
+
+### 4. Arranque del servidor
+
+```python
+if __name__ == "__main__":
+    app.run(debug=True)
+```
+
+Este bloque significa: "si este archivo se ejecuta directamente, levantá el servidor Flask en modo debug".
+
+---
+
+### 5. ¿Por qué se separan `app.py` y `__init__.py`?
+
+Esta separación sigue el patrón recomendado por Flask conocido como *Application Factory Pattern*.
+
+#### Ventajas:
+
+- **Modularidad**: `__init__.py` se encarga de crear y configurar la app. `app.py` solo la ejecuta.
+- **Reutilización**: Podés importar `crear_app()` en otros contextos (por ejemplo, para testing) sin lanzar el servidor.
+- **Escalabilidad**: Permite crear múltiples instancias de la aplicación con diferentes configuraciones si fuera necesario.
+- **Separación de responsabilidades**: `__init__.py` configura la app, `app.py` se encarga del arranque.
+
+#### Resumen:
+
+| Archivo        | Rol                                                       |
+|----------------|------------------------------------------------------------|
+| `__init__.py`  | Configura y devuelve la instancia de Flask (`crear_app`)   |
+| `app.py`       | Ejecuta la aplicación (`app.run(debug=True)`)              |
+
+---
+
+## Explicación paso a paso de `__init__.py`
+
+Este archivo contiene la función `crear_app()`, que se encarga de crear y configurar la instancia de Flask. Esta función devuelve una aplicación completamente configurada y lista para ser ejecutada por `app.py`.
+
+---
+
+### 1. Importaciones
+
+```python
+from flask import Flask
+from config import FLASK_SECRET_KEY
+from backend.utils.formateo_decimales import registrar_filtros
+from backend.rutas import registrar_rutas
+```
+
+Estas líneas importan:
+
+- `Flask`: clase principal para crear una app Flask.
+- `FLASK_SECRET_KEY`: clave secreta usada para sesiones y seguridad, definida en `config.py`.
+- `registrar_filtros`: función auxiliar que registra filtros personalizados para templates.
+- `registrar_rutas`: función que registra todas las rutas del sistema (blueprints).
+
+---
+
+### 2. Creación de la app Flask
+
+```python
+app = Flask(
+    __name__,
+    static_folder="../frontend/static",
+    template_folder="../frontend/templates",
+)
+```
+
+Se crea una instancia de Flask, indicando:
+
+- `__name__`: ayuda a Flask a saber dónde están los archivos.
+- `static_folder`: ruta a los archivos CSS, JS e imágenes.
+- `template_folder`: ruta a los archivos HTML (Jinja2).
+
+---
+
+### 3. Configuración de clave secreta
+
+```python
+app.secret_key = FLASK_SECRET_KEY
+```
+
+Configura la clave secreta que permite usar sesiones y mostrar mensajes "flash" en Flask.
+
+---
+
+### 4. Registro de componentes
+
+```python
+registrar_filtros(app)
+registrar_rutas(app)
+```
+
+- `registrar_filtros`: agrega filtros personalizados de formateo de decimales que luego se pueden usar en templates HTML.
+- `registrar_rutas`: importa y registra todas las rutas del sistema (por ejemplo, `/`, `/billetera`, `/trading`).
+
+---
+
+### 5. Devolver la app
+
+```python
+return app
+```
+
+Una vez configurada, se devuelve la instancia `app` para que pueda ser utilizada por `app.py`.
+
+==================================================
+=== ARCHIVO: ./frontend/static/css/styles_index.css ===
+==================================================
+
+:root {
+    --color-verde: rgb(31, 191, 113);
+    --color-rojo: rgb(226, 33, 52);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #303030;
+    color: #f0c000;
+}
+
+.logo-cripto {
+    margin-right: 1.5rem;
+    vertical-align: middle;
+}
+
+.nombre-cripto {
+    padding-left: 0.75rem;
+    font-weight: bold;
+    font-size: 1.05rem;
+}
+
+.logo-cripto {
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+.ticker-cripto {
+    color: #aaaaaa;
+    font-size: 0.85rem;
+    margin-left: 4px;
+}
+
+table thead th {
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+td,
+th {
+    white-space: nowrap;
+}
+
+/* PRECIO */
+table td:nth-child(3),
+table th:nth-child(3) {
+    min-width: 100px;
+    font-weight: bold;
+}
+table td:nth-child(4),
+table th:nth-child(4),
+table td:nth-child(5),
+table th:nth-child(5),
+table td:nth-child(6),
+table th:nth-child(6) {
+    min-width: 80px; /* 1H, 24H, 7D */
+}
+table td:nth-child(8),
+table th:nth-child(8),
+table td:nth-child(9),
+table th:nth-child(9) {
+    min-width: 100px; /* VOLUME, SUPPLY */
+}
+
+/* Limita el ancho de la columna Name (columna 2) */
+table td:nth-child(2),
+table th:nth-child(2) {
+    max-width: 220px; /* probá ajustar este valor */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.positivo {
+    color: var(--color-verde);
+    font-weight: 500;
+}
+
+.negativo {
+    color: var(--color-rojo);
+    font-weight: 500;
+}
+
+.flecha-verde,
+.flecha-roja {
+    font-size: 0.7em; /* más pequeño que el texto base */
+    vertical-align: middle;
+    margin-right: 4px;
+}
+
+.flecha-verde {
+    color: var(--color-verde);
+    margin-right: 4px;
+}
+
+.flecha-roja {
+    color: var(--color-rojo);
+    margin-right: 4px;
+}
+
+
+==================================================
+=== ARCHIVO: ./frontend/static/css/styles_trading.css ===
+==================================================
+
+:root {
+    --color-verde: rgb(31, 191, 113);
+    --color-rojo: rgb(226, 33, 52);
+    /* --bs-dark-rgb: 30, 30, 30 !important;
+    --bs-body-bg: 44, 44, 44 !important;
+    --bs-border-width: 1px solid rgb(219, 71, 71) !important; */
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #303030 !important;
+    color: #f0c000;
+}
+
+#chart {
+    display: block;
+    overflow: hidden;
+    width: 100%;
+    max-width: 100%;
+}
+
+.text-verde {
+    color: var(--color-verde);
+}
+
+.text-rojo {
+    color: var(--color-rojo);
+}
+
+/* FORMULARIO TRADING */
+
+.form-control {
+    background-color: 44, 44, 44 !important;
+}
+
+/* CAMBIO DE COLOR DEL PUNTO DEL SLIDER THUMB DINÁMICO */
+
+/* Chrome/Safari */
+input[type='range'].slider-compra::-webkit-slider-thumb {
+    background-color: rgb(31, 191, 113) !important; /* verde */
+}
+
+input[type='range'].slider-venta::-webkit-slider-thumb {
+    background-color: rgb(226, 33, 52) !important; /* rojo */
+}
+
+/* Firefox */
+input[type='range'].slider-compra::-moz-range-thumb {
+    background-color: rgb(31, 191, 113) !important;
+}
+
+input[type='range'].slider-venta::-moz-range-thumb {
+    background-color: rgb(226, 33, 52) !important;
+}
+
+
+==================================================
+=== ARCHIVO: ./frontend/static/js/cotizacionesApiService.js ===
+==================================================
+
+// Este módulo se encarga de toda la comunicación con la API del backend.
+
+/**
+ * Obtiene el fragmento HTML de la tabla de cotizaciones.
+ * @returns {Promise<string>} El HTML de la tabla.
+ */
+export async function fetchTablaCotizacionesHTML() {
+    try {
+        const response = await fetch('/api/datos_tabla');
+        if (!response.ok) {
+            throw new Error(`Error en la respuesta del servidor: ${response.statusText}`);
+        }
+        return await response.text();
+    } catch (error) {
+        console.error('❌ Error al obtener el HTML de la tabla:', error);
+        return '<tr><td colspan="9" class="text-center text-danger">No se pudieron cargar los datos.</td></tr>';
+    }
+}
+
+/**
+ * Llama al endpoint que actualiza los datos de cotizaciones en el backend.
+ * @returns {Promise<object>} El resultado de la actualización.
+ */
+export async function triggerActualizacionDatos() {
+    try {
+        const response = await fetch('/api/actualizar');
+        if (!response.ok) {
+            throw new Error(`Error en la respuesta del servidor: ${response.statusText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('❌ Error al solicitar la actualización de datos:', error);
+        return { estado: 'error', mensaje: error.message };
+    }
+}
+
+==================================================
+=== ARCHIVO: ./frontend/static/js/domElements.js ===
+==================================================
+
+// Centraliza todos los selectores del DOM en un único objeto para fácil acceso y mantenimiento.
+export const DOMElements = {
+    form: $('#formulario-trading'),
+    selectorPrincipal: $('#cripto'),
+    selectorPagarCon: $('#moneda-pago'),
+    selectorRecibirEn: $('#moneda-recibir'),
+    botonComprar: $('.boton-comprar'),
+    botonVender: $('.boton-vender'),
+    botonConfirmar: $('.boton-confirmar'),
+    inputAccion: $('#accion'),
+    campoPagarCon: $('#campo-pagar-con'),
+    campoRecibirEn: $('#campo-recibir-en'),
+    spanSaldoDisponible: $('#saldo-disponible'),
+    radioModoIngreso: $('input[name="modo-ingreso"]'),
+    labelMonto: $('label[for="monto"]'),
+    inputMonto: $('#monto'),
+    sliderMonto: $('#slider-monto'),
+};
+
+==================================================
+=== ARCHIVO: ./frontend/static/js/formLogic.js ===
+==================================================
+
+import { DOMElements } from './domElements.js';
+import { UIState } from './uiState.js';
+
+// Contiene la lógica de negocio del formulario, como poblar selectores y cálculos.
+export const FormLogic = {
+    popularSelector(selector, lista, valorPorDefecto) {
+        selector.empty();
+        lista.forEach(({ nombre, ticker }) => selector.append(new Option(nombre, ticker)));
+        const valorFinal = (valorPorDefecto && lista.some(m => m.ticker === valorPorDefecto)) ? valorPorDefecto : (lista.length > 0 ? lista[0].ticker : null);
+        if (valorFinal) {
+            selector.val(valorFinal).trigger('change');
+        }
+        return valorFinal;
+    },
+
+    calcularMontoSlider() {
+        const porcentaje = parseFloat(DOMElements.sliderMonto.val());
+        const esCompra = UIState.esModoCompra();
+        
+        const tickerDeSaldo = esCompra ? UIState.getTickerPago() : UIState.getTickerPrincipal();
+        const saldoDisponible = parseFloat(window.billetera[tickerDeSaldo] || '0');
+        
+        if (!tickerDeSaldo) return 0;
+
+        return (saldoDisponible * porcentaje) / 100.0;
+    }
+};
+
+==================================================
+=== ARCHIVO: ./frontend/static/js/indexPage.js ===
+==================================================
+
+// Este es el punto de entrada para la página de cotizaciones (index.html).
+import { triggerActualizacionDatos } from './cotizacionesApiService.js';
+import { renderTabla } from './tablaCotizacionesUI.js';
+
+const UPDATE_INTERVAL_MS = 15000; // 15 segundos
+
+/**
+ * Configura la actualización automática de la tabla de cotizaciones.
+ */
+function inicializarActualizadorAutomatico() {
+    setInterval(async () => {
+        console.log("⏳ Solicitando actualización de datos...");
+        await triggerActualizacionDatos();
+        await renderTabla();
+    }, UPDATE_INTERVAL_MS);
+}
+
+/**
+ * Función principal que se ejecuta al cargar la página.
+ */
+function main() {
+    // Asegurarse de que estamos en la página correcta verificando la existencia de la tabla.
+    if (document.getElementById('tabla-datos')) {
+        console.log("🚀 Inicializando página de cotizaciones.");
+        
+        // Carga inicial de la tabla
+        renderTabla();
+        
+        // Inicia el ciclo de actualización automática
+        inicializarActualizadorAutomatico();
+    }
+}
+
+// Ejecutar la función principal
+main();
+
+==================================================
+=== ARCHIVO: ./frontend/static/js/renderizarGraficoVelas.js ===
+==================================================
+
+console.log('🟢 Script grafico_velas.js cargado');
+
+document.addEventListener('DOMContentLoaded', function () {
+    const chartContainer = document.getElementById('chart');
+
+    const chart = window.LightweightCharts.createChart(chartContainer, {
+        width: chartContainer.clientWidth,
+        height: 500,
+
+        layout: {
+            textColor: '#0f0f0f', // negro
+        },
+        grid: {
+            vertLines: { color: '#444' },
+            horLines: { color: '#444' },
+        },
+        priceScale: {
+            borderColor: '#ffffff',
+            ticksVisible: true,
+            scaleMargins: {
+                top: 0.1,
+                bottom: 0.2,
+                right: 0.5
+            },
+        },
+        timeScale: {
+            borderColor: '#ffffff',
+            timeVisible: true,
+            secondsVisible: false,
+            ticksVisible: true,
+        },
+        crosshair: {
+            mode: LightweightCharts.CrosshairMode.Normal,
+        },
+    });
+
+    const candleSeries = chart.addCandlestickSeries();
+    candleSeries.priceScale().applyOptions({
+        scaleMargins: {
+            top: 0.1,
+            bottom: 0.1,
+        },
+    });
+
+    fetch('/api/velas')
+        .then((response) => response.json())
+        .then((data) => {
+            if (data.error) {
+                console.error('Error del backend:', data.error);
+                return;
+            }
+
+            const parsedData = data.map((item) => ({
+                time: item.time,
+                open: Number(item.open),
+                high: Number(item.high),
+                low: Number(item.low),
+                close: Number(item.close),
+                volume: Number(item.volume),
+            }));
+
+            console.log('Datos recibidos para el gráfico:', parsedData);
+
+            parsedData.forEach((vela, i) => {
+                console.log(`Vela ${i + 1}:`, vela);
+            });
+
+            candleSeries.setData(parsedData);
+
+            const volumeSeries = chart.addHistogramSeries({
+                priceFormat: {
+                    type: 'volume',
+                },
+                priceScaleId: '',
+            });
+            volumeSeries.priceScale().applyOptions({
+                scaleMargins: {
+                    top: 0.8,
+                    bottom: 0,
+                },
+            });
+
+            const volumeData = parsedData.map((vela) => ({
+                time: vela.time,
+                value: vela.volume,
+                color: vela.close > vela.open ? '#26a69a' : '#ef5350',
+            }));
+
+            volumeSeries.setData(volumeData);
+
+            // Agregar evento para mostrar/ocultar el volumen
+            const volumeCheckbox = document.getElementById('toggleVolume');
+            if (volumeCheckbox) {
+                volumeCheckbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        volumeSeries.setData(volumeData);
+                    } else {
+                        volumeSeries.setData([]);
+                    }
+                });
+            }
+
+            chart.timeScale().fitContent();
+        })
+        .catch((error) => {
+            console.error('Error al obtener datos:', error);
+        });
+
+    new ResizeObserver(() => {
+        chart.applyOptions({ width: chartContainer.clientWidth });
+    }).observe(chartContainer);
+});
+
+
+==================================================
+=== ARCHIVO: ./frontend/static/js/tablaCotizacionesUI.js ===
+==================================================
+
+// Este módulo se encarga de manipular el DOM para la tabla de cotizaciones.
+import { fetchTablaCotizacionesHTML } from './cotizacionesApiService.js';
+
+const cuerpoTabla = document.getElementById('tabla-datos');
+
+/**
+ * Obtiene el HTML de la tabla desde la API y lo renderiza en el DOM.
+ */
+export async function renderTabla() {
+    if (!cuerpoTabla) {
+        console.warn("Elemento 'tabla-datos' no encontrado. No se puede renderizar la tabla.");
+        return;
+    }
+    
+    console.log("🔄 Cargando datos de la tabla...");
+    const html = await fetchTablaCotizacionesHTML();
+    cuerpoTabla.innerHTML = html;
+    console.log("✅ Tabla de cotizaciones renderizada.");
+}
+
+==================================================
+=== ARCHIVO: ./frontend/static/js/tradingPage.js ===
+==================================================
+
+import { DOMElements } from './domElements.js';
+import { UIState } from './uiState.js';
+import { UIUpdater } from './uiUpdater.js';
+import { FormLogic } from './formLogic.js';
+
+// Este es el punto de entrada principal. Orquesta todos los módulos.
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // --- LÓGICA DE CONTROL DE ALTO NIVEL ---
+    function cambiarModo(modo) {
+        DOMElements.inputAccion.val(modo);
+        
+        UIUpdater.actualizarBotones();
+        UIUpdater.actualizarVisibilidadCampos();
+        
+        let tickerParaSaldo = '';
+        if (UIState.esModoCompra()) {
+            const criptosSinUSDT = window.todasLasCriptos.filter(c => c.ticker !== 'USDT');
+            FormLogic.popularSelector(DOMElements.selectorPrincipal, criptosSinUSDT, 'BTC');
+            tickerParaSaldo = UIState.getTickerPago();
+        } else {
+            const tickerPorDefecto = window.monedasPropias.length > 0 ? window.monedasPropias[0].ticker : null;
+            tickerParaSaldo = FormLogic.popularSelector(DOMElements.selectorPrincipal, window.monedasPropias, tickerPorDefecto);
+        }
+        
+        UIUpdater.mostrarSaldo(tickerParaSaldo);
+        UIUpdater.actualizarLabelMonto();
+        UIUpdater.resetSlider();
+    }
+
+    // --- CONFIGURACIÓN DE EVENT LISTENERS ---
+    function setupEventListeners() {
+        DOMElements.botonComprar.on('click', () => cambiarModo('comprar'));
+        DOMElements.botonVender.on('click', () => cambiarModo('vender'));
+
+        DOMElements.selectorPrincipal.on('change', () => {
+            UIUpdater.actualizarLabelMonto();
+            if (!UIState.esModoCompra()) {
+                UIUpdater.mostrarSaldo(UIState.getTickerPrincipal());
+            }
+        });
+
+        DOMElements.selectorPagarCon.on('change', () => {
+            UIUpdater.actualizarLabelMonto();
+            if (UIState.esModoCompra()) {
+                UIUpdater.mostrarSaldo(UIState.getTickerPago());
+            }
+        });
+        
+        DOMElements.selectorRecibirEn.on('change', UIUpdater.actualizarLabelMonto);
+        DOMElements.radioModoIngreso.on('change', UIUpdater.actualizarLabelMonto);
+
+        DOMElements.sliderMonto.on('input', () => {
+            const valorCalculado = FormLogic.calcularMontoSlider();
+            UIUpdater.setInputMonto(valorCalculado.toFixed(8));
+        });
+    }
+
+    // --- INICIALIZACIÓN ---
+    function initialize() {
+        // Inicializar Select2 en todos los selectores
+        [DOMElements.selectorPrincipal, DOMElements.selectorPagarCon, DOMElements.selectorRecibirEn].forEach(sel => {
+            sel.select2({ width: '100%', dropdownCssClass: 'text-dark' });
+        });
+        
+        // Poblar selectores secundarios una sola vez
+        FormLogic.popularSelector(DOMElements.selectorPagarCon, window.monedasPropias, 'USDT');
+        FormLogic.popularSelector(DOMElements.selectorRecibirEn, window.todasLasCriptos, 'USDT');
+        
+        setupEventListeners();
+        
+        // Iniciar en modo compra por defecto
+        cambiarModo('comprar');
+    }
+
+    initialize();
+});
+
+==================================================
+=== ARCHIVO: ./frontend/static/js/uiState.js ===
+==================================================
+
+import { DOMElements } from './domElements.js';
+
+// Mantiene y provee el estado actual de la UI, desacoplando la lógica de la lectura directa del DOM.
+export const UIState = {
+    esModoCompra() {
+        return DOMElements.inputAccion.val() === 'comprar';
+    },
+    getModoIngreso() {
+        return DOMElements.radioModoIngreso.filter(':checked').val();
+    },
+    getTickerPrincipal() {
+        return DOMElements.selectorPrincipal.val();
+    },
+    getTickerPago() {
+        return DOMElements.selectorPagarCon.val();
+    },
+    getTickerRecibo() {
+        return DOMElements.selectorRecibirEn.val();
+    }
+};
+
+==================================================
+=== ARCHIVO: ./frontend/static/js/uiUpdater.js ===
+==================================================
+
+import { DOMElements } from './domElements.js';
+import { UIState } from './uiState.js';
+
+// Contiene todas las funciones que modifican visualmente el DOM.
+export const UIUpdater = {
+    actualizarBotones() {
+        const esCompra = UIState.esModoCompra();
+        DOMElements.botonConfirmar.text(esCompra ? 'COMPRAR' : 'VENDER').toggleClass('btn-success', esCompra).toggleClass('btn-danger', !esCompra);
+        DOMElements.botonComprar.toggleClass('active btn-success', esCompra).toggleClass('btn-outline-secondary', !esCompra);
+        DOMElements.botonVender.toggleClass('active btn-danger', !esCompra).toggleClass('btn-outline-secondary', esCompra);
+    },
+
+    actualizarVisibilidadCampos() {
+        const esCompra = UIState.esModoCompra();
+        DOMElements.campoPagarCon.toggle(esCompra);
+        DOMElements.campoRecibirEn.toggle(!esCompra);
+        DOMElements.selectorPagarCon.prop('disabled', !esCompra);
+        DOMElements.selectorRecibirEn.prop('disabled', esCompra);
+    },
+
+    actualizarLabelMonto() {
+        const esModoMonto = UIState.getModoIngreso() === 'monto';
+        const esCompra = UIState.esModoCompra();
+        let tickerRelevante = '';
+
+        if (esCompra) {
+            tickerRelevante = esModoMonto ? UIState.getTickerPrincipal() : UIState.getTickerPago();
+        } else {
+            tickerRelevante = esModoMonto ? UIState.getTickerPrincipal() : UIState.getTickerRecibo();
+        }
+        
+        const etiqueta = esModoMonto ? 'Monto' : 'Total';
+        DOMElements.labelMonto.text(`${etiqueta} (${tickerRelevante || '...'})`);
+    },
+
+    mostrarSaldo(ticker) {
+        if (!ticker) {
+            DOMElements.spanSaldoDisponible.text('--');
+            return;
+        }
+        // Asume que 'billetera' es una variable global disponible (desde el HTML)
+        const saldo = window.billetera[ticker] || '0.00';
+        const saldoFormateado = parseFloat(saldo).toFixed(8);
+        DOMElements.spanSaldoDisponible.text(`${saldoFormateado} ${ticker}`);
+    },
+
+    setInputMonto(valor) {
+        DOMElements.inputMonto.val(valor);
+    },
+
+    resetSlider() {
+        DOMElements.sliderMonto.val(0);
+    }
+};
+
+==================================================
+=== ARCHIVO: ./frontend/templates/billetera.html ===
+==================================================
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlocX - Billetera</title>
+    <link rel="icon" href="{{ url_for('static', filename='img/logo_BlocX.png') }}" type="image/x-icon">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles_trading.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-dark text-white">
+    <nav class="navbar navbar-expand-lg bg-black shadow">
+        <div class="container-fluid">
+            <a class="navbar-brand text-warning d-flex align-items-center gap-2" href="{{ url_for('home.index') }}">
+                <img src="{{ url_for('static', filename='img/logo_BlocX.png') }}" alt="Logo" width="40" height="40">
+                <span>BlocX</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon bg-light"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('home.index') }}">Cotizaciones</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('trading.mostrar_trading_page') }}">Trading</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('billetera.mostrar_billetera') }}">Billetera</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container my-4">
+        <div class="text-center">
+            <h2 class="text-warning mb-4">Billetera</h2>
+        </div>
+
+        <div class="table-responsive mt-4">
+            <table class="table table-dark table-bordered align-middle text-center">
+                <thead class="table-secondary">
+                    <tr class="table-dark">
+                        <th>Nombre</th>
+                        <th>Cantidad</th>
+                        <th>Precio Actual</th>
+                        <th>Valor USD</th>
+                        <th>G&P (USD)</th>
+                        <th>G&P (%)</th>
+                        <th>% Billetera</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-billetera">
+                    {% include "fragmento_billetera.html" %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
+
+==================================================
+=== ARCHIVO: ./frontend/templates/fragmento_billetera.html ===
+==================================================
+
+{% for cripto in datos %}
+<tr>
+    <td class="text-center">
+        {{ cripto.ticker }}
+        {% if cripto.es_polvo %}
+            <span class="text-muted" style="font-size: 0.8em;">(polvo)</span>
+        {% endif %}
+    </td>
+    <td class="text-center">
+        {% if cripto.ticker != 'USDT' %}
+            {{ cripto.cantidad | formato_cantidad }}
+        {% else %}
+            {{ cripto.cantidad | formato_valor(2, 0.01, '') }}
+        {% endif %}
+    </td>
+    <td class="text-center">{{ cripto.precio_actual | formato_valor(6, 0.000001, '') }}</td>
+    <td class="text-center">{{ cripto.valor_usdt | formato_valor }}</td>
+    <td class="text-center" style="color: {{ cripto.color_ganancia }};">
+        {{ cripto.ganancia_perdida | formato_valor }}
+    </td>
+    <td class="text-center" style="color: {{ cripto.color_porcentaje }};">
+        {{ cripto.porcentaje_ganancia | formato_valor(2, 0.0001, '') }}%
+    </td>
+    <td class="text-center">{{ cripto.porcentaje | formato_valor(2, 0.01, '') }}%</td>
+</tr>
+{% endfor %}
+
+==================================================
+=== ARCHIVO: ./frontend/templates/fragmento_historial.html ===
+==================================================
+
+{% for item in historial %}
+    <tr>
+        <!-- Columna 1: Fecha y Hora -->
+        <td class="text-start ps-3">
+            {{ item.fecha_formateada }} <span class="text-white-50" style="padding-left: 1em">{{ item.hora_formateada }}</span>
+        </td>
+
+        <!-- Columna 2: Par de Trading -->
+        <td class="fw-bold">
+            {% if item.tipo == 'compra' %}
+                {{ item.destino.ticker }}/{{ item.origen.ticker }}
+            {% else %}
+                {{ item.origen.ticker }}/{{ item.destino.ticker }}
+            {% endif %}
+        </td>
+        
+        <!-- Columna 3: Tipo -->
+        <td class="{% if item.tipo == 'compra' %}text-success{% elif item.tipo == 'venta' %}text-danger{% else %}text-warning{% endif %}">
+            {{ item.tipo|capitalize }}
+        </td>
+
+        <!-- Columna 4: Cantidad (de la moneda principal del par) -->
+        <td>
+            {% if item.tipo == 'compra' %}
+                {{ item.destino.cantidad | formato_cantidad }} {{ item.destino.ticker }}
+            {% else %}
+                {{ item.origen.cantidad | formato_cantidad }} {{ item.origen.ticker }}
+            {% endif %}
+        </td>
+        
+        <!-- Columna 5: Valor Total -->
+        <td>{{ item.valor_usd | formato_valor }}</td>
+    </tr>
+{% endfor %}
+
+==================================================
+=== ARCHIVO: ./frontend/templates/fragmento_tabla.html ===
+==================================================
+
+{% for fila in tabla %}
+<tr>
+    {% for valor in fila %}
+        <td class="{{ clases_por_columna[loop.index0] if clases_por_columna is defined else '' }} py-3">{{ valor|safe }}</td>
+    {% endfor %}
+</tr>
+{% endfor %}
+
+==================================================
+=== ARCHIVO: ./frontend/templates/index.html ===
+==================================================
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>BlocX</title>
+	<link rel="icon" href="{{ url_for('static', filename='img/logo_BlocX.png') }}" type="image/x-icon">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/styles_index.css') }}">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet"
+		integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+</head>
+
+<body class="bg-dark text-white">
+
+
+	<nav class="navbar navbar-expand-lg bg-black shadow">
+		<div class="container-fluid">
+			<a class="navbar-brand text-warning d-flex align-items-center gap-2" href="{{ url_for('home.index') }}">
+				<img src="{{ url_for('static', filename='img/logo_BlocX.png') }}" alt="Logo" width="40" height="40">
+				<span>BlocX</span>
+			</a>
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+				<span class="navbar-toggler-icon bg-light"></span>
+			</button>
+			<div class="collapse navbar-collapse" id="navbarNav">
+				<ul class="navbar-nav ms-auto">
+					<li class="nav-item">
+						<a class="nav-link text-white" href="{{ url_for('home.index') }}">Cotizaciones</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link text-white" href="{{ url_for('trading.mostrar_trading_page') }}">Trading</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link text-white" href="{{ url_for('billetera.mostrar_billetera') }}">Billetera</a>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</nav>
+
+	<!-- Contenedor principal -->
+	<main class="container-fluid mt-4">
+		<div class="row">
+			<div class="col-12">
+				<div class="p-2 shadow text-center">
+					<h3 class="text-warning">Cotizaciones</h3>
+					<table class="table table-dark table-striped mt-4">
+						<thead>
+							<tr>
+								<th class="text-start px-3">#</th>
+								<th class="text-start px-3">Nombre</th>
+								<th class="text-start px-3">Precio</th>
+								<th class="text-end px-3">1h</th>
+								<th class="text-end px-3">24h</th>
+								<th class="text-end px-3">7d</th>
+								<th class="text-end px-3">Cap. Mercado</th>
+								<th class="text-end px-3">Volumen</th>
+								<th class="text-end px-3">Suministro</th>
+							</tr>
+						</thead>
+						<tbody id="tabla-datos" class="align-middle">
+							<!-- Aquí se insertarán las filas con JS -->
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	</main>
+
+</body>
+
+
+
+<script type="module" src="{{ url_for('static', filename='js/indexPage.js') }}"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"
+	integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq"
+	crossorigin="anonymous"></script>
+</body>
+
+</html>
+
+==================================================
+=== ARCHIVO: ./frontend/templates/trading.html ===
+==================================================
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlocX - Trading</title>
+    <link rel="icon" href="{{ url_for('static', filename='img/logo_BlocX.png') }}" type="image/x-icon">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles_trading.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+</head>
+
+<body class="bg-dark text-white">
+
+    <!-- ========== BARRA DE NAVEGACIÓN ========== -->
+    <nav class="navbar navbar-expand-lg bg-black shadow">
+        <div class="container-fluid">
+            <a class="navbar-brand text-warning d-flex align-items-center gap-2" href="{{ url_for('home.index') }}">
+                <img src="{{ url_for('static', filename='img/logo_BlocX.png') }}" alt="Logo" width="40" height="40">
+                <span>BlocX</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon bg-light"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('home.index') }}">Cotizaciones</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('trading.mostrar_trading_page') }}">Trading</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('billetera.mostrar_billetera') }}">Billetera</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ========== CONTENIDO PRINCIPAL ========== -->
+    <div class="container mt-5">
+        <div class="row">
+            <!-- ===== SECCIÓN GRÁFICO ===== -->
+            <div class="col-md-7">
+                <h3 class="text-light">Gráfico velas</h3>
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="toggleVolume" checked>
+                    <label class="form-check-label text-light" for="toggleVolume">Mostrar volumen</label>
+                </div>
+                <div class="py-3">
+                    <div id="chart"></div>
+                </div>
+            </div>
+
+            <!-- ===== SECCIÓN FORMULARIO DE TRADING ===== -->
+            <form class="col-md-5 p-3" id="formulario-trading" method="POST"
+                action="{{ url_for('trading.procesar_trading_form') }}">
+                <h2 class="text-warning">Trading</h2>
+
+                <!-- Fila para los selectores de moneda -->
+                <div class="row g-2 mb-3">
+                    <!-- Columna Izquierda: Criptomoneda Principal -->
+                    <div class="col-6">
+                        <label for="cripto" class="form-label">Criptomoneda</label>
+                        <select class="form-select" id="cripto" name="ticker" required></select>
+                    </div>
+
+                    <!-- Columna Derecha: Moneda de Pago o Recibo -->
+                    <div class="col-6">
+                        <!-- Campo para "Pagar con" (visible en modo compra) -->
+                        <div id="campo-pagar-con" style="display: none;">
+                            <label for="moneda-pago" class="form-label">Pagar con</label>
+                            <select class="form-select" id="moneda-pago" name="moneda-pago">
+                                <!-- Las opciones se poblarán dinámicamente con JS -->
+                            </select>
+                        </div>
+
+                        <!-- Campo para "Recibir en" (visible en modo venta) -->
+                        <div id="campo-recibir-en" style="display: none;">
+                            <label for="moneda-recibir" class="form-label">Recibir en</label>
+                            <select class="form-select" id="moneda-recibir" name="moneda-recibir">
+                                <!-- Las opciones se poblarán dinámicamente con JS -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones de Compra/Venta -->
+                <div class="btn-group mb-3 w-100" role="group" id="toggle-trade-type">
+                    <input type="hidden" name="accion" id="accion" value="comprar">
+                    <button type="button" class="btn w-50 btn-success active boton-comprar"
+                        data-action="comprar">Comprar</button>
+                    <button type="button" class="btn w-50 btn-outline-secondary boton-vender"
+                        data-action="vender">Vender</button>
+                </div>
+
+                <!-- Tipo de Orden -->
+                <div class="mb-3">
+                    <label class="form-label d-block mb-2">Tipo de orden</label>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-mercado" value="mercado"
+                            autocomplete="off" checked required>
+                        <label class="btn btn-outline-primary rounded-start-pill" for="tipo-mercado">Mercado</label>
+
+                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-limite" value="limite"
+                            autocomplete="off">
+                        <label class="btn btn-outline-primary" for="tipo-limite">Límite</label>
+
+                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-stop-limit" value="stop-limit"
+                            autocomplete="off">
+                        <label class="btn btn-outline-primary rounded-end-pill" for="tipo-stop-limit">Stop-Limit</label>
+                    </div>
+                </div>
+
+                <!-- Modo de Ingreso -->
+                <div class="mb-3">
+                    <label class="form-label d-block mb-2">Ingresar por</label>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="modo-ingreso" id="modo-monto" value="monto"
+                            autocomplete="off" checked required>
+                        <label class="btn btn-outline-primary rounded-start-pill" for="modo-monto">Monto
+                            (Cripto)</label>
+
+                        <input type="radio" class="btn-check" name="modo-ingreso" id="modo-total" value="total"
+                            autocomplete="off">
+                        <label class="btn btn-outline-primary rounded-end-pill" for="modo-total">Total (USD)</label>
+                    </div>
+                </div>
+
+                <!-- Campo para el Monto -->
+                <div class="mb-3">
+                    <label for="monto" class="form-label">Monto</label>
+                    <input type="number" class="form-control" id="monto" placeholder="0.00" name="monto" required
+                        min="0.00000001" step="any">
+                </div>
+
+                <!-- Slider de Porcentaje -->
+                <div class="mb-3">
+                    <input type="range" class="form-range" min="0" max="100" step="1" id="slider-monto" value="0"
+                        name="slider">
+                    <div class="d-flex justify-content-between text-white-50 small">
+                        <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+                    </div>
+                </div>
+
+                <!-- Saldo Disponible (se actualizará con JS) -->
+                <div class="mb-3 text-end text-secondary">
+                    <small>Disponible: <span id="saldo-disponible">--</span></small>
+                </div>
+
+                <!-- Botón de Confirmación -->
+                <button type="submit" class="btn w-100 btn-success boton-confirmar"
+                    id="boton-confirmar">CONFIRMAR</button>
+            </form>
+        </div>
+
+        <!-- ===== SECCIÓN HISTORIAL DE TRANSACCIONES ===== -->
+        <div class="row mt-5">
+            <div class="col-12">
+                <h4 class="text-warning">Historial de transacciones</h4>
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped text-center align-middle">
+                        <thead>
+                            <tr>
+                                <th class="text-start ps-3">Fecha</th>
+                                <th>Par</th>
+                                <th>Tipo</th>
+                                <th>Cantidad</th>
+                                <th>Valor Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-historial">
+                            {% include "fragmento_historial.html" %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SECCIÓN SCRIPTS ===== -->
+    <script>
+        // Estas variables ahora se asignan a window para ser accesibles globalmente por los módulos
+        window.todasLasCriptos = JSON.parse('{{ lista_todas_las_criptos_json|safe }}');
+        window.monedasPropias = JSON.parse('{{ lista_monedas_propias_json|safe }}');
+        window.billetera = JSON.parse('{{ billetera_json|safe }}');
+    </script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script defer
+        src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+    <script defer src="{{ url_for('static', filename='js/renderizarGraficoVelas.js') }}"></script>
+
+    <!-- ===> CARGA DEL NUEVO SCRIPT PRINCIPAL MODULAR <=== -->
+    <script type="module" src="{{ url_for('static', filename='js/tradingPage.js') }}"></script>
+</body>
+
+</html>
+
+==================================================
+=== ARCHIVO: ./README.md ===
+==================================================
+
+# Simulador Exchange - **BlokX**
+
+Este proyecto educativo fue desarrollado en el marco de la materia "Algoritmos y Estructuras de Datos I" de UADE, bajo la supervisión de la profesora Julia Monasterio.  
+Su objetivo es aplicar los conocimientos de la cátedra simulando el funcionamiento básico de un exchange de criptomonedas.  
+El sistema permite a los usuarios operar con saldo ficticio utilizando datos reales de cotización obtenidos de CoinGecko y Binance.
+
+## 🎯 Objetivos del proyecto
+
+- Familiarizar a los usuarios con el entorno de un exchange de criptomonedas.
+- Simular operaciones de compra y venta mediante distintos tipos de órdenes: Market, Limit y Stop-Loss.
+- Calcular y visualizar ganancias, pérdidas y balances del portafolio.
+- Almacenar toda la información de manera local utilizando archivos `.json`.
+- Comprender la interacción entre frontend y backend mediante una arquitectura moderna (HTML, CSS, Flask y Python).
+
+## ⚙️ Funcionalidades
+
+### Panel general de cotizaciones
+- Visualización del top de criptomonedas con:
+  - Nombre, ticker, precio, market cap, volumen, supply.
+  - Variación en 1h, 24h y 7 días.
+- Actualización automática de precios cada 15 segundos.
+
+### Panel de trading
+En este panel se verán tres secciones diferentes que contemplan lo necesario para ejecutar las ordenes de compra/venta.
+
+#### Gráfico de velas japonesas
+- Grafico en el cual se va a poder visualizar los diferentes pares de criptos usando Lightweight Charts (Libreria de JavaScript), en diferentes time frames: 1m, 5m, 15m, 1h, 4hs, 1d y 1w.
+
+#### Órdenes
+- Compra y venta de activos con órdenes:
+  - Market
+  - Limit
+  - Stop-loss
+- Comisión fija del 0.5% por transacción.
+- Validaciones de saldo y tenencias disponibles.
+
+#### Historial
+- Registro de todas las operaciones realizadas.
+- Incluye tipo de orden, precio, cantidad, fecha y fee aplicado.
+  
+### Billetera
+- Visualización de tenencias actuales:
+  - Cantidad, precio promedio, valor actual, ganancia/pérdida por activo.
+- Balance total del portafolio en USDT.
+
+## 🧠 Cómo funciona el sistema
+
+El sistema está diseñado bajo una arquitectura modular que separa responsabilidades:
+
+- **Rutas (`rutas/`)**: contienen los blueprints de Flask, que responden a las URLs y renderizan las plantillas HTML.
+- **Servicios (`servicios/`)**: implementan la lógica de negocio (por ejemplo, compra y venta de criptomonedas, cálculos de balances, renderizado dinámico de fragmentos).
+- **Acceso a datos (`acceso_datos/`)**: se encargan de leer y escribir archivos JSON, simulando una base de datos local.
+- **Frontend (`frontend/`)**: contiene el HTML, CSS y JavaScript para la interfaz del usuario, incluyendo gráficos interactivos y recarga dinámica de datos.
+
+### Flujo general
+
+1. Al ingresar a la app, se cargan cotizaciones reales desde CoinGecko.
+2. El usuario puede:
+   - Consultar cotizaciones (actualizadas cada 15 segundos).
+   - Ingresar al panel de trading y operar.
+   - Visualizar su billetera y el historial de operaciones.
+3. Toda la información es persistida automáticamente en archivos `.json`.
+
+## 🗃️ Estructura del proyecto
+
+```
+simulador_exchange/
+├── backend/
+│   ├── app.py                      # Servidor Flask y punto de entrada
+│   ├── config.py                   # Configuración del sistema y constantes globales
+│   ├── rutas/                      # Blueprints que definen las vistas
+│   │   ├── __init__.py
+│   │   ├── home.py
+│   │   ├── trading_vista.py
+│   │   ├── billetera_vista.py
+│   │   └── api_externa.py
+│   ├── servicios/                  # Lógica de negocio de cada módulo
+│   │   ├── api_cotizaciones.py
+│   │   ├── cotizaciones.py
+│   │   ├── estado_billetera.py
+│   │   ├── trading_logica.py
+│   │   └── velas_logica.py
+│   ├── acceso_datos/              # Acceso y manipulación de archivos .json
+│   │   ├── datos_billetera.py
+│   │   ├── datos_cotizaciones.py
+│   │   └── datos_historial.py
+│   └── utils/                     # Utilidades auxiliares
+│       └── formateo_decimales.py
+│
+├── frontend/
+│   ├── templates/                 # Plantillas HTML renderizadas por Flask
+│   │   ├── index.html
+│   │   ├── billetera.html
+│   │   ├── trading.html
+│   │   ├── fragmento_billetera.html
+│   │   ├── fragmento_formulario_trading.html
+│   │   ├── fragmento_historial.html
+│   │   ├── fragmento_mensajes_flash.html
+│   │   └── fragmento_tabla.html
+│   └── static/                    # Archivos estáticos
+│       ├── css/
+│       │   ├── styles_index.css
+│       │   └── styles_trading.css
+│       ├── img/
+│       │   └── logo_BlocX.png
+│       └── js/
+│           ├── funciones.js
+│           └── grafico_velas.js
+│
+├── datos/                         # Archivos de persistencia
+│   ├── billetera.json
+│   ├── datos_cotizaciones.json
+│   ├── datos_velas.json
+│   └── historial_operaciones.json
+│
+├── requirements.txt
+├── .gitignore
+└── README.md
+```
+
+## 🚀 Cómo ejecutar el proyecto
+
+### 1. Crear entorno virtual (recomendado)
+```bash
+python3 -m venv venv
+source venv/bin/activate  # En Windows: venv\Scripts\activate
+```
+
+### 2. Instalar dependencias
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Iniciar la app
+```bash
+python3 app.py
+```
+
+Y luego acceder desde el navegador a:  
+```
+http://localhost:5000
+```
+
+## 📦 Tecnologías utilizadas
+
+- Python 3.13
+- Flask
+- HTML, CSS, JavaScript
+- Lightweight Charts (TradingView)
+
+## 📌 Notas
+
+- Todos los datos se almacenan localmente en formato JSON.
+- No se requiere conexión a bases de datos externas.
+- El sistema está pensado para ser didáctico y extensible.
+
+---
+
+**Grupo 12**  
+Fausto Lovera — Patricio Menta — Andrei Veis
+
+
+==================================================
+=== ARCHIVO: ./requirements.txt ===
+==================================================
+
+Flask==3.1.0
+itsdangerous==2.2.0
+Jinja2==3.1.6
+MarkupSafe==3.0.2
+requests==2.32.3
+Werkzeug==3.1.3
+flasgger==0.9.5
+
+
+==================================================
+=== FIN DEL REPORTE ===
+==================================================

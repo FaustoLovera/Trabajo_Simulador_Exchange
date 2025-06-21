@@ -1,7 +1,0 @@
-{% for fila in tabla %}
-<tr>
-    {% for valor in fila %}
-        <td class="{{ clases_por_columna[loop.index0] if clases_por_columna is defined else '' }} py-3">{{ valor|safe }}</td>
-    {% endfor %}
-</tr>
-{% endfor %}
