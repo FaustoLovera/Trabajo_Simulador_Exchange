@@ -1,5 +1,9 @@
 import os
 from decimal import getcontext, ROUND_HALF_DOWN
+from dotenv import load_dotenv
+
+# Cargar variables de entorno desde el archivo .env
+load_dotenv()
 
 # Base del proyecto y carpeta de datos
 PROYECTO_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -14,7 +18,9 @@ VELAS_PATH = os.path.join(BASE_DATA_DIR, "velas.json")
 
 # Configuración general
 BALANCE_INICIAL_USDT = "10000"
-FLASK_SECRET_KEY = os.environ.get("FLASK_SECRET_KEY", "clave_por_defecto_insegura")
+
+# Clave secreta para Flask
+FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "clave_por_defecto_insegura")
 
 # URLs de APIs
 COINGECKO_URL = "https://api.coingecko.com/api/v3/coins/markets"
