@@ -2,12 +2,12 @@
 === REPORTE DE CÓDIGO CONSOLIDADO ===
 Proyecto: Trabajo_Simulador_Exchange
 Ruta: /Users/andreiveis/UADE/2do cuatrimestre/05_Algoritmos y Estructura de datos I/Trabajo_Simulador_Exchange
-Generado el: Sat Jun 21 18:02:22 -03 2025
+Generado el: Mon Jun 23 10:46:22 -03 2025
 ==================================================
 
 --- INFORMACIÓN DEL REPOSITORIO GIT ---
 Rama actual: dev
-Último commit: 53e6765 - trading.html está roto el JS. (andreiveisuade, 3 minutes ago)
+Último commit: d39c7a7 - Documentacion: Agregado de DOCSTRINGS y comentarios. (andreiveisuade, 2 days ago)
 ---
 
 --- ESTRUCTURA DEL DIRECTORIO ---
@@ -32,10 +32,10 @@ Rama actual: dev
 │   │   ├── estado_billetera.py
 │   │   ├── trading_logica.py
 │   │   └── velas_logica.py
-│   ├── utilidades
 │   └── utils
 │       └── formatters.py
 ├── config.py
+├── documentacion.md
 ├── frontend
 │   ├── static
 │   │   ├── css
@@ -48,7 +48,7 @@ Rama actual: dev
 ├── README.md
 └── requirements.txt
 
-13 directories, 23 files
+12 directories, 24 files
 ---
 
 ==================================================
@@ -175,14 +175,32 @@ diagrama.png
 === ARCHIVO: ./backend/__init__.py ===
 ==================================================
 
+"""
+Paquete principal del backend de la aplicación.
+
+Este archivo `__init__.py` no solo marca el directorio `backend` como un paquete de
+Python, sino que también contiene la "Application Factory" `crear_app`.
+Este patrón es una buena práctica en Flask que permite crear múltiples instancias
+de la aplicación con diferentes configuraciones, facilitando las pruebas y la
+escalabilidad.
+"""
+
 from flask import Flask
 from config import FLASK_SECRET_KEY
 from backend.rutas import registrar_rutas
 
-def crear_app():
+def crear_app() -> Flask:
     """
-    Crea y configura la instancia de la aplicación Flask.
-    Este es el patrón de 'Application Factory'.
+    Crea, configura y devuelve una instancia de la aplicación Flask.
+
+    Esta función sigue el patrón de diseño "Application Factory". Se encarga de:
+    1. Crear la instancia de la aplicación Flask.
+    2. Configurar la ubicación de las carpetas de plantillas y archivos estáticos.
+    3. Establecer la clave secreta para la gestión de sesiones y mensajes flash.
+    4. Registrar todos los blueprints (conjuntos de rutas) de la aplicación.
+
+    Returns:
+        Flask: La instancia de la aplicación Flask configurada y lista para usarse.
     """
     app = Flask(
         __name__,
@@ -190,10 +208,8 @@ def crear_app():
         template_folder="../frontend/templates",
     )
 
-    # Configura la clave secreta, necesaria para mensajes flash
     app.secret_key = FLASK_SECRET_KEY
 
-    # Registra todos los blueprints (rutas) de la aplicación
     registrar_rutas(app)
 
     return app
@@ -210,11 +226,30 @@ from config import BILLETERA_PATH, BALANCE_INICIAL_USDT
 
 def cargar_billetera():
     """
-    Carga la billetera desde el archivo JSON de forma segura.
-    Si el archivo no existe, está vacío o corrupto, crea una billetera inicial.
+    Carga la billetera de criptomonedas desde un archivo JSON.
+
+    Esta función se encarga de leer el archivo `billetera.json`. Si el archivo no existe,
+    está vacío o contiene datos corruptos, se crea una nueva billetera con un saldo
+    inicial de USDT, definido por `BALANCE_INICIAL_USDT`.
+
+    Maneja de forma segura la conversión de los saldos de texto a objetos Decimal
+    para mantener la precisión en los cálculos financieros.
+
+    Returns:
+        dict[str, Decimal]: Un diccionario que representa la billetera.
+                            Las claves son los tickers de las criptomonedas (ej. "USDT", "BTC")
+                            y los valores son las cantidades como objetos Decimal.
+
+    Example:
+        >>> # Suponiendo que el archivo de billetera no existe o está vacío.
+        >>> billetera = cargar_billetera()
+        >>> print(billetera)
+        {'USDT': Decimal('10000')}
     """
+    # Asegura que el directorio de la billetera exista.
     os.makedirs(os.path.dirname(BILLETERA_PATH), exist_ok=True)
 
+    # Si el archivo no existe o está vacío, crea una billetera inicial.
     if not os.path.exists(BILLETERA_PATH) or os.path.getsize(BILLETERA_PATH) == 0:
         billetera_inicial = {"USDT": Decimal(BALANCE_INICIAL_USDT)}
         guardar_billetera(billetera_inicial)
@@ -223,20 +258,24 @@ def cargar_billetera():
     try:
         with open(BILLETERA_PATH, "r", encoding="utf-8") as f:
             datos_cargados = json.load(f)
-            # Convierte todos los valores a Decimal, manejando posibles errores
+
             billetera = {}
+            # Convierte todos los valores a Decimal para mantener la precisión.
             for ticker, cantidad_str in datos_cargados.items():
                 try:
                     billetera[ticker] = Decimal(str(cantidad_str))
                 except InvalidOperation:
+                    # Si un valor no es un número válido, se informa y se establece en 0.
                     print(
                         f"Advertencia: Valor inválido para {ticker} en billetera.json. Se usará 0."
                     )
                     billetera[ticker] = Decimal("0")
             return billetera
     except (json.JSONDecodeError, FileNotFoundError):
+        # Si el archivo está corrupto o no se encuentra (aunque ya se verificó),
+        # se reinicia la billetera para evitar errores en la aplicación.
         print(
-            f"Advertencia: Archivo '{BILLETERA_PATH}' corrupto. Se reiniciará la billetera."
+            f"Advertencia: Archivo '{BILLETERA_PATH}' corrupto o no encontrado. Se reiniciará la billetera."
         )
         billetera_inicial = {"USDT": Decimal(BALANCE_INICIAL_USDT)}
         guardar_billetera(billetera_inicial)
@@ -245,12 +284,31 @@ def cargar_billetera():
 
 def guardar_billetera(billetera):
     """
-    Guarda el estado de la billetera en el archivo JSON.
-    Convierte los valores Decimal a string para preservar la precisión.
+    Guarda el estado actual de la billetera en un archivo JSON.
+
+    Esta función toma un diccionario que representa la billetera y lo serializa
+    a formato JSON, guardándolo en la ruta especificada por `BILLETERA_PATH`.
+    Los valores de tipo Decimal se convierten a string para evitar la pérdida de
+    precisión durante la serialización.
+
+    Args:
+        billetera (dict[str, Decimal]): El diccionario de la billetera a guardar.
+                                         Las claves son los tickers (ej. "BTC") y los valores
+                                         son las cantidades en formato Decimal.
+
+    Example:
+        >>> mi_billetera = {'USDT': Decimal('5000.00'), 'BTC': Decimal('0.1')}
+        >>> guardar_billetera(mi_billetera)
+        # Esto creará o sobrescribirá billetera.json con:
+        # {
+        #     "USDT": "5000.00",
+        #     "BTC": "0.1"
+        # }
     """
+    # Asegura que el directorio de la billetera exista antes de guardar.
     os.makedirs(os.path.dirname(BILLETERA_PATH), exist_ok=True)
 
-    # Prepara la billetera para ser guardada, convirtiendo Decimal a string
+    # Convierte los valores Decimal a string para una serialización JSON segura y precisa.
     billetera_serializable = {
         ticker: str(cantidad) for ticker, cantidad in billetera.items()
     }
@@ -268,12 +326,29 @@ import os
 from decimal import Decimal
 from config import COTIZACIONES_PATH
 
+# Caché en memoria para almacenar los precios de las criptomonedas.
+# Esto evita leer el archivo JSON en cada consulta, mejorando el rendimiento.
 precios_cache = {}
 
 def cargar_datos_cotizaciones():
     """
-    Función interna y segura para cargar todas las cotizaciones del archivo JSON.
-    Maneja archivos inexistentes o corruptos.
+    Carga la lista de cotizaciones desde el archivo JSON de forma segura.
+
+    Esta función lee el archivo definido en `COTIZACIONES_PATH`. Si el archivo
+    no existe, está vacío o su contenido JSON es inválido, devuelve una lista vacía
+    para evitar errores en el resto de la aplicación.
+
+    Returns:
+        list[dict]: Una lista de diccionarios, donde cada diccionario representa
+                    una criptomoneda con sus datos (ej. ticker, precio_usd).
+                    Retorna una lista vacía si la carga falla.
+
+    Example:
+        >>> # Suponiendo que cotizaciones.json contiene: 
+        >>> # [{'ticker': 'BTC', 'precio_usd': '65000.00'}]
+        >>> datos = cargar_datos_cotizaciones()
+        >>> print(datos)
+        [{'ticker': 'BTC', 'precio_usd': '65000.00'}]
     """
     if not os.path.exists(COTIZACIONES_PATH) or os.path.getsize(COTIZACIONES_PATH) == 0:
         return []
@@ -282,17 +357,26 @@ def cargar_datos_cotizaciones():
         with open(COTIZACIONES_PATH, "r", encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, FileNotFoundError):
+        # Si hay un error de decodificación o el archivo no se encuentra, 
+        # se retorna una lista vacía para manejar el error de forma controlada.
         return []
 
 def recargar_cache_precios():
     """
-    Actualiza el diccionario de caché de precios en memoria desde el archivo JSON.
-    Debe ser llamada después de que los datos de cotizaciones se actualizan.
+    Actualiza el caché de precios en memoria (`precios_cache`) a partir del archivo JSON.
+
+    Esta función debe ser llamada cada vez que los datos de cotizaciones en el
+    archivo `cotizaciones.json` son actualizados. Lee los datos y los carga en el
+    diccionario `precios_cache` para un acceso rápido y eficiente.
+
+    Side Effects:
+        Modifica la variable global `precios_cache`.
     """
     global precios_cache
     print("🔄 Recargando caché de precios...")
     lista_criptos = cargar_datos_cotizaciones()
     
+    # Crea un diccionario con el ticker en mayúsculas como clave y el precio como Decimal.
     precios_cache = {
         cripto.get("ticker", "").upper(): Decimal(str(cripto.get("precio_usd", "0")))
         for cripto in lista_criptos
@@ -302,12 +386,33 @@ def recargar_cache_precios():
 
 def obtener_precio(ticker):
     """
-    Obtiene el precio de un ticker específico desde el caché en memoria.
-    Si el caché está vacío, lo carga por primera vez.
+    Obtiene el precio de una criptomoneda específica desde el caché en memoria.
+
+    Si el caché de precios está vacío, llama a `recargar_cache_precios()` para cargarlo.
+    La búsqueda del ticker no distingue entre mayúsculas y minúsculas.
+
+    Args:
+        ticker (str): El ticker de la criptomoneda a consultar (ej. "BTC", "eth").
+
+    Returns:
+        Decimal | None: El precio de la criptomoneda como un objeto Decimal si se encuentra.
+                        Retorna `None` si el ticker no existe en el caché.
+
+    Example:
+        >>> # Suponiendo que el caché ha sido cargado con {'BTC': Decimal('65000.00')}
+        >>> precio_btc = obtener_precio("btc")
+        >>> print(precio_btc)
+        Decimal('65000.00')
+        
+        >>> precio_luna = obtener_precio("LUNA")
+        >>> print(precio_luna)
+        None
     """
+    # Si el caché está vacío, se carga por primera vez.
     if not precios_cache:
         recargar_cache_precios()
     
+    # Devuelve el precio del ticker (en mayúsculas) o None si no se encuentra.
     return precios_cache.get(ticker.upper())
 
 ==================================================
@@ -324,7 +429,20 @@ from config import HISTORIAL_PATH
 def cargar_historial():
     """
     Carga el historial de transacciones desde el archivo JSON.
-    Si el archivo no existe, está vacío o corrupto, devuelve una lista vacía.
+
+    Lee el archivo especificado en `HISTORIAL_PATH`. Si el archivo no existe,
+    está vacío o contiene JSON mal formado, devuelve una lista vacía para
+    prevenir errores en la aplicación.
+
+    Returns:
+        list[dict]: Una lista de diccionarios, donde cada uno representa una
+                    transacción guardada. Devuelve una lista vacía si la
+                    carga falla.
+
+    Example:
+        >>> historial = cargar_historial()
+        >>> print(historial)
+        [{'id': 1, 'timestamp': '...', 'tipo': 'compra', ...}]
     """
     if not os.path.exists(HISTORIAL_PATH) or os.path.getsize(HISTORIAL_PATH) == 0:
         return []
@@ -340,22 +458,41 @@ def cargar_historial():
 
 
 def guardar_en_historial(
-    tipo_operacion,
-    moneda_origen,
-    cantidad_origen,
-    moneda_destino,
-    cantidad_destino,
-    valor_usd,
+    tipo_operacion: str,
+    moneda_origen: str,
+    cantidad_origen: Decimal,
+    moneda_destino: str,
+    cantidad_destino: Decimal,
+    valor_usd: Decimal,
 ):
     """
     Guarda una nueva operación en el historial de transacciones.
+
+    Carga el historial existente, crea un nuevo registro de operación y lo
+    añade al principio de la lista. Finalmente, guarda la lista actualizada
+    en el archivo JSON.
+
+    Args:
+        tipo_operacion (str): El tipo de operación (ej. "compra", "venta").
+        moneda_origen (str): Ticker de la moneda de origen (ej. "USDT").
+        cantidad_origen (Decimal): La cantidad de la moneda de origen.
+        moneda_destino (str): Ticker de la moneda de destino (ej. "BTC").
+        cantidad_destino (Decimal): La cantidad de la moneda de destino.
+        valor_usd (Decimal): El valor total de la transacción en USD.
+
+    Example:
+        >>> guardar_en_historial(
+                "compra", "USDT", Decimal("100"), "BTC", Decimal("0.0015"), Decimal("100")
+            )
+        # Esto añadirá una nueva entrada al archivo historial.json
     """
-    # Asegurarse de que el directorio de datos exista
+    # Asegura que el directorio del historial exista.
     os.makedirs(os.path.dirname(HISTORIAL_PATH), exist_ok=True)
 
     historial = cargar_historial()
 
-    # Crear el diccionario para la nueva operación
+    # Crea el diccionario para la nueva operación.
+    # Las cantidades Decimal se convierten a string para preservar la precisión.
     operacion = {
         "id": len(historial) + 1,
         "timestamp": datetime.now().isoformat(),
@@ -365,10 +502,10 @@ def guardar_en_historial(
         "valor_usd": str(valor_usd.quantize(Decimal("0.01"))),
     }
 
-    # Añadir la nueva operación al principio de la lista
+    # Añade la nueva operación al principio de la lista para mostrarla primero.
     historial.insert(0, operacion)
 
-    # Escribir la lista completa de nuevo en el archivo
+    # Guarda la lista completa de nuevo en el archivo.
     with open(HISTORIAL_PATH, "w", encoding="utf-8") as f:
         json.dump(historial, f, indent=4)
 
@@ -377,16 +514,43 @@ def guardar_en_historial(
 === ARCHIVO: ./backend/app.py ===
 ==================================================
 
+"""
+Punto de entrada para ejecutar la aplicación Flask en modo de desarrollo.
+
+Este script importa la 'Application Factory' (`crear_app`), la utiliza para
+crear una instancia de la aplicación y, si se ejecuta directamente, inicia
+el servidor de desarrollo de Flask.
+
+Para iniciar la aplicación, ejecuta el siguiente comando desde el directorio raíz
+del proyecto:
+    python -m backend.app
+"""
+
+from flask import Flask
 from . import crear_app
 
-app = crear_app()
+# Se crea la instancia global de la aplicación llamando a la factory.
+app: Flask = crear_app()
 
+# El siguiente bloque se ejecuta solo si el script es llamado directamente
+# por el intérprete de Python (por ejemplo, `python -m backend.app`).
 if __name__ == "__main__":
+    # Inicia el servidor de desarrollo de Flask.
+    # `debug=True` activa el modo de depuración, que proporciona un depurador
+    # interactivo y recarga automáticamente el servidor al detectar cambios.
     app.run(debug=True)
 
 ==================================================
 === ARCHIVO: ./backend/rutas/__init__.py ===
 ==================================================
+
+"""
+Inicializa el paquete de rutas y registra todos los Blueprints de la aplicación.
+
+Este archivo importa los Blueprints definidos en los diferentes módulos de vistas
+(home, trading, billetera, etc.) y proporciona una función centralizada `registrar_rutas`
+para vincularlos a la instancia principal de la aplicación Flask.
+"""
 
 from .home import bp as home_bp
 from .trading_vista import bp as trading_bp
@@ -395,6 +559,16 @@ from .api_externa import bp as api_ruta_bp
 
 
 def registrar_rutas(app):
+    """
+    Registra todos los Blueprints de la aplicación en la instancia de Flask.
+
+    Args:
+        app (Flask): La instancia principal de la aplicación Flask a la que se
+                     registrarán los Blueprints.
+
+    Side Effects:
+        Modifica el objeto `app` registrando las rutas definidas en los Blueprints.
+    """
     app.register_blueprint(home_bp)
     app.register_blueprint(trading_bp)
     app.register_blueprint(billetera_bp)
@@ -405,93 +579,165 @@ def registrar_rutas(app):
 === ARCHIVO: ./backend/rutas/api_externa.py ===
 ==================================================
 
-from flask import Blueprint, jsonify, render_template
-import os 
-import json
-from backend.servicios.api_cotizaciones import obtener_datos_criptos_coingecko, obtener_velas_binance
-from backend.acceso_datos.datos_cotizaciones import cargar_datos_cotizaciones
-from config import VELAS_PATH
+"""
+Define los endpoints de la API externa de la aplicación.
 
+Este módulo contiene las rutas que exponen datos del mercado de criptomonedas,
+como cotizaciones y datos de velas (candlestick), para ser consumidos por el frontend
+u otros clientes.
+"""
+
+from flask import Blueprint, jsonify
+from backend.servicios.api_cotizaciones import obtener_datos_criptos_coingecko, obtener_velas_de_api
+from backend.acceso_datos.datos_cotizaciones import cargar_datos_cotizaciones
 
 bp = Blueprint("api_externa", __name__, url_prefix="/api")
 
 
 @bp.route("/actualizar")
 def actualizar():
-    """Actualiza los datos de criptomonedas y velas desde las APIs externas."""
-    # ---> AÑADE ESTA LÍNEA EXACTAMENTE AQUÍ <---
-    print("--- PING: Endpoint /api/actualizar ALCANZADO ---") 
-    
+    """
+    Endpoint para forzar la actualización de los datos de cotizaciones desde CoinGecko.
+
+    Al ser llamado, este endpoint invoca al servicio que obtiene los precios más
+    recientes de las criptomonedas y los guarda localmente.
+
+    Returns:
+        Response: Un objeto JSON que confirma el estado de la operación.
+            Ejemplo: `{"estado": "ok", "cantidad_criptos": 100}`
+    """
+    print("--- PING: Endpoint /api/actualizar ALCANZADO ---")
     datos_criptos = obtener_datos_criptos_coingecko()
-    obtener_velas_binance()
     return jsonify({"estado": "ok", "cantidad_criptos": len(datos_criptos)})
 
 
 @bp.route("/cotizaciones")
 def get_cotizaciones():
-    """Retorna la lista completa de cotizaciones en formato JSON."""
+    """
+    Retorna la lista completa de cotizaciones almacenadas localmente.
+
+    Returns:
+        Response: Un objeto JSON que contiene una lista de todas las criptomonedas
+                  y sus datos de cotización.
+                  Ejemplo: `[{"ticker": "BTC", "precio_usd": "65000.00", ...}]`
+    """
     return jsonify(cargar_datos_cotizaciones())
 
 
-@bp.route("/velas")
-def obtener_datos_velas():
-    """Retorna los datos de velas desde un archivo JSON de forma segura."""
-    try:
-        if not os.path.exists(VELAS_PATH) or os.path.getsize(VELAS_PATH) == 0:
-            return jsonify([])
+@bp.route("/velas/<string:ticker>/<string:interval>")
+def obtener_datos_velas_por_ticker(ticker: str, interval: str):
+    """
+    Obtiene los datos de velas (candlestick) para un par y un intervalo específicos.
 
-        with open(VELAS_PATH, "r", encoding="utf-8") as archivo:
-            datos = json.load(archivo)
+    Esta ruta dinámica consulta a una API externa para obtener los datos históricos
+    de precios (OHLCV) necesarios para graficar las velas.
+
+    Args:
+        ticker (str): El símbolo del par a consultar (ej. "BTCUSDT").
+        interval (str): El intervalo de tiempo para las velas (ej. "1h", "4h", "1d").
+
+    Returns:
+        Response: Un objeto JSON con una lista de listas, donde cada sublista
+                  representa una vela. En caso de error, retorna una lista vacía.
+                  Ejemplo: `[[1622505600000, "49000.00", ...], ...]`
+    """
+    try:
+        datos = obtener_velas_de_api(ticker, interval)
         return jsonify(datos)
-    except (IOError, json.JSONDecodeError) as e:
-        print("❌ Error leyendo datos_velas.json:", e)
-        return jsonify({"error": "No se pudo leer el archivo de velas"}), 500
+    except Exception as e:
+        print(f"❌ Error en la ruta de velas para {ticker}/{interval}: {e}")
+        return jsonify([])
 
 ==================================================
 === ARCHIVO: ./backend/rutas/billetera_vista.py ===
 ==================================================
 
+"""
+Define las rutas relacionadas con la visualización de la billetera y el historial.
+
+Este módulo contiene los endpoints para renderizar la página de la billetera
+y para proporcionar datos financieros (estado actual y transacciones pasadas)
+ a través de una API REST al frontend.
+"""
+
 from flask import Blueprint, render_template, jsonify
 from backend.servicios.estado_billetera import estado_actual_completo, obtener_historial_formateado
-from backend.acceso_datos.datos_historial import cargar_historial
-from backend.acceso_datos.datos_billetera import cargar_billetera
 
 bp = Blueprint("billetera", __name__)
 
 
 @bp.route("/billetera")
 def mostrar_billetera():
-    """Renderiza la página principal de la billetera (el contenedor HTML)."""
-    # Ya no pasamos datos porque JS los cargará.
+    """
+    Renderiza la página principal de la billetera.
+
+    Esta ruta sirve el archivo `billetera.html`, que actúa como el contenedor
+    principal para la interfaz de la billetera. Los datos se cargan de forma
+    asíncrona a través de llamadas a la API desde JavaScript.
+
+    Returns:
+        Response: El contenido HTML renderizado de la página de la billetera.
+    """
     return render_template("billetera.html")
 
 
 @bp.route("/api/billetera/estado-completo")
 def get_estado_billetera_completo():
-    """Devuelve el estado financiero detallado de la billetera en JSON."""
+    """
+    Endpoint de API que devuelve el estado financiero completo de la billetera.
+
+    Proporciona un resumen detallado que incluye el balance de cada criptomoneda,
+    su valor en USD, el total general, y el rendimiento.
+
+    Returns:
+        Response: Un objeto JSON con el estado completo de la billetera.
+            Ejemplo: `{"total_usd": "10500.50", "rendimiento": "5.00", ...}`
+    """
     datos = estado_actual_completo()
-    # La conversión de Decimal a string ya se realiza en la capa de servicio.
     return jsonify(datos)
 
 
 @bp.route("/api/historial")
 def get_historial_transacciones():
-    """Devuelve el historial completo y formateado de transacciones en JSON."""
+    """
+    Endpoint de API que devuelve el historial completo de transacciones.
+
+    Retorna una lista de todas las operaciones de compra y venta realizadas,
+    formateadas para su visualización en el frontend.
+
+    Returns:
+        Response: Un objeto JSON que contiene una lista de transacciones.
+            Ejemplo: `[{"id": 1, "fecha": "21/06/2025", "tipo": "compra", ...}]`
+    """
     return jsonify(obtener_historial_formateado())
 
 ==================================================
 === ARCHIVO: ./backend/rutas/home.py ===
 ==================================================
 
+"""
+Define la ruta principal (landing page) de la aplicación.
+
+Este módulo es responsable de servir la página de inicio (index.html),
+que actúa como el punto de entrada para los usuarios.
+"""
+
 from flask import Blueprint, render_template
 
 bp = Blueprint("home", __name__)
 
+
 @bp.route("/")
 def index():
     """
-    Sirve el esqueleto de la página principal. 
-    La carga y actualización de datos se maneja en el frontend.
+    Renderiza la página de inicio de la aplicación.
+
+    Esta ruta sirve el archivo `index.html`, que es el esqueleto principal
+    de la interfaz. El contenido dinámico, como las cotizaciones, se carga
+    posteriormente de forma asíncrona mediante JavaScript.
+
+    Returns:
+        Response: El contenido HTML renderizado de la página de inicio.
     """
     return render_template("index.html")
 
@@ -499,32 +745,57 @@ def index():
 === ARCHIVO: ./backend/rutas/trading_vista.py ===
 ==================================================
 
-# backend/rutas/trading_vista.py (VERSIÓN CON RUTAS SEPARADAS)
+"""
+Define las rutas para la funcionalidad de trading.
+
+Este módulo gestiona la visualización de la página de trading y el procesamiento
+de las operaciones de compra y venta de criptomonedas enviadas por el usuario.
+"""
 
 from flask import Blueprint, request, redirect, url_for, render_template, flash
-
 from backend.servicios.trading_logica import procesar_operacion_trading
 
 bp = Blueprint("trading", __name__)
 
 
-# RUTA GET para MOSTRAR la página de trading
 @bp.route("/trading", methods=["GET"])
 def mostrar_trading_page():
+    """
+    Renderiza la página de trading.
+
+    Esta ruta maneja las solicitudes GET para mostrar la interfaz de trading,
+    sirviendo el archivo `trading.html`.
+
+    Returns:
+        Response: El contenido HTML renderizado de la página de trading.
+    """
     return render_template("trading.html")
 
 
-# RUTA POST para PROCESAR la operación de trading
 @bp.route("/trading/operar", methods=["POST"])
 def procesar_trading_form():
-    """Procesa los datos del formulario de trading."""
-    
+    """
+    Procesa los datos del formulario de una operación de trading (compra/venta).
+
+    Recibe los datos del formulario enviado desde la página de trading, los pasa
+    al servicio de lógica de trading para su procesamiento y muestra un mensaje
+    (flash) al usuario con el resultado. Finalmente, redirige de vuelta a la
+    página de trading.
+
+    Side Effects:
+        - Llama a `procesar_operacion_trading` para modificar el estado de la billetera.
+        - Crea un mensaje flash para notificar al usuario.
+        - Redirige al usuario a la página de trading.
+
+    Returns:
+        Response: Una redirección a la página de trading.
+    """
     print(">>> DATOS RECIBIDOS DEL FORMULARIO:", request.form)
-    
+
     exito, mensaje = procesar_operacion_trading(request.form)
     flash(mensaje, "success" if exito else "danger")
 
-    # Siempre redirige de vuelta a la página principal de trading
+    # Siempre redirige de vuelta a la página principal de trading.
     return redirect(url_for("trading.mostrar_trading_page"))
 
 
@@ -532,22 +803,55 @@ def procesar_trading_form():
 === ARCHIVO: ./backend/servicios/__init__.py ===
 ==================================================
 
+"""
+El paquete 'servicios' contiene la lógica de negocio de la aplicación.
 
+Este módulo separa las operaciones complejas, los cálculos y las interacciones
+con APIs externas de las capas de acceso a datos y de las vistas (rutas).
+Su objetivo es mantener el código organizado, reutilizable y fácil de mantener.
+"""
 
 ==================================================
 === ARCHIVO: ./backend/servicios/api_cotizaciones.py ===
 ==================================================
 
+"""
+Servicio para interactuar con APIs externas de criptomonedas.
+
+Este módulo centraliza las llamadas a las APIs de CoinGecko (para cotizaciones
+generales del mercado) y Binance (para datos de velas/k-lines). Se encarga de
+realizar las peticiones, procesar los datos y guardarlos localmente.
+"""
+
 from decimal import Decimal
 import requests
-from backend.servicios.velas_logica import guardar_datos_cotizaciones, guardar_datos_velas
+from backend.servicios.velas_logica import guardar_datos_cotizaciones
 from config import COINGECKO_URL, BINANCE_URL, CANTIDAD_CRIPTOMONEDAS, CANTIDAD_VELAS
 from backend.utils.formatters import formato_numero_grande, formato_porcentaje, formato_valor_monetario
 
-def obtener_datos_criptos_coingecko():
+def obtener_datos_criptos_coingecko() -> list[dict]:
     """
-    Obtiene información del mercado de criptomonedas desde la API pública de CoinGecko.
-    Añade campos formateados para que la UI pueda renderizarlos directamente.
+    Obtiene y procesa datos de mercado desde la API de CoinGecko.
+
+    Realiza una petición para obtener una lista de las principales criptomonedas,
+    procesa la respuesta JSON, enriquece los datos con campos formateados para la UI,
+    y finalmente guarda las cotizaciones en un archivo local.
+
+    Returns:
+        list[dict]: Una lista de diccionarios, donde cada uno representa una
+                    criptomoneda con datos brutos y formateados. Retorna una
+                    lista vacía si ocurre un error.
+
+    Side Effects:
+        - Guarda los datos de cotizaciones en un archivo JSON local a través de
+          `guardar_datos_cotizaciones()`.
+        - Imprime logs en la consola sobre el estado de la petición.
+
+    Example of a returned item:
+        {
+            'id': 1, 'nombre': 'Bitcoin', 'ticker': 'BTC', 'precio_usd': '65000.10',
+            'precio_usd_formatted': '$65,000.10', 'market_cap_formatted': '$1.28T', ...
+        }
     """
     params = {
         "vs_currency": "usd",
@@ -559,8 +863,8 @@ def obtener_datos_criptos_coingecko():
     }
 
     try:
-        respuesta = requests.get(COINGECKO_URL, params)
-        respuesta.raise_for_status()  # Lanza una excepción para errores HTTP (4xx o 5xx)
+        respuesta = requests.get(COINGECKO_URL, params, timeout=10)
+        respuesta.raise_for_status()
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener datos de CoinGecko: {str(e)}")
         return []
@@ -569,14 +873,16 @@ def obtener_datos_criptos_coingecko():
 
     try:
         datos = respuesta.json()
-        resultado = [
-            {
+        resultado = []
+        for i, dato in enumerate(datos, start=1):
+            # Procesa cada criptomoneda de forma segura
+            resultado.append({
                 "id": i,
                 "nombre": dato.get("name"),
                 "ticker": dato.get('symbol', '').upper(),
                 "logo": dato.get("image"),
                 
-                # Datos crudos
+                # Datos crudos convertidos a string para consistencia
                 "precio_usd": str(Decimal(str(dato.get("current_price", 0)))),
                 "1h_%": str(Decimal(str(dato.get("price_change_percentage_1h_in_currency", 0)))),
                 "24h_%": str(Decimal(str(dato.get("price_change_percentage_24h_in_currency", 0)))),
@@ -586,17 +892,15 @@ def obtener_datos_criptos_coingecko():
                 "circulating_supply": str(Decimal(str(dato.get("circulating_supply", 0)))),
 
                 # Datos pre-formateados para la UI
-                "precio_usd_formatted": formato_valor_monetario(Decimal(str(dato.get("current_price", 0))), decimales=2),
+                "precio_usd_formatted": formato_valor_monetario(Decimal(str(dato.get("current_price", 0)))),
                 "1h_%_formatted": formato_porcentaje(Decimal(str(dato.get("price_change_percentage_1h_in_currency", 0)))),
                 "24h_%_formatted": formato_porcentaje(Decimal(str(dato.get("price_change_percentage_24h_in_currency", 0)))),
                 "7d_%_formatted": formato_porcentaje(Decimal(str(dato.get("price_change_percentage_7d_in_currency", 0)))),
                 "market_cap_formatted": formato_numero_grande(Decimal(str(dato.get("market_cap", 0)))),
                 "volumen_24h_formatted": formato_numero_grande(Decimal(str(dato.get("total_volume", 0)))),
                 "circulating_supply_formatted": f"{Decimal(str(dato.get('circulating_supply', 0))):,.0f} {dato.get('symbol', '').upper()}"
-            }
-            for i, dato in enumerate(datos, start=1)
-        ]
-    except (KeyError, TypeError, ValueError) as e:
+            })
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError) as e:
         print(f"❌ Error al procesar los datos de CoinGecko: {str(e)}")
         return []
 
@@ -605,60 +909,99 @@ def obtener_datos_criptos_coingecko():
     return resultado
 
 
-def obtener_velas_binance():
+def obtener_velas_de_api(ticker: str, interval: str) -> list[dict]:
     """
-    Obtiene datos históricos de velas (Klines) diarias del par BTC/USDT.
+    Obtiene datos históricos de velas (K-lines) desde la API de Binance.
+
+    Args:
+        ticker (str): El ticker de la criptomoneda (ej. "BTC").
+        interval (str): El intervalo de tiempo para las velas (ej. "1h", "4h", "1d").
+
+    Returns:
+        list[dict]: Una lista de diccionarios, donde cada uno representa una vela
+                    con datos OHLCV (Open, High, Low, Close, Volume). Retorna
+                    una lista vacía si ocurre un error.
+
+    Example of a returned item:
+        {
+            'time': 1622505600, 'open': '49000.00', 'high': '49500.00',
+            'low': '48800.00', 'close': '49300.00', 'volume': '1234.56'
+        }
     """
+    # La API de Binance espera el par completo (ej. 'BTCUSDT')
     params = {
-        "symbol": "BTCUSDT",
-        "interval": "1d",
+        "symbol": f"{ticker.upper()}USDT",
+        "interval": interval,
         "limit": CANTIDAD_VELAS,
     }
     try:
-        respuesta = requests.get(BINANCE_URL, params)
+        respuesta = requests.get(BINANCE_URL, params, timeout=10)
         respuesta.raise_for_status()
     except requests.exceptions.RequestException as e:
-        print(f"❌ Error al obtener datos de Binance: {str(e)}")
+        print(f"❌ Error al obtener datos de Binance para {ticker} ({interval}): {str(e)}")
         return []
 
-    print(f"✅ Estado de la respuesta Binance: {respuesta.status_code}")
+    print(f"✅ Estado de la respuesta Binance para {ticker} ({interval}): {respuesta.status_code}")
 
-    datos = respuesta.json()
-    resultado = [
-        {
-            "time": int(vela[0] / 1000),
-            "open": str(Decimal(vela[1])),
-            "high": str(Decimal(vela[2])),
-            "low": str(Decimal(vela[3])),
-            "close": str(Decimal(vela[4])),
-            "volume": str(Decimal(vela[5])),
-        }
-        for vela in datos
-    ]
-    
-    print(f"💡 Total de velas procesadas: {len(resultado)}")
-    guardar_datos_velas(resultado)
-    return resultado
+    try:
+        datos = respuesta.json()
+        if not isinstance(datos, list):
+            print(f"⚠️ Respuesta inesperada de Binance para {ticker} ({interval}): {datos}")
+            return []
+        
+        # Transforma la lista de listas de Binance a una lista de diccionarios
+        resultado = [
+            {
+                "time": int(vela[0] / 1000), "open": str(Decimal(vela[1])),
+                "high": str(Decimal(vela[2])), "low": str(Decimal(vela[3])),
+                "close": str(Decimal(vela[4])), "volume": str(Decimal(vela[5])),
+            }
+            for vela in datos
+        ]
+        return resultado
+    except (json.JSONDecodeError, IndexError, TypeError) as e:
+        print(f"❌ Error al procesar los datos de velas de Binance para {ticker}: {e}")
+        return []
 
 ==================================================
 === ARCHIVO: ./backend/servicios/estado_billetera.py ===
 ==================================================
 
+"""
+Servicio para calcular y formatear el estado de la billetera y el historial.
+
+Este módulo centraliza la lógica de negocio para procesar los datos crudos de la
+billetera, el historial de transacciones y las cotizaciones. Genera una vista
+completa y enriquecida con cálculos financieros (ganancias/pérdidas, precios
+promedio) y campos formateados listos para ser consumidos por el frontend.
+"""
+
 from decimal import Decimal
 from backend.acceso_datos.datos_billetera import cargar_billetera
 from backend.acceso_datos.datos_historial import cargar_historial
-from backend.acceso_datos.datos_cotizaciones import obtener_precio
+from backend.acceso_datos.datos_cotizaciones import obtener_precio, cargar_datos_cotizaciones
 from backend.utils.formatters import formato_valor_monetario, formato_cantidad_cripto, formato_porcentaje, formato_fecha_hora
 
-def calcular_detalle_cripto(ticker, cantidad_actual, precios, historial):
+def calcular_detalle_cripto(ticker: str, cantidad_actual: str | Decimal, precios: dict, historial: list[dict], info_cripto: dict) -> dict:
     """
-    Calcula el estado financiero de una criptomoneda en base a su cantidad actual,
-    el precio de mercado y el historial de compras.
+    Calcula métricas financieras detalladas para una única criptomoneda en la billetera.
+
+    Args:
+        ticker (str): El ticker de la criptomoneda (ej. "BTC").
+        cantidad_actual (str | Decimal): La cantidad de la criptomoneda en posesión.
+        precios (dict): Un diccionario con los precios actuales de todas las criptos.
+        historial (list[dict]): El historial completo de transacciones.
+        info_cripto (dict): Un diccionario con información básica de la cripto (nombre, logo).
+
+    Returns:
+        dict: Un diccionario con los datos calculados, incluyendo valor actual,
+              precio promedio de compra, inversión total y ganancias/pérdidas.
     """
     cantidad_actual = Decimal(str(cantidad_actual))
     precio_actual = precios.get(ticker, Decimal("0"))
-    valor_usdt = (cantidad_actual * precio_actual)
+    valor_usdt = cantidad_actual * precio_actual
 
+    # Filtra solo las compras de la criptomoneda actual para calcular el costo base
     compras = [
         op for op in historial
         if op.get("tipo") == "compra" and op.get("destino", {}).get("ticker") == ticker
@@ -667,6 +1010,7 @@ def calcular_detalle_cripto(ticker, cantidad_actual, precios, historial):
     cantidad_comprada = sum(Decimal(str(op.get("destino", {}).get("cantidad", "0"))) for op in compras)
     total_invertido = sum(Decimal(str(op.get("valor_usd", "0"))) for op in compras)
 
+    # Función local para evitar división por cero
     division_por_cero_segura = lambda num, den: num / den if den != 0 else Decimal("0")
 
     precio_promedio = division_por_cero_segura(total_invertido, cantidad_comprada)
@@ -676,6 +1020,7 @@ def calcular_detalle_cripto(ticker, cantidad_actual, precios, historial):
 
     return {
         "ticker": ticker,
+        "nombre": info_cripto.get('nombre', ticker),
         "cantidad": cantidad_actual,
         "valor_usdt": valor_usdt,
         "precio_actual": precio_actual,
@@ -685,58 +1030,82 @@ def calcular_detalle_cripto(ticker, cantidad_actual, precios, historial):
         "porcentaje_ganancia": porcentaje_ganancia,
     }
 
-def estado_actual_completo():
+def estado_actual_completo() -> list[dict]:
     """
-    Calcula un resumen financiero completo del portafolio, incluyendo campos
-    pre-formateados para la UI.
+    Genera un estado completo y formateado de todos los activos en la billetera.
+
+    Carga la billetera, el historial y las cotizaciones. Para cada activo, calcula
+    sus métricas financieras, añade campos formateados para la UI y determina su
+    peso porcentual en la billetera. Finalmente, convierte todos los valores
+    Decimal a string para asegurar la serialización JSON.
+
+    Returns:
+        list[dict]: Una lista de diccionarios, cada uno representando un activo
+                    con todos sus datos brutos, calculados y formateados.
     """
     billetera = cargar_billetera()
-    precios = {ticker: obtener_precio(ticker) or Decimal("0") for ticker in billetera.keys()}
     historial = cargar_historial()
+    todas_las_cotizaciones = cargar_datos_cotizaciones()
+    info_map = {c.get('ticker'): c for c in todas_las_cotizaciones}
+    precios = {ticker: obtener_precio(ticker) or Decimal("0") for ticker in billetera.keys()}
 
-    detalles = [
-        calcular_detalle_cripto(ticker, cantidad, precios, historial)
-        for ticker, cantidad in billetera.items()
-    ]
+    detalles = []
+    for ticker, cantidad in billetera.items():
+        # USDT es un caso especial ya que no viene de la API de Coingecko
+        if ticker == "USDT":
+            info_cripto = {'nombre': 'Tether', 'ticker': 'USDT'}
+        else:
+            info_cripto = info_map.get(ticker, {'nombre': ticker})  # Fallback si no se encuentra
 
-    total_usdt = sum(d["valor_usdt"] for d in detalles)
+        detalle_calculado = calcular_detalle_cripto(ticker, cantidad, precios, historial, info_cripto)
+        detalles.append(detalle_calculado)
+
+    total_usdt = sum(d.get("valor_usdt", Decimal("0")) for d in detalles)
     division_por_cero_segura = lambda num, den: num / den if den != 0 else Decimal("0")
-    
+
+    # Segunda pasada para calcular porcentajes y añadir formato
     for detalle in detalles:
-        porcentaje_billetera = division_por_cero_segura(detalle["valor_usdt"], total_usdt) * Decimal("100")
+        porcentaje_billetera = division_por_cero_segura(detalle.get("valor_usdt", Decimal("0")), total_usdt) * Decimal("100")
         
-        # Añadir campos de datos crudos adicionales
         detalle["porcentaje"] = porcentaje_billetera
-        detalle["es_polvo"] = detalle["valor_usdt"] < Decimal("0.001")
+        detalle["es_polvo"] = detalle.get("valor_usdt", Decimal("0")) < Decimal("0.001")
         
-        # Añadir campos formateados para la UI
+        # Formateo condicional para USDT vs otras criptos
         if detalle["ticker"] == 'USDT':
             detalle["cantidad_formatted"] = formato_valor_monetario(detalle["cantidad"], simbolo="")
         else:
             detalle["cantidad_formatted"] = formato_cantidad_cripto(detalle["cantidad"])
         
-        detalle["precio_actual_formatted"] = formato_valor_monetario(detalle["precio_actual"], decimales=4)
-        detalle["valor_usdt_formatted"] = formato_valor_monetario(detalle["valor_usdt"])
-        detalle["ganancia_perdida_formatted"] = formato_valor_monetario(detalle["ganancia_perdida"])
-        detalle["porcentaje_ganancia_formatted"] = formato_porcentaje(detalle["porcentaje_ganancia"])
+        detalle["precio_actual_formatted"] = formato_valor_monetario(detalle.get("precio_actual", Decimal("0")), decimales=4)
+        detalle["valor_usdt_formatted"] = formato_valor_monetario(detalle.get("valor_usdt", Decimal("0")))
+        detalle["ganancia_perdida_formatted"] = formato_valor_monetario(detalle.get("ganancia_perdida", Decimal("0")))
+        detalle["porcentaje_ganancia_formatted"] = formato_porcentaje(detalle.get("porcentaje_ganancia", Decimal("0")))
         detalle["porcentaje_formatted"] = formato_porcentaje(porcentaje_billetera)
 
-        # Convertir todos los Decimal a string para serialización JSON segura
+        # Asegura que todos los valores Decimal se conviertan a string
         for k, v in detalle.items():
             if isinstance(v, Decimal):
                 detalle[k] = str(v)
     
     return detalles
 
-def obtener_historial_formateado():
+def obtener_historial_formateado() -> list[dict]:
     """
-    Carga el historial de transacciones y le añade campos formateados para la UI.
+    Carga y formatea el historial de transacciones para su visualización.
+
+    Para cada transacción, añade campos formateados como la fecha, el par de
+    monedas, y los valores monetarios, listos para ser mostrados en la UI.
+
+    Returns:
+        list[dict]: Una lista de transacciones, cada una como un diccionario
+                    enriquecido con datos formateados.
     """
     historial = cargar_historial()
     historial_formateado = []
 
     for item in historial:
-        # Determinar detalles de la transacción
+        item_formateado = item.copy()
+
         if item.get('tipo') == 'compra':
             cantidad = Decimal(str(item.get('destino', {}).get('cantidad', '0')))
             par = f"{item.get('destino', {}).get('ticker', '?')}/{item.get('origen', {}).get('ticker', '?')}"
@@ -744,20 +1113,19 @@ def obtener_historial_formateado():
             cantidad = Decimal(str(item.get('origen', {}).get('cantidad', '0')))
             par = f"{item.get('origen', {}).get('ticker', '?')}/{item.get('destino', {}).get('ticker', '?')}"
 
-        item_formateado = item.copy()
-
-        # Añadir campos formateados para la UI
+        # Añade campos formateados para la UI
         item_formateado['fecha_formatted'] = formato_fecha_hora(item.get('timestamp'))
         item_formateado['par_formatted'] = par
         item_formateado['tipo_formatted'] = item.get('tipo', '').capitalize()
         item_formateado['cantidad_formatted'] = formato_cantidad_cripto(cantidad)
         item_formateado['valor_total_formatted'] = formato_valor_monetario(Decimal(str(item.get('valor_usd', '0'))))
 
-        # Convertir todos los Decimal a string para serialización JSON segura
+        # Convierte todos los Decimal a string para serialización JSON segura
         for k, v in item_formateado.items():
             if isinstance(v, Decimal):
                 item_formateado[k] = str(v)
             elif isinstance(v, dict):
+                # Procesa diccionarios anidados también (ej. 'origen', 'destino')
                 v_copy = v.copy()
                 for sub_k, sub_v in v_copy.items():
                     if isinstance(sub_v, Decimal):
@@ -772,17 +1140,36 @@ def obtener_historial_formateado():
 === ARCHIVO: ./backend/servicios/trading_logica.py ===
 ==================================================
 
+"""
+Servicio para la lógica de negocio de operaciones de trading (swap).
+
+Este módulo contiene toda la lógica para procesar, validar y ejecutar un
+intercambio de criptomonedas. Está diseñado para ser llamado desde la capa de
+vistas (rutas), recibiendo datos de un formulario y orquestando los pasos
+necesarios para completar la operación.
+"""
+
 from decimal import Decimal, InvalidOperation
+from typing import Tuple
+
 from backend.acceso_datos.datos_billetera import cargar_billetera, guardar_billetera
 from backend.acceso_datos.datos_cotizaciones import obtener_precio
 from backend.acceso_datos.datos_historial import guardar_en_historial
 
-# --- FUNCIÓN DE PROCESAMIENTO DEL FORMULARIO ---
-
-def procesar_operacion_trading(formulario):
+def procesar_operacion_trading(formulario: dict) -> Tuple[bool, str]:
     """
-    TRADUCTOR: Recibe el formulario, lo valida y lo convierte en una llamada
-    a la lógica de negocio principal (`realizar_swap`).
+    Valida y traduce los datos de un formulario de trading a una operación de swap.
+
+    Esta función actúa como una capa de adaptación entre la vista y la lógica de
+    negocio. Extrae, valida y convierte los datos del formulario antes de
+    invocar a la función principal `realizar_swap`.
+
+    Args:
+        formulario (dict): Un diccionario con los datos del formulario de trading.
+                           Ej: {'ticker': 'BTC', 'accion': 'comprar', 'monto': '100', ...}
+
+    Returns:
+        Tuple[bool, str]: Una tupla con un booleano de éxito y un mensaje para el usuario.
     """
     try:
         ticker_principal = formulario["ticker"].upper()
@@ -795,7 +1182,6 @@ def procesar_operacion_trading(formulario):
     if monto_form <= 0:
         return False, "❌ El monto debe ser un número positivo."
 
-    # Determina las monedas de la operación basándose en la acción
     if accion == "comprar":
         moneda_origen = formulario.get("moneda-pago", "USDT").upper()
         moneda_destino = ticker_principal
@@ -808,28 +1194,24 @@ def procesar_operacion_trading(formulario):
     if moneda_origen == moneda_destino:
         return False, "❌ La moneda de origen y destino no pueden ser la misma."
 
-    # Llama a la lógica principal con los datos ya limpios y preparados
     return realizar_swap(moneda_origen, moneda_destino, monto_form, modo_ingreso, accion)
 
-
-# --- FUNCIONES AUXILIARES INTERNAS (LÓGICA DE NEGOCIO) ---
-
-def _calcular_detalles_swap(accion, modo_ingreso, monto_form, precio_origen_usdt, precio_destino_usdt):
+def _calcular_detalles_swap(accion: str, modo_ingreso: str, monto_form: Decimal, precio_origen_usdt: Decimal, precio_destino_usdt: Decimal) -> Tuple[bool, dict | str]:
     """
     Calcula las cantidades de origen, destino y el valor total en USD del swap.
-    Esta es una función interna y pura que solo realiza cálculos.
+
+    Es una función interna y pura que solo realiza cálculos sin efectos secundarios.
 
     Returns:
-        tuple: (True, {'origen': cant, 'destino': cant, 'valor_usd': val}) o (False, "error").
+        Tuple[bool, dict | str]: `(True, {'origen': ..., 'destino': ..., 'valor_usd': ...})` en caso de éxito,
+                                 o `(False, "mensaje de error")` si falla.
     """
-    # Validación de entrada específica para esta lógica
     if accion == 'vender' and modo_ingreso == 'total':
         return False, "❌ Al vender, debe ingresar la cantidad en modo 'Monto' (Cripto)."
 
     if accion not in ['comprar', 'vender']:
         return False, "❌ Acción de trading desconocida."
 
-    # Lógica de cálculo
     if accion == 'comprar':
         if modo_ingreso == 'monto':  # Usuario ingresa la cantidad de CRIPTO a recibir
             cantidad_destino = monto_form
@@ -844,15 +1226,13 @@ def _calcular_detalles_swap(accion, modo_ingreso, monto_form, precio_origen_usdt
         valor_total_usd = cantidad_origen * precio_origen_usdt
         cantidad_destino = valor_total_usd / precio_destino_usdt
 
-    detalles = {
+    return True, {
         "origen": cantidad_origen,
         "destino": cantidad_destino,
         "valor_usd": valor_total_usd
     }
-    return True, detalles
 
-
-def _validar_saldo_suficiente(billetera, moneda_origen, cantidad_requerida):
+def _validar_saldo_suficiente(billetera: dict, moneda_origen: str, cantidad_requerida: Decimal) -> Tuple[bool, str | None]:
     """Verifica si hay suficiente saldo en la billetera para la operación."""
     saldo_disponible = billetera.get(moneda_origen, Decimal("0"))
     if cantidad_requerida > saldo_disponible:
@@ -860,9 +1240,18 @@ def _validar_saldo_suficiente(billetera, moneda_origen, cantidad_requerida):
         return False, mensaje_error
     return True, None
 
+def _actualizar_billetera_y_guardar(billetera: dict, moneda_origen: str, cantidad_origen: Decimal, moneda_destino: str, cantidad_destino: Decimal):
+    """
+    Actualiza los saldos en la billetera y persiste los cambios.
 
-def _actualizar_billetera_y_guardar(billetera, moneda_origen, cantidad_origen, moneda_destino, cantidad_destino):
-    """Resta la moneda de origen, suma la de destino y guarda el estado final."""
+    Resta la cantidad de la moneda de origen y suma la de destino. Si el saldo
+    restante es insignificante ("polvo"), lo elimina. Finalmente, guarda el
+    estado actualizado de la billetera.
+
+    Side Effects:
+        - Modifica el diccionario `billetera`.
+        - Llama a `guardar_billetera` para escribir en el archivo.
+    """
     billetera[moneda_origen] -= cantidad_origen
     
     # Si el saldo es muy pequeño ("polvo"), se elimina la moneda de la billetera
@@ -873,9 +1262,13 @@ def _actualizar_billetera_y_guardar(billetera, moneda_origen, cantidad_origen, m
     
     guardar_billetera(billetera)
 
+def _registrar_operacion_historial(moneda_origen: str, cantidad_origen: Decimal, moneda_destino: str, cantidad_destino: Decimal, valor_usd: Decimal):
+    """
+    Determina el tipo de operación y la guarda en el historial.
 
-def _registrar_operacion_historial(moneda_origen, cantidad_origen, moneda_destino, cantidad_destino, valor_usd):
-    """Determina el tipo de operación y la guarda en el historial."""
+    Side Effects:
+        - Llama a `guardar_en_historial` para escribir en el archivo.
+    """
     if moneda_origen == "USDT":
         tipo_operacion = "compra"
     elif moneda_destino == "USDT":
@@ -892,14 +1285,17 @@ def _registrar_operacion_historial(moneda_origen, cantidad_origen, moneda_destin
         valor_usd,
     )
 
-
-# --- FUNCIÓN ORQUESTADORA PRINCIPAL ---
-
-def realizar_swap(moneda_origen, moneda_destino, monto_form, modo_ingreso, accion):
+def realizar_swap(moneda_origen: str, moneda_destino: str, monto_form: Decimal, modo_ingreso: str, accion: str) -> Tuple[bool, str]:
     """
     Orquesta la operación de swap completa: obtiene precios, calcula, valida y ejecuta.
+
+    Esta es la función principal de la lógica de negocio. Sigue una secuencia de
+    pasos para asegurar que la operación sea válida y se complete correctamente.
+
+    Returns:
+        Tuple[bool, str]: Una tupla con un booleano de éxito y un mensaje para el usuario.
     """
-    # 1. Obtener precios
+    # 1. Obtener precios actuales
     precio_origen_usdt = obtener_precio(moneda_origen)
     precio_destino_usdt = obtener_precio(moneda_destino)
 
@@ -937,13 +1333,36 @@ def realizar_swap(moneda_origen, moneda_destino, monto_form, modo_ingreso, accio
 === ARCHIVO: ./backend/servicios/velas_logica.py ===
 ==================================================
 
+"""
+Servicio para la persistencia de datos de mercado en archivos JSON.
+
+Este módulo, aunque nombrado `velas_logica`, tiene la doble responsabilidad de
+guardar y cargar tanto los datos de cotizaciones generales del mercado como los
+datos específicos de velas (k-lines).
+"""
+
 import json
 import os
 from decimal import Decimal
+from typing import Any
 from config import COTIZACIONES_PATH, VELAS_PATH
 
 
-def guardar_datos_cotizaciones(data):
+def guardar_datos_cotizaciones(data: list[dict[str, Any]]):
+    """
+    Guarda los datos de cotizaciones de criptomonedas en un archivo JSON.
+
+    Asegura que el directorio de destino exista y maneja la serialización
+    de objetos Decimal a float para compatibilidad con JSON.
+
+    Args:
+        data (list[dict[str, Any]]): La lista de datos de cotizaciones a guardar.
+
+    Side Effects:
+        - Crea el directorio si no existe.
+        - Escribe/sobrescribe el archivo `datos_cotizaciones.json`.
+        - Imprime logs del proceso en la consola.
+    """
     os.makedirs(os.path.dirname(COTIZACIONES_PATH), exist_ok=True)
     print("💾 Guardando datos en datos_cotizaciones.json...")
     print(f"Cantidad de criptos a guardar: {len(data)}")
@@ -959,17 +1378,39 @@ def guardar_datos_cotizaciones(data):
             )
         print("✅ Datos guardados correctamente")
     except (IOError, TypeError) as e:
-        print("❌ Error al guardar el archivo:", e)
+        print(f"❌ Error al guardar el archivo: {e}")
 
 
-def cargar_datos_cotizaciones():
+def cargar_datos_cotizaciones() -> list[dict[str, Any]]:
+    """
+    Carga los datos de cotizaciones desde el archivo JSON local.
+
+    Returns:
+        list[dict[str, Any]]: La lista de datos de cotizaciones. Retorna una lista
+                              vacía si el archivo no existe.
+    """
     if not os.path.exists(COTIZACIONES_PATH):
         return []
-    with open(COTIZACIONES_PATH, "r") as archivo:
-        return json.load(archivo)
+    try:
+        with open(COTIZACIONES_PATH, "r") as archivo:
+            return json.load(archivo)
+    except (IOError, json.JSONDecodeError) as e:
+        print(f"❌ Error al cargar datos de cotizaciones: {e}")
+        return []
 
 
-def guardar_datos_velas(data):
+def guardar_datos_velas(data: list[dict[str, Any]]):
+    """
+    Guarda los datos de velas (k-lines) de una criptomoneda en un archivo JSON.
+
+    Args:
+        data (list[dict[str, Any]]): La lista de datos de velas a guardar.
+
+    Side Effects:
+        - Crea el directorio si no existe.
+        - Escribe/sobrescribe el archivo `datos_velas.json`.
+        - Imprime logs del proceso en la consola.
+    """
     os.makedirs(os.path.dirname(VELAS_PATH), exist_ok=True)
     print("💾 Guardando datos en datos_velas.json...")
     print(f"Cantidad de velas a guardar: {len(data)}")
@@ -985,7 +1426,7 @@ def guardar_datos_velas(data):
             )
         print("✅ Datos guardados correctamente")
     except (IOError, TypeError) as e:
-        print("❌ Error al guardar el archivo:", e)
+        print(f"❌ Error al guardar el archivo: {e}")
 
 
 ==================================================
@@ -993,15 +1434,36 @@ def guardar_datos_velas(data):
 ==================================================
 
 # backend/utils/formatters.py
+"""
+Utilidades de formateo para la presentación de datos.
+
+Este módulo proporciona un conjunto de funciones reutilizables para dar formato a
+diversos tipos de datos (monetarios, porcentajes, fechas) de una manera
+consistente y legible para el usuario final.
+"""
+
 from datetime import datetime
 from decimal import Decimal
+from typing import Union
 
-def formato_numero_grande(valor, simbolo="$"):
-    """Formatea números grandes con abreviaturas y símbolo de moneda."""
+# Alias de tipo para valores numéricos que pueden ser procesados.
+Numeric = Union[int, float, Decimal]
+
+def formato_numero_grande(valor: Numeric, simbolo: str = "$") -> str:
+    """
+    Formatea números grandes con abreviaturas (M, B, T) y un símbolo.
+
+    Args:
+        valor (Numeric): El número a formatear.
+        simbolo (str, optional): Símbolo a prefijar. Por defecto es "$".
+
+    Returns:
+        str: El número formateado como string. Ej: "$1.25M", "$2.5B".
+    """
     if not isinstance(valor, (int, float, Decimal)):
         return "-"
     num = Decimal(valor)
-    
+
     if num >= 1_000_000_000_000:
         return f"{simbolo}{(num / Decimal('1e12')).quantize(Decimal('0.01'))}T"
     if num >= 1_000_000_000:
@@ -1010,36 +1472,83 @@ def formato_numero_grande(valor, simbolo="$"):
         return f"{simbolo}{(num / Decimal('1e6')).quantize(Decimal('0.01'))}M"
     return f"{simbolo}{num:,.0f}"
 
-def formato_porcentaje(valor):
-    """Formatea un porcentaje con 2 decimales y el signo %."""
+def formato_porcentaje(valor: Numeric) -> str:
+    """
+    Formatea un número como un porcentaje con dos decimales.
+
+    Args:
+        valor (Numeric): El número a formatear.
+
+    Returns:
+        str: El número como string de porcentaje. Ej: "25.45%".
+    """
     if not isinstance(valor, (int, float, Decimal)):
         return "-%"
     return f"{Decimal(valor):.2f}%"
 
-# ===> FUNCIÓN CORREGIDA <===
-def formato_valor_monetario(valor, simbolo="$", decimales=2):
-    """Formatea un valor como moneda con N decimales."""
+def formato_valor_monetario(valor: Numeric, simbolo: str = "$", decimales: int = 2) -> str:
+    """
+    Formatea un valor numérico como una cadena de texto monetaria.
+
+    Args:
+        valor (Numeric): El valor a formatear.
+        simbolo (str, optional): Símbolo de la moneda. Por defecto es "$".
+        decimales (int, optional): Número de decimales a mostrar. Por defecto es 2.
+
+    Returns:
+        str: El valor formateado. Ej: "$1,234.56".
+    """
     if not isinstance(valor, (int, float, Decimal)):
         return "-"
-    # Usamos un f-string con una expresión para formatear dinámicamente los decimales
     return f"{simbolo}{Decimal(valor):,.{decimales}f}"
 
-def formato_cantidad_cripto(valor, decimales=8):
-    """Formatea una cantidad de cripto con N decimales."""
+def formato_cantidad_cripto(valor: Numeric, decimales: int = 8) -> str:
+    """
+    Formatea una cantidad de criptomoneda con una precisión específica.
+
+    Args:
+        valor (Numeric): La cantidad a formatear.
+        decimales (int, optional): Número de decimales. Por defecto es 8.
+
+    Returns:
+        str: La cantidad formateada. Ej: "0.12345678".
+    """
     if not isinstance(valor, (int, float, Decimal)):
         return "-"
     return f"{Decimal(valor):.{decimales}f}"
 
-def formato_fecha_hora(timestamp):
-    """Formatea un timestamp UNIX a un string de fecha y hora local."""
-    if not isinstance(timestamp, (int, float)):
+def formato_fecha_hora(timestamp: Union[int, float, str]) -> str:
+    """
+    Formatea un timestamp o un string ISO a una fecha y hora local.
+
+    Maneja tanto timestamps numéricos (segundos desde la época) como strings
+    de fecha en formato ISO 8601.
+
+    Args:
+        timestamp (Union[int, float, str]): El timestamp o string a formatear.
+
+    Returns:
+        str: La fecha y hora formateada. Ej: "21 Jun 2024, 15:45".
+    """
+    if not timestamp:
         return "--:--"
+    
     try:
-        # Convierte el timestamp a un objeto datetime
-        dt_object = datetime.fromtimestamp(timestamp)
-        # Formatea la fecha y la hora en un formato legible
+        if isinstance(timestamp, (int, float)):
+            # Si es un número, lo trata como timestamp de Unix
+            dt_object = datetime.fromtimestamp(timestamp)
+        elif isinstance(timestamp, str):
+            # Si es un string, intenta parsearlo como formato ISO
+            # El formato recibido del backend es ISO 8601, ej: "2025-06-21T16:57:31.123456"
+            dt_object = datetime.fromisoformat(timestamp)
+        else:
+            # Si no es ni número ni string, no se puede formatear
+            return "--:--"
+            
+        # Formatea la fecha y la hora en un formato legible (DD/MM/YYYY HH:MM:SS)
         return dt_object.strftime("%d/%m/%Y %H:%M:%S")
     except (ValueError, TypeError):
+        # Captura cualquier error durante la conversión (ej. string mal formado)
         return "--:--"
 
 ==================================================
@@ -1076,6 +1585,196 @@ CANTIDAD_VELAS = 250
 getcontext().prec = 28
 getcontext().rounding = ROUND_HALF_DOWN
 
+
+==================================================
+=== ARCHIVO: ./documentacion.md ===
+==================================================
+
+# **1. Diagrama de Arquitectura: El Mapa del Sistema**
+
+El siguiente diagrama visualiza la estructura completa de la aplicación, mostrando los componentes principales, sus interacciones y el flujo de información. Los números indican la secuencia de una interacción típica, que se detalla en la sección siguiente.
+
+```
+      (1) Pide una página (GET /trading)
++-------------------------------------------------+
+|               NAVEGADOR (Usuario)               |
+| - Renderiza HTML, CSS y ejecuta JavaScript.     |
+| - Envía acciones del usuario (clics, forms).    |
++----------------------+--------------------------+
+                       | (14) Muestra UI           ^ (3) Sirve HTML inicial
+                       |      actualizada         |
+                       v                           |
++----------------------+-------------------------------------------------------------------------------------------+
+|                                                   FRONTEND (Cliente)                                             |
+|                                         (Se ejecuta completamente en el navegador)                               |
+|------------------------------------------------------------------------------------------------------------------|
+|  HTML: /templates/*.html                                                                                         |
+|  - Esqueleto inicial de la página, carga los scripts JS.                                                         |
+|                                                                                                                  |
+|  JS: /static/js/                                                                                                 |
+|                                                                                                                  |
+|  (4) Inicia lógica de página                                   (12) Recibe datos y actualiza la UI               |
+|      (DOMContentLoaded)                                              |                                           |
+|            +                                                         |                                           |
+|            |     +-----------------------------+                     v                                           |
+|            +---> |      pages/*.js             | --(11) Llama a componentes--->+--------------------------------+|
+|                  | (tradingPage.js, etc)       |                     |        |     components/*.js            | |
+|                  | - Orquesta la página.       |                     |        | (uiUpdater, chartRenderer)     | |
+|                  | - Llama a servicios.        |                     |        | - Manipulan el DOM.            | |
+|                  | - Pasa datos a componentes. |                     |        | - Actualizan tablas, gráficos. | |
+|                  +--------------+--------------+                     |        +------------------^-------------+ |
+|                                 |                                    |                           | (13)          |
+|                                 | (5) Solicita datos a la API        |                           +---------------+
+|                                 v                                    |                                           |
+|                  +-----------------------------+                     | (10) Devuelve JSON                        |
+|                  |    services/apiService.js   |---------------------+-------------------------------------------+
+|                  | - Centraliza llamadas fetch().|                                                               |
+|                  | - Habla con la API del Backend.|                                                              |
+|                  +-----------------------------+                                                                 |
+|                                 | (6) Petición HTTP (GET /api/billetera/estado-completo, POST /trading/operar)   |
++---------------------------------v--------------------------------------------------------------------------------+
+                                  |
+                                  | (2) Sirve HTML para la ruta inicial (GET /trading)
+                                  | (7) Recibe petición a la API (GET /api/...)
+                                  | (15) Procesa formulario (POST /trading/operar)
++---------------------------------v---------------------------------------------------------------------------------+
+|                                                   BACKEND (Servidor)                                              |
+|                                            (Aplicación Flask - Python)                                          |
+|-----------------------------------------------------------------------------------------------------------------|
+| app.py -> __init__.py                                                                                           |
+| - Inicia la app Flask y registra las rutas.                                                                     |
+|                                                                                                                 |
+| +-------------------------------------------------------------------------------------------------------------+ |
+| |                                          RUTAS (Capa de Vistas)                                             | |
+| | /rutas/*.py (billetera_vista.py, api_externa.py, etc)                                                       | |
+| | - Definen los endpoints (URL).                                                                              | |
+| | - Reciben peticiones HTTP del Frontend.                                                                     | |
+| | - Llaman a la capa de Servicios para obtener/procesar datos.                                                | |
+| | - Devuelven JSON (para /api/...) o HTML (para rutas base).                                                  | |
+| +-------------------------------------------------------+-----------------------------------------------------+ |
+|                                                         | (8, 16) Llama a la lógica de negocio                  |
+|                                                         v                                                       |
+| +-------------------------------------------------------+-----------------------------------------------------+ |
+| |                                        SERVICIOS (Capa de Lógica de Negocio)                                | |
+| | /servicios/*.py (trading_logica.py, estado_billetera.py, etc)                                               | |
+| | - Contiene el "cerebro" de la app.                                                                          | |
+| | - Realiza cálculos (ganancias, swap), formatea datos, procesa operaciones.                                  | |
+| | - Orquesta llamadas a la capa de Datos y a APIs externas.                                                   | |
+| +---------------------+---------------------------------+-------------------------+---------------------------+ |
+|                       | (9, 17) Pide/guarda datos crudos |                         | Llama a API externa       |
+|                       v                                  v                         v                           v
+| +---------------------+--------------------------------+    +----------------------+---------------------------+
+| |        ACCESO A DATOS (Capa de Persistencia)         |    |            APIs EXTERNAS (Fuentes de Datos)     |
+| | /acceso_datos/*.py (datos_billetera.py, etc)         |    | - CoinGecko (cotizaciones)                        |
+| | - Lee y escribe en los archivos .json.               |    | - Binance (velas)                                 |
+| | - Abstrae el manejo de archivos.                     |    |                                                   |
+| +----------+------------------+------------------------+    +---------------------------------------------------+
+|            |                  |                        |
+|            | Lee/Escribe      | Lee/Escribe            | Lee/Escribe
+|            v                  v                        v
+| +----------+---------+  +-----+--------------+  +------+-------------------+
+| |  billetera.json    |  | historial.json     |  | cotizaciones.json        |
+| +--------------------+  +--------------------+  +--------------------------+
++-----------------------------------------------------------------------------------------------------------------+
+```
+
+## **2. El Flujo de Datos en Acción: Siguiendo los Números**
+
+Este es el recorrido paso a paso de una interacción completa, desde la carga de la página hasta la ejecución de una operación.
+
+#### **A. Flujo de Carga de una Página (Ej: `/trading`)**
+
+1.  **Petición Inicial del Usuario:** El usuario navega a `http://localhost:5000/trading`. El navegador envía una petición `GET` al servidor.
+
+2.  **El Backend Sirve el "Contenedor" HTML:** El servidor Flask recibe la petición. La capa de **Rutas** (`rutas/trading_vista.py`) la asocia con la función `mostrar_trading_page()` y devuelve el archivo `trading.html`. Este HTML es solo un esqueleto, no contiene datos dinámicos.
+
+3.  **El Navegador se Prepara:** El navegador recibe este HTML, lo analiza y comienza a cargar los recursos vinculados, como los archivos CSS y los scripts de JavaScript.
+
+4.  **El Frontend Despierta:** Una vez que la estructura básica del HTML está lista (`DOMContentLoaded`), el navegador ejecuta `tradingPage.js`. Aquí arranca toda la lógica del lado del cliente.
+
+5.  **El Frontend Solicita Datos:** `tradingPage.js` (la capa `pages`) actúa como el "director" de la página. Sabe que necesita datos (cotizaciones, estado de billetera, etc.) para funcionar. Para obtenerlos, llama a las funciones del módulo `services/apiService.js`.
+
+6.  **Peticiones a la API del Backend:** `apiService.js` convierte esas llamadas en peticiones HTTP reales. Por ejemplo, realiza una petición `GET` a la URL `/api/billetera/estado-completo`. La clave aquí es el prefijo `/api/`, que el backend identifica como una solicitud de datos, no de una página completa.
+
+7.  **La API del Backend Recibe la Solicitud:** Flask recibe esta nueva petición. La capa de **Rutas** la identifica como una llamada a la API y entiende que debe devolver datos, no HTML.
+
+8.  **Delegación a la Lógica de Negocio (Servicios):** La función de la ruta (ej: `get_estado_billetera_completo()`) no realiza los cálculos. Delega esa responsabilidad llamando a la función correspondiente en la capa de **Servicios** (ej: `estado_actual_completo()`).
+
+9.  **Los Servicios Orquestan la Respuesta:** La función del servicio es el cerebro. Llama a la capa de **Acceso a Datos** para leer la información cruda de los archivos `.json`, realiza los cálculos necesarios (ganancias, totales), formatea los datos y los empaqueta.
+
+10. **El Backend Serializa y Devuelve Datos JSON:** El servicio devuelve el paquete de datos a la ruta. La ruta utiliza la función `jsonify` de Flask para convertir la estructura de datos de Python en una cadena de texto en formato **JSON**, que es enviada como respuesta al navegador.
+
+11. **El Frontend Recibe y Procesa el JSON:** De vuelta en el navegador, la promesa `fetch` en `apiService.js` se resuelve, entregando los datos JSON. `JSON.parse()` (a menudo manejado automáticamente por `fetch`) convierte esta cadena de texto de nuevo en un objeto JavaScript utilizable.
+
+12. **El Director Distribuye los Datos:** `tradingPage.js` recibe los objetos de datos y sabe qué componente de la UI necesita qué información.
+
+13. **Los Especialistas de la UI entran en Acción:** El director pasa los datos a los módulos `components`. Por ejemplo, entrega los datos del historial a `UIUpdater.js` y los datos de velas a `chartRenderer.js`.
+
+14. **Renderizado del Lado del Cliente:** Estos componentes manipulan el DOM. `UIUpdater` crea dinámicamente las filas `<tr>` para la tabla del historial, y `chartRenderer` dibuja el gráfico. El usuario ve cómo la página "vacía" cobra vida sin necesidad de recargarla. Este proceso se llama **Renderizado del Lado del Cliente (Client-Side Rendering)**.
+
+#### **B. Flujo de una Operación (Ej: Comprar BTC)**
+
+15. **El Usuario Envía el Formulario:** El usuario llena el formulario y hace clic en "CONFIRMAR". El navegador empaqueta los datos y envía una petición `POST` a `/trading/operar`.
+
+16. **La Ruta del Backend Procesa la Acción:** El backend recibe el `POST`. La ruta `procesar_trading_form()` extrae los datos y llama a la función principal de la capa de **Servicios**: `procesar_operacion_trading()`.
+
+17. **El Servicio Ejecuta el Cambio de Estado:** Aquí ocurren los cambios permanentes. `procesar_operacion_trading()` realiza la validación crítica (saldo, montos válidos), calcula los resultados del swap y, si todo es correcto, llama a la capa de **Acceso a Datos** para que **modifique** los archivos `billetera.json` y `historial.json`. Finalmente, devuelve un mensaje de éxito o error.
+
+## **3. Glosario Técnico y Piezas del Sistema**
+
+#### **I. Conceptos de Arquitectura y Diseño**
+
+*   **Arquitectura de Software:** Es el diseño fundamental de un sistema. Define los componentes principales, sus responsabilidades y cómo interactúan entre sí. Una buena arquitectura hace que el sistema sea más fácil de entender, mantener y ampliar.
+*   **Arquitectura Desacoplada (Decoupled Architecture):** Un principio de diseño donde los componentes (frontend y backend) son independientes y se comunican a través de una interfaz bien definida (la API). El gran beneficio es que se puede cambiar o incluso reemplazar un componente (ej. crear una app móvil que consuma el mismo backend) sin afectar al otro.
+*   **Capa (Layer):** Una forma de organizar el código en grupos lógicos con responsabilidades específicas. En este proyecto, el backend se divide en capas (Rutas, Servicios, Acceso a Datos), lo que promueve el principio de **Separación de Intereses (Separation of Concerns)** y hace que el código sea más limpio.
+
+#### **II. Comunicación y Datos (Cliente-Servidor)**
+
+*   **API (Application Programming Interface):** Un contrato que define cómo dos piezas de software deben comunicarse. Establece un conjunto de reglas, endpoints y formatos de datos que el servidor expone para que los clientes puedan interactuar con él de manera predecible.
+*   **API REST (Representational State Transfer):** Un estilo arquitectónico para diseñar APIs que se basa en principios como:
+    1.  **Operaciones sobre Recursos:** La API se centra en "recursos" (ej: `cotizaciones`, `billetera`).
+    2.  **Uso de Métodos HTTP:** Se utilizan los verbos estándar (`GET` para obtener, `POST` para crear) para manipular estos recursos.
+    3.  **Comunicación sin Estado (Stateless):** Cada petición del cliente debe contener toda la información necesaria para ser entendida. El servidor no guarda ningún contexto del cliente entre peticiones.
+*   **Endpoint:** Una URL específica en la API que expone un recurso o una acción. Por ejemplo, `/api/cotizaciones` y `/api/historial` son dos endpoints distintos.
+*   **JSON (JavaScript Object Notation):** Un formato de texto ligero para el intercambio de datos. Es el "idioma" que hablan el frontend y el backend. Su estructura es fácilmente convertible a objetos de JavaScript, lo que lo hace ideal para aplicaciones web.
+
+#### **III. Componentes y Tecnologías del Backend (Python/Flask)**
+
+*   **Backend:** La parte de la aplicación que se ejecuta en el servidor. Es responsable de la lógica de negocio, la seguridad y la gestión de datos.
+*   **Flask:** Un micro-framework de Python para construir aplicaciones web. Proporciona las herramientas esenciales para manejar rutas y peticiones HTTP, permitiendo una gran flexibilidad en la estructura del proyecto.
+*   **Patrón de Fábrica de Aplicaciones (Application Factory):** La práctica de crear la instancia de la aplicación Flask dentro de una función (`crear_app()`) en lugar de globalmente. Esto facilita las pruebas y la configuración de múltiples instancias.
+*   **Blueprint:** Un componente de Flask para organizar las rutas en grupos modulares. Permite que la aplicación sea más escalable y que las rutas relacionadas con una funcionalidad (ej. `trading`) estén juntas en un mismo archivo.
+*   **Persistencia:** La capacidad de que los datos se conserven incluso después de que el programa se cierre. En este proyecto, se logra mediante la escritura de datos en archivos `.json` en el disco duro.
+*   **`Decimal` (Tipo de Dato):** Un tipo numérico de alta precisión utilizado para cálculos financieros. A diferencia de los números de punto flotante estándar, `Decimal` evita pequeños errores de redondeo que son inaceptables al manejar dinero.
+
+#### **IV. Componentes y Tecnologías del Frontend (JavaScript)**
+
+*   **Frontend:** La parte de la aplicación que se ejecuta en el navegador del usuario y con la que este interactúa directamente.
+*   **DOM (Document Object Model):** Una representación en memoria de la estructura de un documento HTML. JavaScript utiliza el DOM para leer y modificar dinámicamente el contenido y la apariencia de la página.
+*   **Manipulación del DOM:** El proceso de usar JavaScript para cambiar el DOM, lo que resulta en actualizaciones visuales en la página sin necesidad de recargarla. Esta es la base del renderizado del lado del cliente.
+*   **Manejo de Eventos (Event Handling):** La capacidad de JavaScript para responder a acciones del usuario (un `click` en un botón, un `change` en un selector). Un "escuchador de eventos" (`event listener`) espera a que ocurra un evento y ejecuta una función en respuesta.
+*   **Código Asíncrono (`async`/`await`):** En JavaScript, las operaciones de red (como las peticiones `fetch` a la API) son asíncronas. Esto significa que el código no espera a que la operación termine, sino que continúa ejecutándose. `async/await` es una sintaxis moderna que permite escribir código asíncrono de una manera que parece síncrona, haciéndolo mucho más fácil de leer y depurar.
+
+## **4. Las Piezas del Engranaje: Descripción Detallada de Capas**
+
+*   **Capa de Presentación (Frontend):**
+    *   **Propósito:** Crear la experiencia visual e interactiva del usuario. Es autónoma y solo necesita conocer el "contrato" de la API del backend para funcionar.
+    *   **Componentes Clave:**
+        *   **`pages/*.js`:** Los orquestadores de cada página. Inician la carga de datos y coordinan la actualización de la UI.
+        *   **`services/apiService.js`:** El punto único de comunicación con el backend. Centraliza toda la lógica de `fetch`.
+        *   **`components/*.js`:** Módulos reutilizables con responsabilidades únicas (renderizar el gráfico, actualizar la tabla, etc.).
+
+*   **Capa de Vistas/Rutas (Backend - `rutas/`):**
+    *   **Propósito:** Actuar como el controlador de tráfico del backend. Es la puerta de entrada para todas las peticiones HTTP.
+    *   **Funcionamiento:** Asocia las URLs (endpoints) con funciones de Python. No contiene lógica de negocio; su trabajo es validar la petición (si es necesario) y delegar la tarea a la capa de servicios.
+
+*   **Capa de Lógica de Negocio (Backend - `servicios/`):**
+    *   **Propósito:** Es el cerebro de la aplicación. Aquí residen todas las reglas, cálculos y procesos de negocio.
+    *   **Funcionamiento:** Orquesta las operaciones complejas. Por ejemplo, para un `swap`, obtiene precios, valida el saldo, calcula las cantidades, invoca a la capa de datos para guardar los cambios y prepara una respuesta.
+
+*   **Capa de Acceso a Datos (Backend - `acceso_datos/`):**
+    *   **Propósito:** Abstraer y gestionar la interacción con la fuente de datos (en este caso, los archivos `.json`).
+    *   **Funcionamiento:** Proporciona funciones simples y claras como `cargar_billetera()` o `guardar_en_historial()`. La capa de servicios no necesita saber cómo o dónde se guardan los datos, solo pide que se realicen las operaciones.
 
 ==================================================
 === ARCHIVO: ./frontend/static/css/styles_index.css ===
@@ -1196,9 +1895,11 @@ table th:nth-child(2) {
 :root {
     --color-verde: rgb(31, 191, 113);
     --color-rojo: rgb(226, 33, 52);
-    /* --bs-dark-rgb: 30, 30, 30 !important;
-    --bs-body-bg: 44, 44, 44 !important;
-    --bs-border-width: 1px solid rgb(219, 71, 71) !important; */
+    --color-azul-activo: #0d6efd; /* Azul de Bootstrap para botones activos */
+    --color-fondo-base: #343a40; /* Un gris oscuro para fondos de input/select */
+    --color-borde: #6c757d; /* Un gris más claro para bordes */
+    --color-texto: #f8f9fa; /* Texto casi blanco */
+    --border-radius-suave: 0.375rem; /* El radio de borde por defecto de Bootstrap */
 }
 
 * {
@@ -1209,7 +1910,7 @@ table th:nth-child(2) {
 
 body {
     font-family: Arial, sans-serif;
-    background-color: #303030 !important;
+    background-color: #1e1e1e !important; /* Un fondo un poco más oscuro que antes */
     color: #f0c000;
 }
 
@@ -1218,40 +1919,132 @@ body {
     overflow: hidden;
     width: 100%;
     max-width: 100%;
+    min-height: 500px;
 }
 
-.text-verde {
-    color: var(--color-verde);
+/* --- ESTILOS UNIFICADOS PARA EL FORMULARIO --- */
+
+/* Estilo base para todos los controles de formulario */
+.form-control,
+.form-select,
+.select2-container--bootstrap-5 .select2-selection {
+    background-color: var(--color-fondo-base) !important;
+    color: var(--color-texto) !important;
+    border: 1px solid var(--color-borde) !important;
+    border-radius: var(--border-radius-suave) !important;
+    box-shadow: none !important; /* Eliminar sombras por defecto */
 }
 
-.text-rojo {
-    color: var(--color-rojo);
+/* Placeholder text color */
+.form-control::placeholder {
+    color: #999;
 }
 
-/* FORMULARIO TRADING */
-
-.form-control {
-    background-color: 44, 44, 44 !important;
+/* Estilo para los grupos de botones (Tipo de orden, Ingresar por, Timeframes) */
+.btn-group .btn-outline-primary,
+.btn-group .btn-outline-secondary {
+    color: var(--color-texto);
+    border-color: var(--color-borde);
 }
 
-/* CAMBIO DE COLOR DEL PUNTO DEL SLIDER THUMB DINÁMICO */
-
-/* Chrome/Safari */
-input[type='range'].slider-compra::-webkit-slider-thumb {
-    background-color: rgb(31, 191, 113) !important; /* verde */
+/* Estilo para el botón ACTIVO en los grupos */
+.btn-group .btn-check:checked + .btn-outline-primary,
+.btn-group .btn.active {
+    background-color: var(--color-azul-activo);
+    border-color: var(--color-azul-activo);
+    color: var(--color-texto);
+}
+.btn-group .timeframe-btn.active {
+    background-color: var(--color-azul-activo) !important;
+    border-color: var(--color-azul-activo) !important;
 }
 
-input[type='range'].slider-venta::-webkit-slider-thumb {
-    background-color: rgb(226, 33, 52) !important; /* rojo */
+/* --- ESTILOS PERSONALIZADOS PARA SELECT2 --- */
+
+/* Contenedor principal de Select2 */
+.select2-container--bootstrap-5 .select2-selection {
+    height: calc(1.5em + 0.75rem + 2px); /* Altura estándar de Bootstrap */
+    padding: 0.375rem 0.75rem;
+    line-height: 1.5;
 }
 
-/* Firefox */
-input[type='range'].slider-compra::-moz-range-thumb {
-    background-color: rgb(31, 191, 113) !important;
+/* Flecha del dropdown de Select2 */
+.select2-container--bootstrap-5 .select2-selection__arrow b {
+    border-color: var(--color-texto) transparent transparent transparent !important;
 }
 
-input[type='range'].slider-venta::-moz-range-thumb {
-    background-color: rgb(226, 33, 52) !important;
+/* Estilos para el Dropdown (la lista que se abre) */
+.select2-dropdown {
+    background-color: var(--color-fondo-base) !important;
+    border: 1px solid var(--color-borde) !important;
+    border-radius: var(--border-radius-suave) !important;
+}
+
+/* Campo de búsqueda dentro del dropdown */
+.select2-search__field {
+    background-color: #495057 !important;
+    color: var(--color-texto) !important;
+    border: 1px solid var(--color-borde) !important;
+    border-radius: var(--border-radius-suave);
+}
+
+/* Opciones de la lista */
+.select2-results__option {
+    color: var(--color-texto) !important;
+}
+
+/* Opción seleccionada actualmente en la lista */
+.select2-results__option--selected {
+    background-color: #5a6268 !important;
+}
+
+/* Opción bajo el cursor del ratón (hover) */
+.select2-results__option--highlighted {
+    background-color: var(--color-azul-activo) !important;
+    color: var(--color-texto) !important;
+}
+
+/* --- LÓGICA DE BOTONES DE COMPRA/VENTA (SIN CAMBIOS DE LÓGICA, SÓLO ESTÉTICA) --- */
+.boton-comprar.active {
+    background-color: var(--color-verde) !important;
+    border-color: var(--color-verde) !important;
+}
+.boton-vender.active {
+    background-color: var(--color-rojo) !important;
+    border-color: var(--color-rojo) !important;
+}
+.btn-outline-secondary {
+    background-color: transparent;
+    border-color: var(--color-borde);
+}
+.btn-outline-secondary:hover {
+    background-color: var(--color-fondo-base);
+}
+
+/* --- OVERLAY DE ERROR (SIN CAMBIOS) --- */
+.chart-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(30, 30, 30, 0.85);
+    color: #f0c000;
+    font-size: 1.2rem;
+    font-weight: 500;
+    text-align: center;
+    padding: 20px;
+    z-index: 10;
+    border-radius: 8px;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered,
+.form-control::placeholder {
+    color: var(--color-texto) !important;
 }
 
 
@@ -1259,21 +2052,50 @@ input[type='range'].slider-venta::-moz-range-thumb {
 === ARCHIVO: ./frontend/static/js/components/chartRenderer.js ===
 ==================================================
 
-// Manages the creation and updating of the candlestick chart.
-export function initializeChart(data) {
-    console.log('📈 Initializing candlestick chart...');
+/**
+ * @module chartRenderer
+ * @description Gestiona la creación, inicialización y actualización del gráfico financiero
+ * de velas utilizando la biblioteca Lightweight Charts™.
+ * Este módulo es responsable de todas las interacciones directas con la instancia del gráfico.
+ */
+
+// Variables globales para mantener las instancias del gráfico y sus series.
+let chart;
+let candleSeries;
+let volumeSeries;
+
+/**
+ * @typedef {object} CandleData
+ * @property {string} time - Marca de tiempo en formato 'YYYY-MM-DD'.
+ * @property {number} open - Precio de apertura.
+ * @property {number} high - Precio máximo.
+ * @property {number} low - Precio mínimo.
+ * @property {number} close - Precio de cierre.
+ * @property {number} volume - Volumen de la operación.
+ */
+
+/**
+ * Crea e inicializa el gráfico de velas en la primera carga.
+ * Configura la apariencia del gráfico, añade las series de velas y volumen,
+ * y establece los listeners de eventos para la interactividad.
+ *
+ * @param {CandleData[]} initialData - El conjunto de datos inicial de velas para mostrar.
+ * @side-effects Manipula el DOM para crear el gráfico dentro del elemento '#chart'.
+ *               También adjunta un ResizeObserver para manejar el redimensionamiento responsivo.
+ */
+export function initializeChart(initialData) {
     const chartContainer = document.getElementById('chart');
     if (!chartContainer) {
-        console.warn("Element #chart not found. Cannot render chart.");
+        console.warn("Elemento #chart no encontrado. No se puede renderizar el gráfico.");
         return;
     }
-
     if (!window.LightweightCharts) {
-        console.error("LightweightCharts library is not loaded. Make sure it loads before this script.");
+        console.error("La biblioteca LightweightCharts no está cargada.");
         return;
     }
 
-    const chart = window.LightweightCharts.createChart(chartContainer, {
+    // Crea la instancia principal del gráfico con estilos personalizados.
+    chart = window.LightweightCharts.createChart(chartContainer, {
         width: chartContainer.clientWidth,
         height: 500,
         layout: { textColor: '#ccc', background: { type: 'solid', color: '#1E1E1E' } },
@@ -1282,7 +2104,8 @@ export function initializeChart(data) {
         timeScale: { borderColor: '#485c7b' },
     });
 
-    const candleSeries = chart.addCandlestickSeries({
+    // Añade la serie principal de velas para la acción del precio.
+    candleSeries = chart.addCandlestickSeries({
         upColor: 'rgb(31, 191, 113)',
         downColor: 'rgb(226, 33, 52)',
         borderDownColor: 'rgb(226, 33, 52)',
@@ -1291,23 +2114,19 @@ export function initializeChart(data) {
         wickUpColor: '#838ca1',
     });
 
-    const volumeSeries = chart.addHistogramSeries({
+    // Añade una serie secundaria de histograma para el volumen de operaciones.
+    volumeSeries = chart.addHistogramSeries({
         priceFormat: { type: 'volume' },
-        priceScaleId: '',
+        priceScaleId: '', // Se adjunta a una escala de precios separada.
     });
+    // Ajusta la escala de precios de la serie de volumen para darle más espacio.
     volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
-    if (data && data.length > 0) {
-        const candleData = data.map(item => ({
-            time: item.time, open: Number(item.open), high: Number(item.high), low: Number(item.low), close: Number(item.close)
-        }));
-        const volumeData = data.map(item => ({
-            time: item.time, value: Number(item.volume), color: Number(item.close) > Number(item.open) ? 'rgba(31, 191, 113, 0.5)' : 'rgba(226, 33, 52, 0.5)'
-        }));
-        candleSeries.setData(candleData);
-        volumeSeries.setData(volumeData);
+    if (initialData && initialData.length > 0) {
+        updateChartData(initialData);
     }
-    
+
+    // Añade un listener de eventos al checkbox para alternar la visibilidad del volumen.
     const volumeCheckbox = document.getElementById('toggleVolume');
     if (volumeCheckbox) {
         volumeCheckbox.addEventListener('change', (e) => {
@@ -1315,31 +2134,103 @@ export function initializeChart(data) {
         });
     }
 
+    // Asegura que el gráfico se ajuste a su contenido y sea responsivo.
     chart.timeScale().fitContent();
     new ResizeObserver(() => chart.applyOptions({ width: chartContainer.clientWidth })).observe(chartContainer);
 }
 
+/**
+ * Actualiza el gráfico con un nuevo conjunto de datos de velas.
+ * Maneja tanto el caso en que hay datos disponibles como en el que no, mostrando
+ * u ocultando un mensaje de error superpuesto según corresponda.
+ *
+ * @param {CandleData[]} data - El nuevo array de datos de velas. Si el array está vacío
+ *        o es nulo, limpia el gráfico y muestra un mensaje de error.
+ */
+export function updateChartData(data) {
+    if (!candleSeries || !volumeSeries) {
+        console.warn("El gráfico no está inicializado. No se pueden actualizar los datos.");
+        return;
+    }
+
+    const errorOverlay = document.getElementById('chart-error-overlay');
+
+    if (data && data.length > 0) {
+        // Oculta el mensaje de error si hay datos disponibles.
+        errorOverlay.style.display = 'none';
+
+        // Mapea los datos brutos al formato requerido por Lightweight Charts.
+        const candleData = data.map(item => ({
+            time: item.time,
+            open: Number(item.open),
+            high: Number(item.high),
+            low: Number(item.low),
+            close: Number(item.close)
+        }));
+        const volumeData = data.map(item => ({
+            time: item.time,
+            value: Number(item.volume),
+            color: Number(item.close) > Number(item.open) ? 'rgba(31, 191, 113, 0.5)' : 'rgba(226, 33, 52, 0.5)'
+        }));
+
+        console.log(`📊 Actualizando gráfico con ${data.length} velas.`);
+        candleSeries.setData(candleData);
+        volumeSeries.setData(volumeData);
+    } else {
+        // Si no hay datos disponibles, limpia las series y muestra el overlay de error.
+        console.log("📊 No hay datos de velas disponibles. Mostrando mensaje de error.");
+        candleSeries.setData([]);
+        volumeSeries.setData([]);
+        errorOverlay.style.display = 'flex'; // Se usa 'flex' para que coincida con el centrado del CSS.
+    }
+}
 
 ==================================================
 === ARCHIVO: ./frontend/static/js/components/domElements.js ===
 ==================================================
 
-// Almacena referencias a los elementos del DOM para un acceso rápido y centralizado.
+/**
+ * @module DOMElements
+ * @description Centraliza las referencias a los elementos del DOM a los que se accede con frecuencia.
+ * Este patrón mejora el rendimiento al cachear los objetos jQuery, evitando consultas
+ * redundantes al DOM y facilitando el mantenimiento del código.
+ */
+
+/**
+ * Un objeto que contiene referencias cacheadas de jQuery a los elementos del DOM
+ * utilizados en la interfaz de trading.
+ * @type {Object<string, JQuery>}
+ */
 export const DOMElements = {
+    // Contenedor principal del formulario de trading
     form: $('#formulario-trading'),
+    // Selector principal de criptomonedas (ej. BTC, ETH)
     selectorPrincipal: $('#cripto'),
+    // Desplegable para seleccionar la moneda de pago (en una compra)
     selectorPagarCon: $('#moneda-pago'),
+    // Desplegable para seleccionar la moneda a recibir (en una venta)
     selectorRecibirEn: $('#moneda-recibir'),
+    // Botón de acción 'Comprar'
     botonComprar: $('.boton-comprar'),
+    // Botón de acción 'Vender'
     botonVender: $('.boton-vender'),
+    // Botón final 'Confirmar' para la transacción
     botonConfirmar: $('.boton-confirmar'),
+    // Input oculto que almacena la acción actual ('comprar' o 'vender')
     inputAccion: $('#accion'),
+    // Contenedor para el desplegable 'Pagar con'
     campoPagarCon: $('#campo-pagar-con'),
+    // Contenedor para el desplegable 'Recibir en'
     campoRecibirEn: $('#campo-recibir-en'),
+    // Span para mostrar el saldo disponible del usuario
     spanSaldoDisponible: $('#saldo-disponible'),
+    // Botones de radio para cambiar entre modos de ingreso ('monto' vs 'total')
     radioModoIngreso: $('input[name="modo-ingreso"]'),
+    // Etiqueta para el campo de entrada de monto
     labelMonto: $('label[for="monto"]'),
+    // Campo de entrada principal para el monto
     inputMonto: $('#monto'),
+    // Slider para ajustar el monto
     sliderMonto: $('#slider-monto'),
 };
 
@@ -1347,24 +2238,42 @@ export const DOMElements = {
 === ARCHIVO: ./frontend/static/js/components/formLogic.js ===
 ==================================================
 
-// frontend/static/js/components/formLogic.js
+/**
+ * @module FormLogic
+ * @description Encapsula la lógica principal para manejar las interacciones del usuario
+ * y la manipulación de datos dentro del formulario de trading.
+ */
 
 import { DOMElements } from './domElements.js';
 import { UIState } from './uiState.js';
 
+/**
+ * @typedef {Object} Moneda
+ * @property {string} ticker - El símbolo de la moneda (ej. 'BTC').
+ * @property {string} nombre - El nombre completo de la moneda (ej. 'Bitcoin').
+ */
+
+/**
+ * Colección de funciones que gestionan la lógica del formulario de trading.
+ */
 export const FormLogic = {
     /**
-     * Llena un selector de Bootstrap con opciones y selecciona un valor por defecto.
-     * @param {jQuery} selector - El elemento selector de jQuery.
-     * @param {Array<Object>} lista - Lista de objetos para poblar el selector (cada objeto debe tener 'ticker' y 'nombre').
-     * @param {string} valorPorDefecto - El valor a seleccionar por defecto.
-     * @returns {string|null} El ticker seleccionado o null si la lista está vacía.
+     * Rellena un elemento <select> con una lista de opciones.
+     *
+     * @param {JQuery} selector - El objeto jQuery para el elemento <select> que se va a rellenar.
+     * @param {Moneda[]} lista - Un array de objetos para crear las opciones.
+     * @param {string} [valorPorDefecto] - El ticker del ítem que se seleccionará por defecto.
+     * @returns {string|null} El ticker del valor finalmente seleccionado, o null si la lista está vacía.
+     * @side-effects Limpia y añade elementos <option> al DOM. Dispara un evento 'change'.
      */
     popularSelector(selector, lista, valorPorDefecto) {
         selector.empty();
-        // CORRECCIÓN: Asegurarse de que se usan las propiedades correctas (ticker, nombre)
         lista.forEach(({ ticker, nombre }) => selector.append(new Option(`${nombre} (${ticker})`, ticker)));
-        const valorFinal = (valorPorDefecto && lista.some(m => m.ticker === valorPorDefecto)) ? valorPorDefecto : (lista.length > 0 ? lista[0].ticker : null);
+
+        const valorFinal = (valorPorDefecto && lista.some(m => m.ticker === valorPorDefecto))
+            ? valorPorDefecto
+            : (lista.length > 0 ? lista[0].ticker : null);
+
         if (valorFinal) {
             selector.val(valorFinal).trigger('change');
         }
@@ -1372,32 +2281,31 @@ export const FormLogic = {
     },
 
     /**
-     * Calcula el monto basado en el valor del slider y el saldo disponible.
-     * Protegido contra el caso donde window.ownedCoins aún no está cargado.
-     * @returns {number} El monto calculado.
+     * Calcula el monto de la operación basado en el porcentaje del slider.
+     *
+     * Esta función determina el saldo disponible de la moneda relevante
+     * (moneda de pago para compras, moneda principal para ventas) y calcula
+     * el monto correspondiente al porcentaje del slider.
+     *
+     * @returns {number} El monto calculado para la operación.
      */
     calcularMontoSlider() {
-        // Añade este log para verificar si la función se llama
-        console.log("DEBUG: Se ha llamado a calcularMontoSlider()"); 
-
-        // ----> CORRECCIÓN DEFENSIVA CLAVE <----
-        // Si window.ownedCoins aún no se ha cargado desde la API, no hagas nada y devuelve 0.
-        // Esto evita el crash durante la inicialización.
+        // Comprobación defensiva: si los datos de monedas del usuario aún no se han cargado,
+        // devuelve 0 para evitar errores al inicio.
         if (!window.ownedCoins) {
-             console.log("DEBUG: window.ownedCoins es undefined. Saliendo de calcularMontoSlider.");
-             return 0;
+            return 0;
         }
-        
+
         const porcentaje = parseFloat(DOMElements.sliderMonto.val());
         const esCompra = UIState.esModoCompra();
-        
+
+        // Determina qué saldo de moneda usar según la dirección de la operación.
         const tickerDeSaldo = esCompra ? UIState.getTickerPago() : UIState.getTickerPrincipal();
-        
-        // Ahora que sabemos que window.ownedCoins existe, podemos usarlo de forma segura.
-        const moneda = window.ownedCoins.find(m => m.ticker === tickerDeSaldo);
-        const saldoDisponible = moneda ? parseFloat(moneda.cantidad) : 0; // Usar .cantidad
-        
         if (!tickerDeSaldo) return 0;
+
+        // Busca la moneda específica en la billetera del usuario y obtiene su cantidad disponible.
+        const moneda = window.ownedCoins.find(m => m.ticker === tickerDeSaldo);
+        const saldoDisponible = moneda ? parseFloat(moneda.cantidad) : 0;
 
         return (saldoDisponible * porcentaje) / 100.0;
     }
@@ -1407,15 +2315,47 @@ export const FormLogic = {
 === ARCHIVO: ./frontend/static/js/components/tablaCotizacionesUI.js ===
 ==================================================
 
-// Controla la renderización y actualización de la tabla de cotizaciones.
+/**
+ * @module tablaCotizacionesUI
+ * @description Controla la renderización y actualización de la tabla de cotizaciones de criptomonedas.
+ */
 
 import { fetchCotizaciones } from '../services/apiService.js';
 import { UIUpdater } from './uiUpdater.js';
 
 const cuerpoTabla = document.getElementById('tabla-datos');
 
+/**
+ * @typedef {object} Cotizacion
+ * @property {string} logo - URL del logo de la criptomoneda.
+ * @property {string} nombre - Nombre de la criptomoneda.
+ * @property {string} ticker - Símbolo de la criptomoneda.
+ * @property {string} precio_usd_formatted - Precio formateado en USD.
+ * @property {string} '1h_%' - Variación porcentual en la última hora.
+ * @property {string} '24h_%' - Variación porcentual en las últimas 24 horas.
+ * @property {string} '7d_%' - Variación porcentual en los últimos 7 días.
+ * @property {string} '1h_%_formatted' - Variación porcentual formateada (1h).
+ * @property {string} '24h_%_formatted' - Variación porcentual formateada (24h).
+ * @property {string} '7d_%_formatted' - Variación porcentual formateada (7d).
+ * @property {string} market_cap_formatted - Capitalización de mercado formateada.
+ * @property {string} volumen_24h_formatted - Volumen de 24h formateado.
+ * @property {string} circulating_supply_formatted - Suministro circulante formateado.
+ */
+
+/**
+ * Crea el HTML para una fila de la tabla de cotizaciones.
+ *
+ * @private
+ * @param {Cotizacion} cripto - El objeto de datos de la criptomoneda.
+ * @param {number} index - El número de fila (índice + 1).
+ * @returns {string} Una cadena de texto con el HTML del `<tr>` para la criptomoneda.
+ */
 function createFilaCotizacionHTML(cripto, index) {
-    // Helper para no repetir la lógica de positivo/negativo
+    /**
+     * Determina la clase CSS y el símbolo de flecha para valores de rendimiento.
+     * @param {string|number} value - El valor numérico a evaluar.
+     * @returns {{className: string, arrow: string}} Objeto con la clase ('positivo' o 'negativo') y la flecha ('▲' o '▼').
+     */
     const getPerfIndicator = (value) => {
         const isPositive = parseFloat(value) >= 0;
         return {
@@ -1464,6 +2404,13 @@ function createFilaCotizacionHTML(cripto, index) {
     `;
 }
 
+/**
+ * Obtiene los datos de cotizaciones y renderiza la tabla completa en el DOM.
+ * Maneja los estados de carga, éxito y error.
+ * @async
+ * @side-effects Modifica el `innerHTML` del elemento '#tabla-datos'.
+ *               Puede mostrar un mensaje de error global a través de `UIUpdater`.
+ */
 export async function renderTabla() {
     if (!cuerpoTabla) return;
     try {
@@ -1477,7 +2424,7 @@ export async function renderTabla() {
     } catch (error) {
         console.error('❌ Error al renderizar la tabla de cotizaciones:', error);
         UIUpdater.mostrarMensajeError('No se pudieron cargar las cotizaciones. La información puede estar desactualizada.');
-        // Opcional: mostrar un estado de error en la propia tabla
+        // Muestra un estado de error en la propia tabla para informar al usuario.
         cuerpoTabla.innerHTML = '<tr><td colspan="9" class="text-center text-danger py-4">Error al cargar las cotizaciones.</td></tr>';
     }
 }
@@ -1487,22 +2434,57 @@ export async function renderTabla() {
 === ARCHIVO: ./frontend/static/js/components/uiState.js ===
 ==================================================
 
-// Gestiona el estado de la interfaz de usuario, como el modo de operación (compra/venta).
+/**
+ * @module uiState
+ * @description Proporciona un objeto centralizado para consultar el estado actual de la interfaz de usuario.
+ * Este módulo abstrae la lógica de acceso a los valores de los elementos del DOM, facilitando
+ * la obtención de información sobre el estado de la UI sin interactuar directamente con `DOMElements`.
+ */
+
 import { DOMElements } from './domElements.js';
 
+/**
+ * @description Un objeto que agrupa funciones para obtener diferentes aspectos del estado de la UI.
+ * Cada método consulta un elemento del DOM a través de `DOMElements` y devuelve su estado actual.
+ * @exports UIState
+ */
 export const UIState = {
+    /**
+     * Comprueba si el modo de operación actual es 'comprar'.
+     * @returns {boolean} `true` si la acción seleccionada es 'comprar', de lo contrario `false`.
+     */
     esModoCompra() {
         return DOMElements.inputAccion.val() === 'comprar';
     },
+
+    /**
+     * Obtiene el modo de ingreso seleccionado (ej. 'cantidad' o 'monto').
+     * @returns {string} El valor del radio button seleccionado para el modo de ingreso.
+     */
     getModoIngreso() {
         return DOMElements.radioModoIngreso.filter(':checked').val();
     },
+
+    /**
+     * Obtiene el ticker de la criptomoneda principal seleccionada.
+     * @returns {string} El ticker de la criptomoneda en el selector principal.
+     */
     getTickerPrincipal() {
         return DOMElements.selectorPrincipal.val();
     },
+
+    /**
+     * Obtiene el ticker de la moneda utilizada para pagar.
+     * @returns {string} El ticker de la moneda en el selector 'pagar con'.
+     */
     getTickerPago() {
         return DOMElements.selectorPagarCon.val();
     },
+
+    /**
+     * Obtiene el ticker de la moneda que se recibirá.
+     * @returns {string} El ticker de la moneda en el selector 'recibir en'.
+     */
     getTickerRecibo() {
         return DOMElements.selectorRecibirEn.val();
     }
@@ -1512,11 +2494,25 @@ export const UIState = {
 === ARCHIVO: ./frontend/static/js/components/uiUpdater.js ===
 ==================================================
 
-// Contiene funciones para actualizar dinámicamente la interfaz de usuario.
+/**
+ * @module uiUpdater
+ * @description Centraliza todas las funciones que actualizan dinámicamente la interfaz de usuario.
+ * Este módulo es responsable de cambiar la apariencia y el contenido de los elementos del DOM
+ * en respuesta a las acciones del usuario y los datos de la aplicación.
+ */
+
 import { DOMElements } from './domElements.js';
 import { UIState } from './uiState.js';
 
+/**
+ * @description Objeto que agrupa métodos para manipular la interfaz de usuario.
+ * @exports UIUpdater
+ */
 export const UIUpdater = {
+    /**
+     * Actualiza el texto y estilo de los botones de acción (comprar/vender) según el modo actual.
+     * @side-effects Modifica el texto y las clases CSS de `botonConfirmar`, `botonComprar` y `botonVender`.
+     */
     actualizarBotones() {
         const esCompra = UIState.esModoCompra();
         DOMElements.botonConfirmar
@@ -1531,6 +2527,10 @@ export const UIUpdater = {
             .toggleClass('btn-outline-secondary', esCompra);
     },
 
+    /**
+     * Muestra u oculta los campos de 'Pagar con' y 'Recibir en' según el modo de operación.
+     * @side-effects Modifica la visibilidad y el estado `disabled` de los selectores correspondientes.
+     */
     actualizarVisibilidadCampos() {
         const esCompra = UIState.esModoCompra();
         DOMElements.campoPagarCon.toggle(esCompra);
@@ -1539,6 +2539,10 @@ export const UIUpdater = {
         DOMElements.selectorRecibirEn.prop('disabled', esCompra);
     },
 
+    /**
+     * Actualiza la etiqueta del campo de monto/cantidad para reflejar la moneda relevante.
+     * @side-effects Modifica el texto de `labelMonto`.
+     */
     actualizarLabelMonto() {
         const esModoMonto = UIState.getModoIngreso() === 'monto';
         const esCompra = UIState.esModoCompra();
@@ -1550,42 +2554,72 @@ export const UIUpdater = {
             tickerRelevante = esModoMonto ? UIState.getTickerPrincipal() : UIState.getTickerRecibo();
         }
 
-        const etiqueta = esModoMonto ? 'Monto' : 'Total';
+        const etiqueta = esModoMonto ? 'Cantidad' : 'Total';
         DOMElements.labelMonto.text(`${etiqueta} (${tickerRelevante || '...'})`);
     },
 
+    /**
+     * Muestra el saldo disponible para una moneda específica.
+     * Se asegura de que el objeto `window.ownedCoins` esté disponible antes de intentar leerlo.
+     * @param {string} ticker - El ticker de la moneda para la cual mostrar el saldo.
+     * @side-effects Modifica el texto de `spanSaldoDisponible`.
+     */
     mostrarSaldo(ticker) {
         if (!ticker) {
             DOMElements.spanSaldoDisponible.text('--');
             return;
         }
-        // Busca la moneda en el estado completo para obtener el saldo formateado.
-        const moneda = window.monedasPropias.find(m => m.ticker === ticker);
+
+        // Es crucial que 'window.ownedCoins' exista para evitar errores de referencia.
+        if (!window.ownedCoins) {
+            console.warn('Intento de mostrar saldo antes de que window.ownedCoins esté listo.');
+            DOMElements.spanSaldoDisponible.text('Cargando...');
+            return;
+        }
+
+        const moneda = window.ownedCoins.find((m) => m.ticker === ticker);
         const saldoFormateado = moneda ? moneda.cantidad_formatted : '0.00000000';
         DOMElements.spanSaldoDisponible.text(`${saldoFormateado} ${ticker}`);
     },
 
+    /**
+     * Establece el valor del campo de entrada de monto.
+     * @param {string|number} valor - El valor a establecer en el input.
+     * @side-effects Modifica el valor de `inputMonto`.
+     */
     setInputMonto(valor) {
         DOMElements.inputMonto.val(valor);
     },
 
+    /**
+     * Reinicia el control deslizante de monto a su valor inicial (0).
+     * @side-effects Modifica el valor de `sliderMonto`.
+     */
     resetSlider() {
         DOMElements.sliderMonto.val(0);
     },
 
+    /**
+     * Renderiza la tabla del historial de transacciones.
+     * @param {Array<object>} historialData - Un array de objetos de transacciones.
+     * @side-effects Modifica el `innerHTML` de `tabla-historial`.
+     */
     renderHistorial(historialData) {
         const tablaHistorial = $('#tabla-historial');
         if (!tablaHistorial.length) return;
 
         if (historialData.length === 0) {
-            tablaHistorial.html('<tr><td colspan="5" class="text-center text-muted py-3">No hay transacciones en el historial.</td></tr>');
+            tablaHistorial.html(
+                '<tr><td colspan="5" class="text-center text-muted py-3">No hay transacciones en el historial.</td></tr>'
+            );
             return;
         }
 
-        const historialHTML = historialData.map((item) => {
-            const claseTipo = item.tipo === 'compra' ? 'text-success' : 'text-danger';
+        const historialHTML = historialData
+            .map((item) => {
+                const claseTipo = item.tipo === 'compra' ? 'text-success' : 'text-danger';
 
-            return `
+                return `
                 <tr>
                     <td class="text-start ps-3">${item.fecha_formatted}</td>
                     <td class="fw-bold">${item.par_formatted}</td>
@@ -1594,15 +2628,17 @@ export const UIUpdater = {
                     <td>${item.valor_total_formatted}</td>
                 </tr>
             `;
-        }).join('');
+            })
+            .join('');
 
         tablaHistorial.html(historialHTML);
     },
 
     /**
-     * Muestra un mensaje de error en un contenedor de alertas en la parte superior de la página.
+     * Muestra un mensaje de error en un contenedor específico de la UI.
      * @param {string} mensaje - El mensaje de error a mostrar.
      * @param {string} [containerSelector='#error-container'] - El selector del contenedor donde se mostrará el error.
+     * @side-effects Modifica el `innerHTML` del contenedor de errores.
      */
     mostrarMensajeError(mensaje, containerSelector = '#error-container') {
         const errorContainer = $(containerSelector);
@@ -1610,37 +2646,53 @@ export const UIUpdater = {
             console.error(`Error container '${containerSelector}' not found.`);
             return;
         }
-
         const alertHTML = `
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                 ${mensaje}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         `;
-
-        // Limpia mensajes anteriores y añade el nuevo para evitar acumulación.
         errorContainer.html(alertHTML);
-    },
+    }
 };
+
 
 ==================================================
 === ARCHIVO: ./frontend/static/js/pages/billeteraPage.js ===
 ==================================================
 
-// Orquesta la inicialización y la lógica principal de la página de la billetera.
+/**
+ * @module pages/billeteraPage
+ * @description Orquesta la inicialización y la lógica principal de la página de la billetera,
+ * incluyendo la obtención de datos y la renderización de la tabla de activos.
+ */
+
 import { fetchEstadoBilletera } from '../services/apiService.js';
 import { UIUpdater } from '../components/uiUpdater.js';
 
 /**
- * Crea una fila HTML para la tabla de la billetera a partir de un objeto de cripto.
- * @param {object} cripto - El objeto que contiene los datos de la cripto.
- * @returns {string} El string HTML para la fila <tr>.
+ * @typedef {object} Cripto
+ * @property {string} ticker - El símbolo de la criptomoneda (ej. "BTC").
+ * @property {boolean} es_polvo - Indica si la cantidad es considerada "polvo" (muy pequeña).
+ * @property {string} cantidad_formatted - La cantidad de la criptomoneda, formateada como string.
+ * @property {string} precio_actual_formatted - El precio actual por unidad, formateado.
+ * @property {string} valor_usdt_formatted - El valor total en USDT, formateado.
+ * @property {string|number} ganancia_perdida - El valor numérico de la ganancia o pérdida.
+ * @property {string} ganancia_perdida_formatted - La ganancia o pérdida, formateada.
+ * @property {string} porcentaje_ganancia_formatted - El porcentaje de ganancia o pérdida, formateado.
+ * @property {string} porcentaje_formatted - El porcentaje que este activo representa en la billetera, formateado.
+ */
+
+/**
+ * Crea una fila HTML (`<tr>`) para la tabla de la billetera a partir de un objeto de criptomoneda.
+ * @param {Cripto} cripto - El objeto que contiene los datos del activo.
+ * @returns {string} Una cadena de texto con el HTML de la fila de la tabla.
  */
 function createBilleteraRowHTML(cripto) {
-    // La lógica de color se basa en el valor numérico crudo.
+    // Determina la clase CSS para el color basado en si la ganancia/pérdida es positiva o negativa.
     const colorGanancia = parseFloat(cripto.ganancia_perdida) >= 0 ? 'positivo' : 'negativo';
     
-    // Se usan directamente los campos _formatted que vienen del backend.
+    // Utiliza directamente los campos con el sufijo `_formatted` que ya vienen preparados del backend.
     return `
         <tr>
             <td class="text-center">${cripto.ticker} ${cripto.es_polvo ? '<span class="text-muted small">(polvo)</span>' : ''}</td>
@@ -1655,16 +2707,19 @@ function createBilleteraRowHTML(cripto) {
 }
 
 /**
- * Renderiza la tabla completa de la billetera en el DOM.
+ * Obtiene los datos de la billetera desde la API y los renderiza en la tabla del DOM.
+ * Maneja los estados de carga, éxito y error, actualizando la UI correspondientemente.
+ * @async
+ * @function renderBilletera
  */
 async function renderBilletera() {
     const cuerpoTabla = document.getElementById('tabla-billetera');
     if (!cuerpoTabla) {
-        console.warn("Elemento #tabla-billetera no encontrado.");
+        console.warn("El elemento #tabla-billetera no fue encontrado en el DOM. No se renderizará la tabla.");
         return;
     }
 
-    console.log("🔄 Cargando datos de la billetera...");
+    console.log("Cargando datos de la billetera...");
     try {
         const datosBilletera = await fetchEstadoBilletera();
 
@@ -1675,54 +2730,76 @@ async function renderBilletera() {
 
         const tablaHTML = datosBilletera.map(createBilleteraRowHTML).join('');
         cuerpoTabla.innerHTML = tablaHTML;
-        console.log("✅ Billetera renderizada correctamente.");
+        console.log("Billetera renderizada correctamente.");
     } catch (error) {
-        console.error('❌ Error al renderizar la billetera:', error);
-        // Muestra el error en la consola, en la UI global y en la tabla misma.
+        console.error('Error al renderizar la billetera:', error);
+        // Muestra un mensaje de error tanto en la consola como en la interfaz de usuario.
         UIUpdater.mostrarMensajeError('No se pudieron cargar los datos de la billetera. Por favor, intenta recargar la página.');
         cuerpoTabla.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Error al cargar los datos.</td></tr>';
     }
 }
 
-// Iniciar el proceso cuando el DOM esté listo.
-document.addEventListener('DOMContentLoaded', () => {renderBilletera()});
+/**
+ * @description Listener que se ejecuta cuando el DOM está completamente cargado.
+ * Inicia el proceso de renderizado de la billetera.
+ * @event DOMContentLoaded
+ */
+document.addEventListener('DOMContentLoaded', renderBilletera);
 
 ==================================================
 === ARCHIVO: ./frontend/static/js/pages/indexPage.js ===
 ==================================================
 
-// frontend/static/js/pages/indexPage.js
+/**
+ * @module pages/indexPage
+ * @description Lógica para la página principal de cotizaciones.
+ * Se encarga de inicializar y gestionar la actualización periódica de la tabla de cotizaciones.
+ */
 
 import { triggerActualizacionDatos } from '../services/apiService.js';
 import { renderTabla } from '../components/tablaCotizacionesUI.js';
 
+/**
+ * @const {number} UPDATE_INTERVAL_MS
+ * @description Intervalo en milisegundos para la actualización automática de la tabla de cotizaciones.
+ * @default 15000
+ */
 const UPDATE_INTERVAL_MS = 15000; // 15 segundos
 
 /**
- * Función unificada para actualizar datos y renderizar la tabla.
+ * Orquesta el ciclo completo de actualización de datos y renderizado de la tabla.
+ * Primero, solicita al backend que actualice sus datos desde la fuente externa.
+ * Una vez completado, renderiza la tabla de cotizaciones con la información más reciente.
+ * @async
+ * @function actualizarYRenderizar
+ * @throws {Error} Si alguna de las operaciones (actualización o renderizado) falla.
  */
 async function actualizarYRenderizar() {
-    console.log("🔄 Actualizando y renderizando cotizaciones...");
+    console.log("Iniciando ciclo de actualización de cotizaciones...");
     try {
-        // Primero, le pedimos al backend que se actualice desde la API externa.
         await triggerActualizacionDatos();
-        // Luego, renderizamos la tabla con los datos frescos.
         await renderTabla();
-        console.log("✅ Tabla de cotizaciones actualizada.");
+        console.log("Tabla de cotizaciones actualizada exitosamente.");
     } catch (error) {
-        console.error("❌ Falló el ciclo de actualización:", error);
-        // Opcional: podrías mostrar un mensaje de error en la UI aquí.
+        console.error("Falló el ciclo de actualización de la tabla de cotizaciones:", error);
     }
 }
 
+/**
+ * @description Listener que se ejecuta cuando el DOM está completamente cargado.
+ * Verifica si la tabla de cotizaciones existe en la página actual y, si es así,
+ * inicia el ciclo de actualización inmediata y periódica.
+ * @event DOMContentLoaded
+ */
 document.addEventListener('DOMContentLoaded', () => {
+    // Asegurarse de que el script solo se ejecute en la página correcta.
     if (document.getElementById('tabla-datos')) {
-        console.log("🚀 Inicializando página de cotizaciones.");
+        console.log("Página de cotizaciones detectada. Iniciando actualizaciones.");
         
-        // 1. Ejecuta la actualización INMEDIATAMENTE al cargar la página.
+        // Ejecuta la actualización inmediatamente al cargar la página.
         actualizarYRenderizar();
         
-        // 2. Luego, establece el intervalo para futuras actualizaciones.
+        // Establece el intervalo para futuras actualizaciones automáticas.
         setInterval(actualizarYRenderizar, UPDATE_INTERVAL_MS);
     }
 });
@@ -1731,145 +2808,181 @@ document.addEventListener('DOMContentLoaded', () => {
 === ARCHIVO: ./frontend/static/js/pages/tradingPage.js ===
 ==================================================
 
-// Orquesta la inicialización y la lógica principal de la página de trading.
+/**
+ * @module pages/tradingPage
+ * @description Orquesta toda la lógica de la página de trading. Se encarga de la inicialización,
+ * la gestión del estado, la interacción del usuario y la comunicación con otros módulos
+ * como el gráfico, el formulario y los servicios de API.
+ */
+
 import { DOMElements } from '../components/domElements.js';
 import { UIState } from '../components/uiState.js';
 import { UIUpdater } from '../components/uiUpdater.js';
 import { FormLogic } from '../components/formLogic.js';
-import { initializeChart } from '../components/chartRenderer.js';
+import { initializeChart, updateChartData } from '../components/chartRenderer.js';
 import { fetchCotizaciones, fetchEstadoBilletera, fetchHistorial, fetchVelas } from '../services/apiService.js';
 
-console.log("1. tradingPage.js - Script cargado e importaciones OK");
-
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("2. tradingPage.js - DOMContentLoaded se disparó");
-
-    // Variables globales para almacenar datos
-    window.allCryptos = [];
-    // Declaración explícita de window.ownedCoins
-    window.ownedCoins = []; 
+    /** @type {string} El ticker de la criptomoneda actualmente seleccionada en el gráfico. */
+    let currentTicker = 'BTC';
+    /** @type {string} La temporalidad (intervalo) actual del gráfico (ej. '1d', '1h'). */
+    let currentInterval = '1d';
+    /** @type {boolean} Bandera para prevenir cargas concurrentes de datos para el gráfico. */
+    let isChartLoading = false;
 
     /**
-     * Actualiza la interfaz de usuario según el modo de trading (compra/venta).
-     * @param {string} mode - El modo de operación ('comprar' o 'vender').
+     * Configura la interfaz de usuario para el modo de operación especificado (compra o venta).
+     * @param {'comprar' | 'vender'} mode - El modo de trading a activar.
      */
     function setTradeMode(mode) {
-        DOMElements.inputAccion.val(mode); 
-        
+        DOMElements.inputAccion.val(mode);
+
         UIUpdater.actualizarBotones();
         UIUpdater.actualizarVisibilidadCampos();
+
         let tickerForBalance = '';
         if (UIState.esModoCompra()) {
+            // En modo COMPRA, el selector principal muestra todas las criptos disponibles para comprar.
             const cryptosWithoutUSDT = window.allCryptos.filter(c => c.ticker !== 'USDT');
             FormLogic.popularSelector(DOMElements.selectorPrincipal, cryptosWithoutUSDT, 'BTC');
+            // El saldo a mostrar es el de la moneda con la que se paga (ej. USDT).
             tickerForBalance = UIState.getTickerPago();
         } else {
-            // Usamos window.ownedCoins aquí.
-            // Si window.ownedCoins es null o undefined o vacío, puede causar problemas.
-            // Añadimos una comprobación defensiva aquí.
+            // En modo VENTA, el selector principal muestra solo las criptos que el usuario posee.
             if (!window.ownedCoins || window.ownedCoins.length === 0) {
-                console.warn("WARN: window.ownedCoins no está disponible o está vacío al intentar configurar el modo de venta.");
-                // Podríamos intentar poblar con algo genérico o simplemente no hacer nada.
-                // Por ahora, si no hay ownedCoins, no poblamos el selector principal.
-                tickerForBalance = null; // O manejarlo de otra forma
+                console.warn("No se encontraron monedas en propiedad para configurar el modo de venta.");
+                tickerForBalance = null; // No se puede mostrar saldo si no hay monedas.
             } else {
-                const defaultTicker = window.ownedCoins[0].ticker; // Accede al primer elemento si existe
+                const defaultTicker = window.ownedCoins[0].ticker;
                 tickerForBalance = FormLogic.popularSelector(DOMElements.selectorPrincipal, window.ownedCoins, defaultTicker);
             }
         }
-        
+
         UIUpdater.mostrarSaldo(tickerForBalance);
         UIUpdater.actualizarLabelMonto();
         UIUpdater.resetSlider();
     }
 
     /**
-     * Configura todos los event listeners para los elementos interactivos del formulario y el gráfico.
+     * Obtiene los datos de velas para un par y temporalidad específicos y actualiza el gráfico.
+     * Utiliza una bandera (`isChartLoading`) para evitar peticiones concurrentes.
+     * @async
+     * @param {string} ticker - El ticker de la criptomoneda (ej. 'BTC').
+     * @param {string} interval - La temporalidad del gráfico (ej. '1d', '15m').
+     */
+    async function actualizarGrafico(ticker, interval) {
+        if (isChartLoading) {
+            console.log("Petición de actualización de gráfico ignorada: carga en curso.");
+            return;
+        }
+        isChartLoading = true;
+        console.log(`Solicitando datos de velas para ${ticker} en intervalo ${interval}...`);
+        try {
+            const nuevosDatosVelas = await fetchVelas(ticker, interval);
+            updateChartData(nuevosDatosVelas);
+        } catch (error) {
+            console.error(`Error al actualizar el gráfico para ${ticker}/${interval}:`, error);
+            updateChartData([]); // En caso de error, limpia el gráfico y muestra un mensaje.
+        } finally {
+            isChartLoading = false; // Restablece la bandera para permitir futuras peticiones.
+        }
+    }
+
+    /**
+     * Configura todos los manejadores de eventos para los elementos interactivos de la página.
      */
     function setupEventListeners() {
         DOMElements.botonComprar.on('click', () => setTradeMode('comprar'));
         DOMElements.botonVender.on('click', () => setTradeMode('vender'));
 
         DOMElements.selectorPrincipal.on('change', () => {
+            currentTicker = UIState.getTickerPrincipal();
             UIUpdater.actualizarLabelMonto();
             if (!UIState.esModoCompra()) {
-                // Aquí también puede ser que window.ownedCoins no esté listo si el usuario cambia a venta muy rápido.
-                // Pero la protección en setTradeMode debería mitigar esto.
-                UIUpdater.mostrarSaldo(UIState.getTickerPrincipal());
+                UIUpdater.mostrarSaldo(currentTicker);
             }
+            actualizarGrafico(currentTicker, currentInterval);
+        });
+
+        // Delega el evento de clic para los botones de temporalidad.
+        $('#timeframe-selector').on('click', '.timeframe-btn', function() {
+            const $btn = $(this);
+            if ($btn.hasClass('active')) return;
+
+            $('#timeframe-selector .timeframe-btn').removeClass('active');
+            $btn.addClass('active');
+
+            currentInterval = $btn.data('interval');
+            actualizarGrafico(currentTicker, currentInterval);
         });
 
         DOMElements.selectorPagarCon.on('change', () => {
             UIUpdater.actualizarLabelMonto();
             if (UIState.esModoCompra()) UIUpdater.mostrarSaldo(UIState.getTickerPago());
         });
-        
+
         DOMElements.selectorRecibirEn.on('change', UIUpdater.actualizarLabelMonto);
         DOMElements.radioModoIngreso.on('change', UIUpdater.actualizarLabelMonto);
 
         DOMElements.sliderMonto.on('input', () => {
             const calculatedValue = FormLogic.calcularMontoSlider();
-            UIUpdater.setInputMonto(calculatedValue.toFixed(8)); 
+            UIUpdater.setInputMonto(calculatedValue.toFixed(8));
         });
     }
 
+    /**
+     * Función principal que inicializa la página de trading.
+     * Carga datos críticos en paralelo, renderiza componentes y configura los listeners.
+     * @async
+     */
     async function initialize() {
-        console.log("3. tradingPage.js - Entrando en initialize()");
+        console.log("Inicializando página de trading...");
         try {
-            console.log("4. tradingPage.js - A punto de llamar a Promise.all");
+            // Carga todos los datos necesarios de forma concurrente para optimizar el tiempo de carga.
             const [cotizaciones, estadoBilletera, historial, velas] = await Promise.all([
                 fetchCotizaciones(),
                 fetchEstadoBilletera(),
                 fetchHistorial(),
-                fetchVelas()
+                fetchVelas(currentTicker, currentInterval) // Carga inicial para BTC en 1D.
             ]);
-            console.log("5. tradingPage.js - Promise.all completado con ÉXITO");
-            
-            window.allCryptos = cotizaciones;
-            // CORRECCIÓN: Asegurarse de usar 'ownedCoins' y filtrar correctamente
-            window.ownedCoins = estadoBilletera.filter(moneda => parseFloat(moneda.cantidad) > 0);
-            console.log(`6. tradingPage.js - Variables globales pobladas: allCryptos=${window.allCryptos.length}, ownedCoins=${window.ownedCoins.length}`);
 
+            // Almacena los datos en el objeto `window` para acceso global dentro de la página.
+            window.allCryptos = cotizaciones;
+            window.ownedCoins = estadoBilletera.filter(moneda => parseFloat(moneda.cantidad) > 0);
+
+            // Renderiza los componentes que dependen de los datos cargados.
             UIUpdater.renderHistorial(historial);
             initializeChart(velas);
-            console.log("7. tradingPage.js - Historial y gráfico renderizados");
 
+            // Inicializa la biblioteca Select2 en los selectores para mejorar su apariencia y funcionalidad.
             [DOMElements.selectorPrincipal, DOMElements.selectorPagarCon, DOMElements.selectorRecibirEn].forEach(sel => {
-                sel.select2({ 
-                    width: '100%', 
-                    dropdownCssClass: 'text-dark', 
-                    theme: 'bootstrap-5' 
+                sel.select2({
+                    width: '100%',
+                    dropdownCssClass: 'text-dark',
+                    theme: "bootstrap-5"
                 });
             });
-            console.log("8. tradingPage.js - Select2 inicializado");
 
-            // 5. Poblar los selectores con los datos ya cargados
-            // Asegurarse de que window.ownedCoins está disponible ANTES de poblar el selector
-            if (window.ownedCoins) {
-                FormLogic.popularSelector(DOMElements.selectorPagarCon, window.ownedCoins, 'USDT');
-            } else {
-                console.warn("WARN: window.ownedCoins no está disponible al poblar selectorPagarCon.");
-                // Poblar con un valor por defecto si ownedCoins no existe
-                FormLogic.popularSelector(DOMElements.selectorPagarCon, [{ticker: 'USDT', nombre: 'USDT'}], 'USDT');
-            }
-            // Siempre poblar el selector Recibir en con allCryptos
-            if (window.allCryptos) {
-                FormLogic.popularSelector(DOMElements.selectorRecibirEn, window.allCryptos, 'USDT');
-            } else {
-                console.warn("WARN: window.allCryptos no está disponible al poblar selectorRecibirEn.");
-            }
-            console.log("9. tradingPage.js - Selectores poblados");
-            
+            // Popula los selectores con las opciones correspondientes.
+            FormLogic.popularSelector(DOMElements.selectorPagarCon, window.ownedCoins, 'USDT');
+            FormLogic.popularSelector(DOMElements.selectorRecibirEn, window.allCryptos, 'USDT');
+
             setupEventListeners();
-            setTradeMode('comprar'); // Iniciar en modo compra por defecto
-            console.log("10. tradingPage.js - Listeners y modo de trading configurados. ¡Inicialización COMPLETA!");
+            
+            // Establece el estado inicial de la UI en modo 'comprar'.
+            setTradeMode('comprar');
+            
+            // Marca visualmente la temporalidad '1d' como activa.
+            $('#timeframe-selector .timeframe-btn[data-interval="1d"]').addClass('active');
 
+            console.log("Página de trading inicializada correctamente.");
         } catch (error) {
-            console.error('--- ERROR FATAL CAPTURADO EN INITIALIZE ---', error); 
-            UIUpdater.mostrarMensajeError('No se pudieron cargar los datos esenciales para la página de trading. Por favor, recarga la página.');
+            console.error('Error fatal durante la inicialización de la página de trading:', error);
+            UIUpdater.mostrarMensajeError('No se pudieron cargar los datos esenciales. Por favor, recarga la página.');
         }
     }
 
+    // Inicia todo el proceso de inicialización.
     initialize();
 });
 
@@ -1877,61 +2990,74 @@ document.addEventListener('DOMContentLoaded', () => {
 === ARCHIVO: ./frontend/static/js/services/apiService.js ===
 ==================================================
 
-// Centraliza todas las llamadas a la API del backend en un solo lugar.
+/**
+ * @module services/apiService
+ * @description Centraliza todas las llamadas a la API del backend. Proporciona una función
+ * genérica para las solicitudes y exporta funciones específicas para cada endpoint, 
+ * manejando errores de forma consistente.
+ */
 
 /**
- * Función genérica para realizar solicitudes fetch a la API.
- * @param {string} url - La URL del endpoint de la API.
- * @param {object} options - Opciones para la solicitud fetch (ej. method, headers, body).
- * @param {string} errorMessage - Mensaje de error personalizado para la excepción.
- * @returns {Promise<any>} - La respuesta JSON de la API.
+ * Realiza una solicitud `fetch` a un endpoint de la API y maneja la respuesta.
  * @private
+ * @async
+ * @param {string} url - El endpoint de la API al que se va a llamar.
+ * @param {RequestInit} [options={}] - Opciones para la solicitud `fetch` (método, headers, body, etc.).
+ * @param {string} [errorMessage='Error en la solicitud a la API'] - Mensaje de error personalizado para lanzar si la respuesta no es `ok`.
+ * @returns {Promise<any>} Una promesa que se resuelve con la respuesta JSON de la API.
+ * @throws {Error} Lanza un error si la solicitud de red falla o si la respuesta del servidor no es exitosa (status no es 2xx).
  */
 async function _fetchData(url, options = {}, errorMessage = 'Error en la solicitud a la API') {
     try {
         const response = await fetch(url, options);
         if (!response.ok) {
+            // Si la respuesta del servidor no es exitosa, construye un error informativo.
             throw new Error(`${errorMessage} (status: ${response.status})`);
         }
         return await response.json();
     } catch (error) {
-        console.error(`❌ Error en la llamada a ${url}:`, error);
-        // Re-lanzar el error permite que el código que llama lo maneje (ej. Promise.all).
+        console.error(`Error en la llamada a la API [${url}]:`, error);
+        // Re-lanza el error para que el código que invoca la función pueda manejarlo (ej. en un Promise.all).
         throw error;
     }
 }
 
-// --- Funciones exportadas para cada endpoint de la API ---
-
 /**
- * Obtiene la lista completa de cotizaciones.
+ * Obtiene la lista completa de cotizaciones de criptomonedas desde el backend.
+ * @returns {Promise<Array<object>>} Una promesa que se resuelve con un array de objetos de cotización.
  */
 export const fetchCotizaciones = () => 
-    _fetchData('/api/cotizaciones', {}, 'No se pudo cargar las cotizaciones');
+    _fetchData('/api/cotizaciones', {}, 'No se pudieron cargar las cotizaciones');
 
 /**
  * Obtiene el estado completo y formateado de la billetera del usuario.
+ * @returns {Promise<Array<object>>} Una promesa que se resuelve con un array de objetos, donde cada objeto representa una moneda en la billetera.
  */
 export const fetchEstadoBilletera = () => 
     _fetchData('/api/billetera/estado-completo', {}, 'No se pudo cargar el estado de la billetera');
 
 /**
  * Obtiene el historial de transacciones del usuario.
+ * @returns {Promise<Array<object>>} Una promesa que se resuelve con un array de objetos de transacciones.
  */
 export const fetchHistorial = () => 
-    _fetchData('/api/historial', {}, 'No se pudo cargar el historial');
+    _fetchData('/api/historial', {}, 'No se pudo cargar el historial de transacciones');
 
 /**
- * Obtiene los datos de las velas (candlestick) para el gráfico.
+ * Obtiene los datos de velas (candlestick) para un ticker y un intervalo de tiempo específicos.
+ * @param {string} ticker - El ticker de la criptomoneda (ej. 'BTC').
+ * @param {string} interval - La temporalidad de las velas (ej. '1d', '1h', '15m').
+ * @returns {Promise<Array<object>>} Una promesa que se resuelve con un array de datos de velas.
  */
-export const fetchVelas = () => 
-    _fetchData('/api/velas', {}, 'No se pudo cargar los datos de velas');
+export const fetchVelas = (ticker, interval) => 
+    _fetchData(`/api/velas/${ticker}/${interval}`, {}, `No se pudieron cargar los datos de velas para ${ticker} (${interval})`);
 
 /**
- * Solicita al backend que actualice los datos de las cotizaciones desde la fuente externa.
+ * Envía una solicitud al backend para que actualice los datos de cotizaciones desde la fuente externa.
+ * @returns {Promise<object>} Una promesa que se resuelve con un mensaje de éxito o estado de la actualización.
  */
 export const triggerActualizacionDatos = () => 
-    _fetchData('/api/actualizar', {}, 'La solicitud para actualizar datos falló');
+    _fetchData('/api/actualizar', {}, 'La solicitud para actualizar los datos falló');
 
 ==================================================
 === ARCHIVO: ./frontend/templates/billetera.html ===
@@ -2113,11 +3239,12 @@ export const triggerActualizacionDatos = () =>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles_trading.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
 </head>
 
 <body class="bg-dark text-white">
 
-    <!-- ========== BARRA DE NAVEGACIÓN (sin cambios) ========== -->
+    <!-- ========== BARRA DE NAVEGACIÓN ========== -->
     <nav class="navbar navbar-expand-lg bg-black shadow">
         <div class="container-fluid">
             <a class="navbar-brand text-warning d-flex align-items-center gap-2" href="{{ url_for('home.index') }}">
@@ -2143,25 +3270,43 @@ export const triggerActualizacionDatos = () =>
         </div>
     </nav>
 
-    <!-- Contenedor para mensajes de error -->
+    <!-- Contenedor para mensajes de error globales -->
     <div id="error-container" class="container-fluid mt-3"></div>
 
-    <!-- ========== CONTENIDO PRINCIPAL (sin cambios) ========== -->
+    <!-- ========== CONTENIDO PRINCIPAL ========== -->
     <div class="container mt-5">
         <div class="row">
             <div class="col-md-7">
                 <h3 class="text-light">Gráfico velas</h3>
-                <div class="form-check form-switch mb-2">
+                
+                <!-- Grupo de botones para las temporalidades -->
+                <div class="btn-group btn-group-sm mb-2" role="group" id="timeframe-selector">
+                    <button type="button" class="btn btn-outline-secondary timeframe-btn" data-interval="5m">5m</button>
+                    <button type="button" class="btn btn-outline-secondary timeframe-btn" data-interval="15m">15m</button>
+                    <button type="button" class="btn btn-outline-secondary timeframe-btn" data-interval="1h">1h</button>
+                    <button type="button" class="btn btn-outline-secondary timeframe-btn" data-interval="4h">4h</button>
+                    <button type="button" class="btn btn-outline-secondary timeframe-btn active" data-interval="1d">1D</button>
+                    <button type="button" class="btn btn-outline-secondary timeframe-btn" data-interval="1w">1S</button>
+                </div>
+
+                <!-- Checkbox para el volumen -->
+                <div class="form-check form-switch mb-2 d-inline-block ms-3">
                     <input class="form-check-input" type="checkbox" id="toggleVolume" checked>
                     <label class="form-check-label text-light" for="toggleVolume">Mostrar volumen</label>
                 </div>
-                <div class="py-3">
+
+                <!-- Contenedor del gráfico con posicionamiento relativo -->
+                <div class="py-3" style="position: relative;">
+                    <!-- Overlay de error, inicialmente oculto -->
+                    <div id="chart-error-overlay" class="chart-overlay" style="display: none;">
+                        <span>No hay datos de gráfico disponibles para este par y temporalidad.</span>
+                    </div>
+                    <!-- Contenedor donde se renderiza el gráfico -->
                     <div id="chart"></div>
                 </div>
             </div>
 
-            <form class="col-md-5 p-3" id="formulario-trading" method="POST"
-                action="{{ url_for('trading.procesar_trading_form') }}">
+            <form class="col-md-5 p-3" id="formulario-trading" method="POST" action="{{ url_for('trading.procesar_trading_form') }}">
                 <h2 class="text-warning">Trading</h2>
                 <div class="row g-2 mb-3">
                     <div class="col-6">
@@ -2181,45 +3326,35 @@ export const triggerActualizacionDatos = () =>
                 </div>
                 <div class="btn-group mb-3 w-100" role="group" id="toggle-trade-type">
                     <input type="hidden" name="accion" id="accion" value="comprar">
-                    <button type="button" class="btn w-50 btn-success active boton-comprar"
-                        data-action="comprar">Comprar</button>
-                    <button type="button" class="btn w-50 btn-outline-secondary boton-vender"
-                        data-action="vender">Vender</button>
+                    <button type="button" class="btn w-50 btn-success active boton-comprar" data-action="comprar">Comprar</button>
+                    <button type="button" class="btn w-50 btn-outline-secondary boton-vender" data-action="vender">Vender</button>
                 </div>
                 <div class="mb-3">
                     <label class="form-label d-block mb-2">Tipo de orden</label>
                     <div class="btn-group w-100" role="group">
-                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-mercado" value="mercado"
-                            autocomplete="off" checked required>
+                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-mercado" value="mercado" autocomplete="off" checked required>
                         <label class="btn btn-outline-primary rounded-start-pill" for="tipo-mercado">Mercado</label>
-                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-limite" value="limite"
-                            autocomplete="off">
+                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-limite" value="limite" autocomplete="off">
                         <label class="btn btn-outline-primary" for="tipo-limite">Límite</label>
-                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-stop-limit" value="stop-limit"
-                            autocomplete="off">
+                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-stop-limit" value="stop-limit" autocomplete="off">
                         <label class="btn btn-outline-primary rounded-end-pill" for="tipo-stop-limit">Stop-Limit</label>
                     </div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label d-block mb-2">Ingresar por</label>
                     <div class="btn-group w-100" role="group">
-                        <input type="radio" class="btn-check" name="modo-ingreso" id="modo-monto" value="monto"
-                            autocomplete="off" checked required>
-                        <label class="btn btn-outline-primary rounded-start-pill" for="modo-monto">Monto
-                            (Cripto)</label>
-                        <input type="radio" class="btn-check" name="modo-ingreso" id="modo-total" value="total"
-                            autocomplete="off">
+                        <input type="radio" class="btn-check" name="modo-ingreso" id="modo-monto" value="monto" autocomplete="off" checked required>
+                        <label class="btn btn-outline-primary rounded-start-pill" for="modo-monto">Cantidad (Cripto)</label>
+                        <input type="radio" class="btn-check" name="modo-ingreso" id="modo-total" value="total" autocomplete="off">
                         <label class="btn btn-outline-primary rounded-end-pill" for="modo-total">Total (USD)</label>
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label for="monto" class="form-label">Monto</label>
-                    <input type="number" class="form-control" id="monto" placeholder="0.00" name="monto" required
-                        min="0.00000001" step="any">
+                    <label for="monto" class="form-label">Cantidad</label> <!-- Texto cambiado aquí también para consistencia -->
+                    <input type="number" class="form-control" id="monto" placeholder="0.00" name="monto" required min="0.00000001" step="any">
                 </div>
                 <div class="mb-3">
-                    <input type="range" class="form-range" min="0" max="100" step="1" id="slider-monto" value="0"
-                        name="slider">
+                    <input type="range" class="form-range" min="0" max="100" step="1" id="slider-monto" value="0" name="slider">
                     <div class="d-flex justify-content-between text-white-50 small">
                         <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
                     </div>
@@ -2227,8 +3362,7 @@ export const triggerActualizacionDatos = () =>
                 <div class="mb-3 text-end text-secondary">
                     <small>Disponible: <span id="saldo-disponible">--</span></small>
                 </div>
-                <button type="submit" class="btn w-100 btn-success boton-confirmar"
-                    id="boton-confirmar">CONFIRMAR</button>
+                <button type="submit" class="btn w-100 btn-success boton-confirmar" id="boton-confirmar">CONFIRMAR</button>
             </form>
         </div>
 
@@ -2247,9 +3381,7 @@ export const triggerActualizacionDatos = () =>
                             </tr>
                         </thead>
                         <tbody id="tabla-historial">
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-3">Cargando historial...</td>
-                            </tr>
+                            <tr><td colspan="5" class="text-center text-muted py-3">Cargando historial...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -2257,11 +3389,12 @@ export const triggerActualizacionDatos = () =>
         </div>
     </div>
 
+    <!-- ===== SECCIÓN SCRIPTS ===== -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <script type="module" src="{{ url_for('static', filename='js/pages/tradingPage.js') }}"></script>
-
 </body>
 
 </html>
