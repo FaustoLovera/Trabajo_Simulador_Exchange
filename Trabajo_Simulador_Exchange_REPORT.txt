@@ -2,16 +2,17 @@
 === REPORTE DE CÓDIGO CONSOLIDADO ===
 Proyecto: Trabajo_Simulador_Exchange
 Ruta: /Users/andreiveis/UADE/2do cuatrimestre/05_Algoritmos y Estructura de datos I/Trabajo_Simulador_Exchange
-Generado el: Mon Jun 23 10:46:22 -03 2025
+Generado el: Mon Jun 23 13:23:52 -03 2025
 ==================================================
 
 --- INFORMACIÓN DEL REPOSITORIO GIT ---
 Rama actual: dev
-Último commit: d39c7a7 - Documentacion: Agregado de DOCSTRINGS y comentarios. (andreiveisuade, 2 days ago)
+Último commit: ab0b492 - Eliminacion de la clave secreta del entorno de prod (andreiveisuade, 61 minutes ago)
 ---
 
 --- ESTRUCTURA DEL DIRECTORIO ---
 .
+├── .env
 ├── .gitignore
 ├── backend
 │   ├── __init__.py
@@ -30,6 +31,7 @@ Rama actual: dev
 │   │   ├── __init__.py
 │   │   ├── api_cotizaciones.py
 │   │   ├── estado_billetera.py
+│   │   ├── presentacion_datos.py
 │   │   ├── trading_logica.py
 │   │   └── velas_logica.py
 │   └── utils
@@ -48,8 +50,16 @@ Rama actual: dev
 ├── README.md
 └── requirements.txt
 
-12 directories, 24 files
+12 directories, 26 files
 ---
+
+==================================================
+=== ARCHIVO: ./.env ===
+==================================================
+
+# Clave secreta para sesiones de Flask. ¡NO COMPARTIR!
+FLASK_SECRET_KEY='f9ce7ff641c611e7e519d1551ccdfd699929967d87528324'
+
 
 ==================================================
 === ARCHIVO: ./.gitignore ===
@@ -589,7 +599,7 @@ u otros clientes.
 
 from flask import Blueprint, jsonify
 from backend.servicios.api_cotizaciones import obtener_datos_criptos_coingecko, obtener_velas_de_api
-from backend.acceso_datos.datos_cotizaciones import cargar_datos_cotizaciones
+from backend.servicios.presentacion_datos import obtener_cotizaciones_formateadas
 
 bp = Blueprint("api_externa", __name__, url_prefix="/api")
 
@@ -614,14 +624,17 @@ def actualizar():
 @bp.route("/cotizaciones")
 def get_cotizaciones():
     """
-    Retorna la lista completa de cotizaciones almacenadas localmente.
+    Retorna la lista completa de cotizaciones, formateada para la presentación.
+
+    Esta ruta utiliza el servicio de presentación para tomar los datos crudos
+    y enriquecerlos con formato antes de enviarlos al frontend.
 
     Returns:
         Response: Un objeto JSON que contiene una lista de todas las criptomonedas
-                  y sus datos de cotización.
-                  Ejemplo: `[{"ticker": "BTC", "precio_usd": "65000.00", ...}]`
+                  y sus datos de cotización listos para ser mostrados.
+                  Ejemplo: `[{"ticker": "BTC", "precio_usd_formatted": "$65,000.10", ...}]`
     """
-    return jsonify(cargar_datos_cotizaciones())
+    return jsonify(obtener_cotizaciones_formateadas())
 
 
 @bp.route("/velas/<string:ticker>/<string:interval>")
@@ -827,30 +840,29 @@ from decimal import Decimal
 import requests
 from backend.servicios.velas_logica import guardar_datos_cotizaciones
 from config import COINGECKO_URL, BINANCE_URL, CANTIDAD_CRIPTOMONEDAS, CANTIDAD_VELAS
-from backend.utils.formatters import formato_numero_grande, formato_porcentaje, formato_valor_monetario
 
 def obtener_datos_criptos_coingecko() -> list[dict]:
     """
     Obtiene y procesa datos de mercado desde la API de CoinGecko.
 
     Realiza una petición para obtener una lista de las principales criptomonedas,
-    procesa la respuesta JSON, enriquece los datos con campos formateados para la UI,
-    y finalmente guarda las cotizaciones en un archivo local.
+    procesa la respuesta JSON y guarda los datos crudos en un archivo local.
+    El formateo para la UI se delega a otra capa de servicio.
 
     Returns:
         list[dict]: Una lista de diccionarios, donde cada uno representa una
-                    criptomoneda con datos brutos y formateados. Retorna una
+                    criptomoneda con sus datos crudos. Retorna una
                     lista vacía si ocurre un error.
 
-    Side Effects:
-        - Guarda los datos de cotizaciones en un archivo JSON local a través de
+    Objetivo:
+        - Guardar los datos de cotizaciones en un archivo JSON local a través de
           `guardar_datos_cotizaciones()`.
-        - Imprime logs en la consola sobre el estado de la petición.
+        - Imprimir logs en la consola sobre el estado de la petición.
 
-    Example of a returned item:
+    Ejemplo de lo que retorna la funcion:
         {
             'id': 1, 'nombre': 'Bitcoin', 'ticker': 'BTC', 'precio_usd': '65000.10',
-            'precio_usd_formatted': '$65,000.10', 'market_cap_formatted': '$1.28T', ...
+            'market_cap': '1280000000000', ...
         }
     """
     params = {
@@ -875,14 +887,14 @@ def obtener_datos_criptos_coingecko() -> list[dict]:
         datos = respuesta.json()
         resultado = []
         for i, dato in enumerate(datos, start=1):
-            # Procesa cada criptomoneda de forma segura
+            # Procesa cada criptomoneda de forma segura, guardando únicamente datos crudos.
             resultado.append({
                 "id": i,
                 "nombre": dato.get("name"),
                 "ticker": dato.get('symbol', '').upper(),
                 "logo": dato.get("image"),
                 
-                # Datos crudos convertidos a string para consistencia
+                # Datos crudos convertidos a string para consistencia y para usar con Decimal
                 "precio_usd": str(Decimal(str(dato.get("current_price", 0)))),
                 "1h_%": str(Decimal(str(dato.get("price_change_percentage_1h_in_currency", 0)))),
                 "24h_%": str(Decimal(str(dato.get("price_change_percentage_24h_in_currency", 0)))),
@@ -891,14 +903,14 @@ def obtener_datos_criptos_coingecko() -> list[dict]:
                 "volumen_24h": str(Decimal(str(dato.get("total_volume", 0)))),
                 "circulating_supply": str(Decimal(str(dato.get("circulating_supply", 0)))),
 
-                # Datos pre-formateados para la UI
-                "precio_usd_formatted": formato_valor_monetario(Decimal(str(dato.get("current_price", 0)))),
-                "1h_%_formatted": formato_porcentaje(Decimal(str(dato.get("price_change_percentage_1h_in_currency", 0)))),
-                "24h_%_formatted": formato_porcentaje(Decimal(str(dato.get("price_change_percentage_24h_in_currency", 0)))),
-                "7d_%_formatted": formato_porcentaje(Decimal(str(dato.get("price_change_percentage_7d_in_currency", 0)))),
-                "market_cap_formatted": formato_numero_grande(Decimal(str(dato.get("market_cap", 0)))),
-                "volumen_24h_formatted": formato_numero_grande(Decimal(str(dato.get("total_volume", 0)))),
-                "circulating_supply_formatted": f"{Decimal(str(dato.get('circulating_supply', 0))):,.0f} {dato.get('symbol', '').upper()}"
+                # --- DATOS FORMATEADOS ELIMINADOS ---
+                # "precio_usd_formatted": formato_valor_monetario(...) # <-- ELIMINADO
+                # "1h_%_formatted": formato_porcentaje(...) # <-- ELIMINADO
+                # "24h_%_formatted": formato_porcentaje(...) # <-- ELIMINADO
+                # "7d_%_formatted": formato_porcentaje(...) # <-- ELIMINADO
+                # "market_cap_formatted": formato_numero_grande(...) # <-- ELIMINADO
+                # "volumen_24h_formatted": formato_numero_grande(...) # <-- ELIMINADO
+                # "circulating_supply_formatted": f"{...}" # <-- ELIMINADO
             })
     except (KeyError, TypeError, ValueError, json.JSONDecodeError) as e:
         print(f"❌ Error al procesar los datos de CoinGecko: {str(e)}")
@@ -974,6 +986,9 @@ Este módulo centraliza la lógica de negocio para procesar los datos crudos de 
 billetera, el historial de transacciones y las cotizaciones. Genera una vista
 completa y enriquecida con cálculos financieros (ganancias/pérdidas, precios
 promedio) y campos formateados listos para ser consumidos por el frontend.
+
+La reescritura se enfoca en la claridad, separando la lógica en funciones más
+pequeñas y con responsabilidades únicas.
 """
 
 from decimal import Decimal
@@ -982,159 +997,321 @@ from backend.acceso_datos.datos_historial import cargar_historial
 from backend.acceso_datos.datos_cotizaciones import obtener_precio, cargar_datos_cotizaciones
 from backend.utils.formatters import formato_valor_monetario, formato_cantidad_cripto, formato_porcentaje, formato_fecha_hora
 
-def calcular_detalle_cripto(ticker: str, cantidad_actual: str | Decimal, precios: dict, historial: list[dict], info_cripto: dict) -> dict:
+
+# --- Funciones Auxiliares para el Cálculo de la Billetera ---
+def _division_segura(numerador: Decimal, denominador: Decimal) -> Decimal:
+    """Evita errores de división por cero devolviendo Decimal('0') si el denominador es cero."""
+    if denominador == Decimal("0"):
+        return Decimal("0")
+    else:
+        return numerador / denominador
+
+
+def _preparar_datos_compra(historial: list[dict]) -> dict[str, dict]:
     """
-    Calcula métricas financieras detalladas para una única criptomoneda en la billetera.
+    Procesa el historial de transacciones UNA SOLA VEZ para agregar los costos
+    y cantidades de compra por cada criptomoneda.
+
+    Esto es mucho más eficiente que filtrar el historial para cada moneda individualmente.
 
     Args:
-        ticker (str): El ticker de la criptomoneda (ej. "BTC").
-        cantidad_actual (str | Decimal): La cantidad de la criptomoneda en posesión.
-        precios (dict): Un diccionario con los precios actuales de todas las criptos.
         historial (list[dict]): El historial completo de transacciones.
-        info_cripto (dict): Un diccionario con información básica de la cripto (nombre, logo).
 
     Returns:
-        dict: Un diccionario con los datos calculados, incluyendo valor actual,
-              precio promedio de compra, inversión total y ganancias/pérdidas.
+        dict[str, dict]: Un diccionario donde la clave es el ticker de la criptomoneda
+                         y el valor es otro diccionario con 'total_invertido' y
+                         'cantidad_comprada'.
+                         Ej: {'BTC': {'total_invertido': 5000, 'cantidad_comprada': 0.1}}
     """
-    cantidad_actual = Decimal(str(cantidad_actual))
-    precio_actual = precios.get(ticker, Decimal("0"))
-    valor_usdt = cantidad_actual * precio_actual
+    datos_compra_por_ticker = {}
+    for operacion in historial:
+        if operacion.get("tipo") == "compra":
+            destino = operacion.get("destino", {})
+            ticker = destino.get("ticker")
+            if not ticker:
+                continue
 
-    # Filtra solo las compras de la criptomoneda actual para calcular el costo base
-    compras = [
-        op for op in historial
-        if op.get("tipo") == "compra" and op.get("destino", {}).get("ticker") == ticker
-    ]
+            # Inicializa el diccionario para el ticker si es la primera vez que lo vemos
+            if ticker not in datos_compra_por_ticker:
+                datos_compra_por_ticker[ticker] = {
+                    "total_invertido": Decimal("0"),
+                    "cantidad_comprada": Decimal("0"),
+                }
+            
+            # Agrega los valores de la transacción actual
+            datos_compra_por_ticker[ticker]["total_invertido"] += Decimal(str(operacion.get("valor_usd", "0")))
+            datos_compra_por_ticker[ticker]["cantidad_comprada"] += Decimal(str(destino.get("cantidad", "0")))
+            
+    return datos_compra_por_ticker
 
-    cantidad_comprada = sum(Decimal(str(op.get("destino", {}).get("cantidad", "0"))) for op in compras)
-    total_invertido = sum(Decimal(str(op.get("valor_usd", "0"))) for op in compras)
 
-    # Función local para evitar división por cero
-    division_por_cero_segura = lambda num, den: num / den if den != 0 else Decimal("0")
+def _calcular_metricas_activo(ticker: str, cantidad_actual: Decimal, precio_actual: Decimal, datos_compra: dict) -> dict:
+    """
+    Calcula las métricas financieras clave (sin formato) para un único activo.
+    Esta función se enfoca puramente en los cálculos matemáticos.
 
-    precio_promedio = division_por_cero_segura(total_invertido, cantidad_comprada)
-    invertido_actual = cantidad_actual * precio_promedio
-    ganancia = valor_usdt - invertido_actual
-    porcentaje_ganancia = division_por_cero_segura(ganancia, invertido_actual) * Decimal("100")
+    Args:
+        ticker (str): El ticker del activo (ej. "BTC").
+        cantidad_actual (Decimal): La cantidad del activo en la billetera.
+        precio_actual (Decimal): El precio de mercado actual del activo.
+        datos_compra (dict): La información de compra pre-procesada para este activo.
+
+    Returns:
+        dict: Un diccionario con las métricas calculadas (valor, P&L, etc.) como objetos Decimal.
+    """
+    valor_actual_usd = cantidad_actual * precio_actual
+
+    # Obtiene los datos de compra para este activo específico
+    total_invertido = datos_compra.get("total_invertido", Decimal("0"))
+    cantidad_comprada = datos_compra.get("cantidad_comprada", Decimal("0"))
+
+    # Calcula las métricas
+    precio_promedio_compra = _division_segura(total_invertido, cantidad_comprada)
+    costo_base_actual = cantidad_actual * precio_promedio_compra
+    ganancia_o_perdida = valor_actual_usd - costo_base_actual
+    porcentaje_ganancia = _division_segura(ganancia_o_perdida, costo_base_actual) * Decimal("100")
 
     return {
         "ticker": ticker,
-        "nombre": info_cripto.get('nombre', ticker),
         "cantidad": cantidad_actual,
-        "valor_usdt": valor_usdt,
         "precio_actual": precio_actual,
-        "precio_promedio": precio_promedio,
-        "invertido": invertido_actual,
-        "ganancia_perdida": ganancia,
+        "valor_usdt": valor_actual_usd,
+        "precio_promedio_compra": precio_promedio_compra,
+        "costo_base_actual": costo_base_actual,
+        "ganancia_perdida": ganancia_o_perdida,
         "porcentaje_ganancia": porcentaje_ganancia,
     }
+
+
+def _formatear_activo_para_presentacion(activo_calculado: dict, total_billetera_usd: Decimal, info_cripto: dict) -> dict:
+    """
+    Toma un activo con métricas calculadas y le añade todos los campos formateados
+    para ser mostrados en la interfaz de usuario.
+
+    Args:
+        activo_calculado (dict): Un diccionario con las métricas del activo (valores Decimal).
+        total_billetera_usd (Decimal): El valor total de toda la billetera en USD.
+        info_cripto (dict): Un diccionario con información estática de la cripto (nombre, logo).
+
+    Returns:
+        dict: Un diccionario final listo para ser enviado como JSON, con todos los valores como strings.
+    """
+    porcentaje_en_billetera = _division_segura(activo_calculado["valor_usdt"], total_billetera_usd) * Decimal("100")
+
+    # Formato condicional para la cantidad (USDT vs otras criptos)
+    if activo_calculado["ticker"] == 'USDT':
+        cantidad_formateada = formato_valor_monetario(activo_calculado["cantidad"], simbolo="")
+    else:
+        cantidad_formateada = formato_cantidad_cripto(activo_calculado["cantidad"])
+
+    return {
+        "ticker": activo_calculado["ticker"],
+        "nombre": info_cripto.get("nombre", activo_calculado["ticker"]),
+        "es_polvo": activo_calculado["valor_usdt"] < Decimal("0.01"),
+        
+        # === INICIO DE LA CORRECCIÓN ===
+        # Devolvemos tanto el valor crudo (para la lógica del JS) como el formateado (para la vista).
+        "cantidad": str(activo_calculado["cantidad"]),
+        "cantidad_formatted": cantidad_formateada,
+        # === FIN DE LA CORRECCIÓN ===
+
+        "precio_actual_formatted": formato_valor_monetario(activo_calculado["precio_actual"], decimales=4),
+        "valor_usdt_formatted": formato_valor_monetario(activo_calculado["valor_usdt"]),
+        "ganancia_perdida_formatted": formato_valor_monetario(activo_calculado["ganancia_perdida"]),
+        "porcentaje_ganancia_formatted": formato_porcentaje(activo_calculado["porcentaje_ganancia"]),
+        "porcentaje_formatted": formato_porcentaje(porcentaje_en_billetera),
+
+        # Incluir el valor crudo de ganancia/pérdida para lógica de color en el frontend
+        "ganancia_perdida": str(activo_calculado["ganancia_perdida"]),
+    }
+
+# --- Función Principal de la Billetera ---
 
 def estado_actual_completo() -> list[dict]:
     """
     Genera un estado completo y formateado de todos los activos en la billetera.
-
-    Carga la billetera, el historial y las cotizaciones. Para cada activo, calcula
-    sus métricas financieras, añade campos formateados para la UI y determina su
-    peso porcentual en la billetera. Finalmente, convierte todos los valores
-    Decimal a string para asegurar la serialización JSON.
-
-    Returns:
-        list[dict]: Una lista de diccionarios, cada uno representando un activo
-                    con todos sus datos brutos, calculados y formateados.
+    El proceso está dividido en pasos claros para mejorar la legibilidad.
     """
+    # PASO 1: Cargar todos los datos crudos necesarios
     billetera = cargar_billetera()
     historial = cargar_historial()
     todas_las_cotizaciones = cargar_datos_cotizaciones()
-    info_map = {c.get('ticker'): c for c in todas_las_cotizaciones}
-    precios = {ticker: obtener_precio(ticker) or Decimal("0") for ticker in billetera.keys()}
-
-    detalles = []
-    for ticker, cantidad in billetera.items():
-        # USDT es un caso especial ya que no viene de la API de Coingecko
-        if ticker == "USDT":
-            info_cripto = {'nombre': 'Tether', 'ticker': 'USDT'}
-        else:
-            info_cripto = info_map.get(ticker, {'nombre': ticker})  # Fallback si no se encuentra
-
-        detalle_calculado = calcular_detalle_cripto(ticker, cantidad, precios, historial, info_cripto)
-        detalles.append(detalle_calculado)
-
-    total_usdt = sum(d.get("valor_usdt", Decimal("0")) for d in detalles)
-    division_por_cero_segura = lambda num, den: num / den if den != 0 else Decimal("0")
-
-    # Segunda pasada para calcular porcentajes y añadir formato
-    for detalle in detalles:
-        porcentaje_billetera = division_por_cero_segura(detalle.get("valor_usdt", Decimal("0")), total_usdt) * Decimal("100")
-        
-        detalle["porcentaje"] = porcentaje_billetera
-        detalle["es_polvo"] = detalle.get("valor_usdt", Decimal("0")) < Decimal("0.001")
-        
-        # Formateo condicional para USDT vs otras criptos
-        if detalle["ticker"] == 'USDT':
-            detalle["cantidad_formatted"] = formato_valor_monetario(detalle["cantidad"], simbolo="")
-        else:
-            detalle["cantidad_formatted"] = formato_cantidad_cripto(detalle["cantidad"])
-        
-        detalle["precio_actual_formatted"] = formato_valor_monetario(detalle.get("precio_actual", Decimal("0")), decimales=4)
-        detalle["valor_usdt_formatted"] = formato_valor_monetario(detalle.get("valor_usdt", Decimal("0")))
-        detalle["ganancia_perdida_formatted"] = formato_valor_monetario(detalle.get("ganancia_perdida", Decimal("0")))
-        detalle["porcentaje_ganancia_formatted"] = formato_porcentaje(detalle.get("porcentaje_ganancia", Decimal("0")))
-        detalle["porcentaje_formatted"] = formato_porcentaje(porcentaje_billetera)
-
-        # Asegura que todos los valores Decimal se conviertan a string
-        for k, v in detalle.items():
-            if isinstance(v, Decimal):
-                detalle[k] = str(v)
     
-    return detalles
+    # Crear mapas para acceso rápido a la información
+    info_cripto_map = {c.get('ticker'): c for c in todas_las_cotizaciones}
+    precios_actuales = {ticker: obtener_precio(ticker) or Decimal("0") for ticker in billetera.keys()}
+
+    # PASO 2: Pre-procesar el historial para optimizar los cálculos
+    datos_compra_por_ticker = _preparar_datos_compra(historial)
+
+    # PASO 3: Calcular las métricas financieras para cada activo en la billetera
+    activos_calculados = []
+    for ticker, cantidad in billetera.items():
+        if cantidad <= Decimal("1e-8"):  # Ignorar saldos de polvo insignificantes
+            continue
+            
+        datos_compra_activo = datos_compra_por_ticker.get(ticker, {})
+        metricas = _calcular_metricas_activo(
+            ticker,
+            cantidad,
+            precios_actuales.get(ticker, Decimal("0")),
+            datos_compra_activo
+        )
+        activos_calculados.append(metricas)
+
+    # PASO 4: Calcular el valor total de la billetera
+    total_billetera_usd = sum(activo["valor_usdt"] for activo in activos_calculados)
+
+    # PASO 5: Formatear cada activo para la presentación final
+    activos_para_presentacion = []
+    for activo in activos_calculados:
+        ticker = activo["ticker"]
+        # Asignar información básica (nombre, logo)
+        if ticker == "USDT":
+            info_cripto = {'nombre': 'Tether'}
+        else:
+            info_cripto = info_cripto_map.get(ticker, {'nombre': ticker})
+        
+        activo_formateado = _formatear_activo_para_presentacion(activo, total_billetera_usd, info_cripto)
+        activos_para_presentacion.append(activo_formateado)
+
+    return activos_para_presentacion
+
+# --- Función para el Historial ---
 
 def obtener_historial_formateado() -> list[dict]:
     """
     Carga y formatea el historial de transacciones para su visualización.
-
-    Para cada transacción, añade campos formateados como la fecha, el par de
-    monedas, y los valores monetarios, listos para ser mostrados en la UI.
-
-    Returns:
-        list[dict]: Una lista de transacciones, cada una como un diccionario
-                    enriquecido con datos formateados.
+    La lógica de formato está contenida para mayor claridad.
     """
-    historial = cargar_historial()
+    historial_crudo = cargar_historial()
     historial_formateado = []
 
-    for item in historial:
-        item_formateado = item.copy()
-
+    for item in historial_crudo:
+        # Determinar el par y la cantidad principal de la operación
         if item.get('tipo') == 'compra':
+            par_origen = item.get('origen', {}).get('ticker', '?')
+            par_destino = item.get('destino', {}).get('ticker', '?')
             cantidad = Decimal(str(item.get('destino', {}).get('cantidad', '0')))
-            par = f"{item.get('destino', {}).get('ticker', '?')}/{item.get('origen', {}).get('ticker', '?')}"
-        else:  # Venta
+        else:  # Venta o Intercambio
+            par_origen = item.get('origen', {}).get('ticker', '?')
+            par_destino = item.get('destino', {}).get('ticker', '?')
             cantidad = Decimal(str(item.get('origen', {}).get('cantidad', '0')))
-            par = f"{item.get('origen', {}).get('ticker', '?')}/{item.get('destino', {}).get('ticker', '?')}"
 
-        # Añade campos formateados para la UI
-        item_formateado['fecha_formatted'] = formato_fecha_hora(item.get('timestamp'))
-        item_formateado['par_formatted'] = par
-        item_formateado['tipo_formatted'] = item.get('tipo', '').capitalize()
-        item_formateado['cantidad_formatted'] = formato_cantidad_cripto(cantidad)
-        item_formateado['valor_total_formatted'] = formato_valor_monetario(Decimal(str(item.get('valor_usd', '0'))))
-
-        # Convierte todos los Decimal a string para serialización JSON segura
-        for k, v in item_formateado.items():
-            if isinstance(v, Decimal):
-                item_formateado[k] = str(v)
-            elif isinstance(v, dict):
-                # Procesa diccionarios anidados también (ej. 'origen', 'destino')
-                v_copy = v.copy()
-                for sub_k, sub_v in v_copy.items():
-                    if isinstance(sub_v, Decimal):
-                        v_copy[sub_k] = str(sub_v)
-                item_formateado[k] = v_copy
-
+        # Ensamblar el diccionario final con campos formateados
+        item_formateado = {
+            "id": item.get("id"),
+            "tipo": item.get("tipo"),
+            "fecha_formatted": formato_fecha_hora(item.get('timestamp')),
+            "par_formatted": f"{par_destino}/{par_origen}",
+            "tipo_formatted": item.get('tipo', '').capitalize(),
+            "cantidad_formatted": formato_cantidad_cripto(cantidad),
+            "valor_total_formatted": formato_valor_monetario(Decimal(str(item.get('valor_usd', '0')))),
+        }
         historial_formateado.append(item_formateado)
 
     return historial_formateado
+
+==================================================
+=== ARCHIVO: ./backend/servicios/presentacion_datos.py ===
+==================================================
+
+"""
+Servicio de Presentación de Datos.
+
+Este módulo se encarga de tomar los datos crudos de la aplicación (como las cotizaciones)
+y enriquecerlos con formato y lógica de presentación para ser consumidos directamente
+por el frontend.
+"""
+
+from decimal import Decimal
+from backend.acceso_datos.datos_cotizaciones import cargar_datos_cotizaciones
+from backend.utils.formatters import (
+    formato_valor_monetario,
+    formato_porcentaje,
+    formato_numero_grande,
+)
+
+
+def _get_indicador_rendimiento(valor_str: str) -> dict:
+    """
+    Analiza un valor de rendimiento y devuelve un diccionario con la clase CSS y
+    el símbolo de flecha correspondiente.
+
+    Args:
+        valor_str (str): El valor de rendimiento como string.
+
+    Returns:
+        dict: Un diccionario con las claves 'className' y 'arrow'.
+    """
+    try:
+        valor = Decimal(valor_str)
+        if valor >= 0:
+            return {"className": "positivo", "arrow": "▲"}
+        return {"className": "negativo", "arrow": "▼"}
+    except (ValueError, TypeError):
+        return {"className": "", "arrow": ""}
+
+
+def obtener_cotizaciones_formateadas() -> list[dict]:
+    """
+    Carga las cotizaciones crudas y las transforma en una lista de diccionarios
+    listos para ser renderizados en el frontend.
+
+    Esta función añade campos formateados, indicadores de rendimiento y cualquier
+    otra lógica de presentación necesaria.
+
+    Returns:
+        list[dict]: Una lista de diccionarios con los datos de cotización
+                    enriquecidos para la presentación.
+    """
+    cotizaciones_crudas = cargar_datos_cotizaciones()
+    cotizaciones_presentacion = []
+
+    for cripto in cotizaciones_crudas:
+        # Extraer los valores crudos para procesarlos
+        ticker = cripto.get("ticker", "")
+        precio_usd_crudo = cripto.get("precio_usd", "0")
+        perf_1h_crudo = cripto.get("1h_%", "0")
+        perf_24h_crudo = cripto.get("24h_%", "0")
+        perf_7d_crudo = cripto.get("7d_%", "0")
+        market_cap_crudo = cripto.get("market_cap", "0")
+        volumen_24h_crudo = cripto.get("volumen_24h", "0")
+        circulating_supply_crudo = cripto.get("circulating_supply", "0")
+
+        # Ensamblar el nuevo diccionario de presentación
+        cripto_presentacion = {
+            # Datos básicos que no cambian
+            "id": cripto.get("id"),
+            "nombre": cripto.get("nombre"),
+            "ticker": ticker,
+            "logo": cripto.get("logo"),
+
+            # Datos formateados usando los formatters
+            "precio_usd_formatted": formato_valor_monetario(Decimal(precio_usd_crudo)),
+            "market_cap_formatted": formato_numero_grande(Decimal(market_cap_crudo)),
+            "volumen_24h_formatted": formato_numero_grande(Decimal(volumen_24h_crudo)),
+            
+            # Formateo especial para el supply circulante
+            "circulating_supply_formatted": (
+                f"{Decimal(circulating_supply_crudo):,.0f} {ticker}"
+                if circulating_supply_crudo != "0"
+                else "-"
+            ),
+
+            # Campos de rendimiento formateados
+            "1h_formatted": formato_porcentaje(Decimal(perf_1h_crudo)),
+            "24h_formatted": formato_porcentaje(Decimal(perf_24h_crudo)),
+            "7d_formatted": formato_porcentaje(Decimal(perf_7d_crudo)),
+
+            # Indicadores de rendimiento (clase CSS y flecha)
+            "perf_1h": _get_indicador_rendimiento(perf_1h_crudo),
+            "perf_24h": _get_indicador_rendimiento(perf_24h_crudo),
+            "perf_7d": _get_indicador_rendimiento(perf_7d_crudo),
+        }
+        cotizaciones_presentacion.append(cripto_presentacion)
+
+    return cotizaciones_presentacion
 
 ==================================================
 === ARCHIVO: ./backend/servicios/trading_logica.py ===
@@ -1557,6 +1734,10 @@ def formato_fecha_hora(timestamp: Union[int, float, str]) -> str:
 
 import os
 from decimal import getcontext, ROUND_HALF_DOWN
+from dotenv import load_dotenv
+
+# Cargar variables de entorno desde el archivo .env
+load_dotenv()
 
 # Base del proyecto y carpeta de datos
 PROYECTO_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -1571,7 +1752,9 @@ VELAS_PATH = os.path.join(BASE_DATA_DIR, "velas.json")
 
 # Configuración general
 BALANCE_INICIAL_USDT = "10000"
-FLASK_SECRET_KEY = os.environ.get("FLASK_SECRET_KEY", "clave_por_defecto_insegura")
+
+# Clave secreta para Flask
+FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "clave_por_defecto_insegura")
 
 # URLs de APIs
 COINGECKO_URL = "https://api.coingecko.com/api/v3/coins/markets"
@@ -2246,6 +2429,8 @@ export const DOMElements = {
 
 import { DOMElements } from './domElements.js';
 import { UIState } from './uiState.js';
+// Importamos AppState para acceder a los datos de la billetera.
+import { AppState } from '../services/appState.js';
 
 /**
  * @typedef {Object} Moneda
@@ -2253,26 +2438,20 @@ import { UIState } from './uiState.js';
  * @property {string} nombre - El nombre completo de la moneda (ej. 'Bitcoin').
  */
 
-/**
- * Colección de funciones que gestionan la lógica del formulario de trading.
- */
 export const FormLogic = {
-    /**
-     * Rellena un elemento <select> con una lista de opciones.
-     *
-     * @param {JQuery} selector - El objeto jQuery para el elemento <select> que se va a rellenar.
-     * @param {Moneda[]} lista - Un array de objetos para crear las opciones.
-     * @param {string} [valorPorDefecto] - El ticker del ítem que se seleccionará por defecto.
-     * @returns {string|null} El ticker del valor finalmente seleccionado, o null si la lista está vacía.
-     * @side-effects Limpia y añade elementos <option> al DOM. Dispara un evento 'change'.
-     */
     popularSelector(selector, lista, valorPorDefecto) {
         selector.empty();
+        if (!lista || lista.length === 0) {
+            selector.append(new Option('No hay opciones', '')).prop('disabled', true);
+            return null;
+        }
+
+        selector.prop('disabled', false);
         lista.forEach(({ ticker, nombre }) => selector.append(new Option(`${nombre} (${ticker})`, ticker)));
 
         const valorFinal = (valorPorDefecto && lista.some(m => m.ticker === valorPorDefecto))
             ? valorPorDefecto
-            : (lista.length > 0 ? lista[0].ticker : null);
+            : lista[0].ticker;
 
         if (valorFinal) {
             selector.val(valorFinal).trigger('change');
@@ -2280,31 +2459,15 @@ export const FormLogic = {
         return valorFinal;
     },
 
-    /**
-     * Calcula el monto de la operación basado en el porcentaje del slider.
-     *
-     * Esta función determina el saldo disponible de la moneda relevante
-     * (moneda de pago para compras, moneda principal para ventas) y calcula
-     * el monto correspondiente al porcentaje del slider.
-     *
-     * @returns {number} El monto calculado para la operación.
-     */
     calcularMontoSlider() {
-        // Comprobación defensiva: si los datos de monedas del usuario aún no se han cargado,
-        // devuelve 0 para evitar errores al inicio.
-        if (!window.ownedCoins) {
-            return 0;
-        }
-
         const porcentaje = parseFloat(DOMElements.sliderMonto.val());
         const esCompra = UIState.esModoCompra();
 
-        // Determina qué saldo de moneda usar según la dirección de la operación.
         const tickerDeSaldo = esCompra ? UIState.getTickerPago() : UIState.getTickerPrincipal();
         if (!tickerDeSaldo) return 0;
 
-        // Busca la moneda específica en la billetera del usuario y obtiene su cantidad disponible.
-        const moneda = window.ownedCoins.find(m => m.ticker === tickerDeSaldo);
+        // Usamos AppState en lugar de 'window' para obtener la moneda.
+        const moneda = AppState.getOwnedCoinByTicker(tickerDeSaldo);
         const saldoDisponible = moneda ? parseFloat(moneda.cantidad) : 0;
 
         return (saldoDisponible * porcentaje) / 100.0;
@@ -2326,48 +2489,31 @@ import { UIUpdater } from './uiUpdater.js';
 const cuerpoTabla = document.getElementById('tabla-datos');
 
 /**
- * @typedef {object} Cotizacion
+ * @typedef {object} CotizacionPresentacion
  * @property {string} logo - URL del logo de la criptomoneda.
  * @property {string} nombre - Nombre de la criptomoneda.
  * @property {string} ticker - Símbolo de la criptomoneda.
  * @property {string} precio_usd_formatted - Precio formateado en USD.
- * @property {string} '1h_%' - Variación porcentual en la última hora.
- * @property {string} '24h_%' - Variación porcentual en las últimas 24 horas.
- * @property {string} '7d_%' - Variación porcentual en los últimos 7 días.
- * @property {string} '1h_%_formatted' - Variación porcentual formateada (1h).
- * @property {string} '24h_%_formatted' - Variación porcentual formateada (24h).
- * @property {string} '7d_%_formatted' - Variación porcentual formateada (7d).
+ * @property {string} '1h_formatted' - Variación porcentual formateada (1h).
+ * @property {string} '24h_formatted' - Variación porcentual formateada (24h).
+ * @property {string} '7d_formatted' - Variación porcentual formateada (7d).
+ * @property {object} perf_1h - Objeto con {className, arrow} para rendimiento 1h.
+ * @property {object} perf_24h - Objeto con {className, arrow} para rendimiento 24h.
+ * @property {object} perf_7d - Objeto con {className, arrow} para rendimiento 7d.
  * @property {string} market_cap_formatted - Capitalización de mercado formateada.
  * @property {string} volumen_24h_formatted - Volumen de 24h formateado.
  * @property {string} circulating_supply_formatted - Suministro circulante formateado.
  */
 
 /**
- * Crea el HTML para una fila de la tabla de cotizaciones.
+ * Crea el HTML para una fila de la tabla de cotizaciones a partir de datos ya procesados.
  *
  * @private
- * @param {Cotizacion} cripto - El objeto de datos de la criptomoneda.
+ * @param {CotizacionPresentacion} cripto - El objeto de datos de la criptomoneda, ya formateado por el backend.
  * @param {number} index - El número de fila (índice + 1).
  * @returns {string} Una cadena de texto con el HTML del `<tr>` para la criptomoneda.
  */
 function createFilaCotizacionHTML(cripto, index) {
-    /**
-     * Determina la clase CSS y el símbolo de flecha para valores de rendimiento.
-     * @param {string|number} value - El valor numérico a evaluar.
-     * @returns {{className: string, arrow: string}} Objeto con la clase ('positivo' o 'negativo') y la flecha ('▲' o '▼').
-     */
-    const getPerfIndicator = (value) => {
-        const isPositive = parseFloat(value) >= 0;
-        return {
-            className: isPositive ? 'positivo' : 'negativo',
-            arrow: isPositive ? '▲' : '▼'
-        };
-    };
-
-    const perf1h = getPerfIndicator(cripto['1h_%']);
-    const perf24h = getPerfIndicator(cripto['24h_%']);
-    const perf7d = getPerfIndicator(cripto['7d_%']);
-
     return `
         <tr>
             <td class="text-start px-3">${index}</td>
@@ -2379,21 +2525,21 @@ function createFilaCotizacionHTML(cripto, index) {
             <td class="text-start px-3 fw-bold">${cripto.precio_usd_formatted}</td>
             
             <td class="text-end px-3">
-                <span class="${perf1h.className}">
-                    <span class="flecha">${perf1h.arrow}</span>
-                    ${cripto['1h_%_formatted']}
+                <span class="${cripto.perf_1h.className}">
+                    <span class="flecha">${cripto.perf_1h.arrow}</span>
+                    ${cripto['1h_formatted']}
                 </span>
             </td>
             <td class="text-end px-3">
-                <span class="${perf24h.className}">
-                    <span class="flecha">${perf24h.arrow}</span>
-                    ${cripto['24h_%_formatted']}
+                <span class="${cripto.perf_24h.className}">
+                    <span class="flecha">${cripto.perf_24h.arrow}</span>
+                    ${cripto['24h_formatted']}
                 </span>
             </td>
             <td class="text-end px-3">
-                <span class="${perf7d.className}">
-                    <span class="flecha">${perf7d.arrow}</span>
-                    ${cripto['7d_%_formatted']}
+                <span class="${cripto.perf_7d.className}">
+                    <span class="flecha">${cripto.perf_7d.arrow}</span>
+                    ${cripto['7d_formatted']}
                 </span>
             </td>
             
@@ -2405,30 +2551,28 @@ function createFilaCotizacionHTML(cripto, index) {
 }
 
 /**
- * Obtiene los datos de cotizaciones y renderiza la tabla completa en el DOM.
- * Maneja los estados de carga, éxito y error.
+ * Obtiene los datos de cotizaciones y renderiza la tabla en el DOM.
+ * Si no hay cotizaciones, la tabla simplemente se mostrará vacía.
  * @async
  * @side-effects Modifica el `innerHTML` del elemento '#tabla-datos'.
- *               Puede mostrar un mensaje de error global a través de `UIUpdater`.
+ *               Puede mostrar un mensaje de error si la carga de datos falla.
  */
 export async function renderTabla() {
     if (!cuerpoTabla) return;
     try {
-        const cotizaciones = await fetchCotizaciones();
-        if (!cotizaciones || cotizaciones.length === 0) {
-            cuerpoTabla.innerHTML =
-                '<tr><td colspan="9" class="text-center text-muted py-4">No hay datos disponibles.</td></tr>';
-            return;
-        }
-        cuerpoTabla.innerHTML = cotizaciones.map((cripto, index) => createFilaCotizacionHTML(cripto, index + 1)).join('');
+        const cotizaciones = (await fetchCotizaciones()) || [];
+        cuerpoTabla.innerHTML = cotizaciones
+            .map((cripto, index) => createFilaCotizacionHTML(cripto, index + 1))
+            .join('');
     } catch (error) {
         console.error('❌ Error al renderizar la tabla de cotizaciones:', error);
-        UIUpdater.mostrarMensajeError('No se pudieron cargar las cotizaciones. La información puede estar desactualizada.');
-        // Muestra un estado de error en la propia tabla para informar al usuario.
-        cuerpoTabla.innerHTML = '<tr><td colspan="9" class="text-center text-danger py-4">Error al cargar las cotizaciones.</td></tr>';
+        UIUpdater.mostrarMensajeError(
+            'No se pudieron cargar las cotizaciones. La información puede estar desactualizada.'
+        );
+        cuerpoTabla.innerHTML =
+            '<tr><td colspan="9" class="text-center text-danger py-4">Error al cargar las cotizaciones.</td></tr>';
     }
 }
-
 
 ==================================================
 === ARCHIVO: ./frontend/static/js/components/uiState.js ===
@@ -2503,16 +2647,12 @@ export const UIState = {
 
 import { DOMElements } from './domElements.js';
 import { UIState } from './uiState.js';
+// Importamos AppState para acceder a los datos de la billetera.
+import { AppState } from '../services/appState.js';
 
-/**
- * @description Objeto que agrupa métodos para manipular la interfaz de usuario.
- * @exports UIUpdater
- */
+
 export const UIUpdater = {
-    /**
-     * Actualiza el texto y estilo de los botones de acción (comprar/vender) según el modo actual.
-     * @side-effects Modifica el texto y las clases CSS de `botonConfirmar`, `botonComprar` y `botonVender`.
-     */
+    // ... (las funciones actualizarBotones, actualizarVisibilidadCampos, actualizarLabelMonto no cambian) ...
     actualizarBotones() {
         const esCompra = UIState.esModoCompra();
         DOMElements.botonConfirmar
@@ -2527,10 +2667,6 @@ export const UIUpdater = {
             .toggleClass('btn-outline-secondary', esCompra);
     },
 
-    /**
-     * Muestra u oculta los campos de 'Pagar con' y 'Recibir en' según el modo de operación.
-     * @side-effects Modifica la visibilidad y el estado `disabled` de los selectores correspondientes.
-     */
     actualizarVisibilidadCampos() {
         const esCompra = UIState.esModoCompra();
         DOMElements.campoPagarCon.toggle(esCompra);
@@ -2539,10 +2675,6 @@ export const UIUpdater = {
         DOMElements.selectorRecibirEn.prop('disabled', esCompra);
     },
 
-    /**
-     * Actualiza la etiqueta del campo de monto/cantidad para reflejar la moneda relevante.
-     * @side-effects Modifica el texto de `labelMonto`.
-     */
     actualizarLabelMonto() {
         const esModoMonto = UIState.getModoIngreso() === 'monto';
         const esCompra = UIState.esModoCompra();
@@ -2558,52 +2690,28 @@ export const UIUpdater = {
         DOMElements.labelMonto.text(`${etiqueta} (${tickerRelevante || '...'})`);
     },
 
-    /**
-     * Muestra el saldo disponible para una moneda específica.
-     * Se asegura de que el objeto `window.ownedCoins` esté disponible antes de intentar leerlo.
-     * @param {string} ticker - El ticker de la moneda para la cual mostrar el saldo.
-     * @side-effects Modifica el texto de `spanSaldoDisponible`.
-     */
     mostrarSaldo(ticker) {
         if (!ticker) {
             DOMElements.spanSaldoDisponible.text('--');
             return;
         }
 
-        // Es crucial que 'window.ownedCoins' exista para evitar errores de referencia.
-        if (!window.ownedCoins) {
-            console.warn('Intento de mostrar saldo antes de que window.ownedCoins esté listo.');
-            DOMElements.spanSaldoDisponible.text('Cargando...');
-            return;
-        }
-
-        const moneda = window.ownedCoins.find((m) => m.ticker === ticker);
+        // Usamos AppState en lugar de 'window'
+        const moneda = AppState.getOwnedCoinByTicker(ticker);
+        // Ahora usamos el campo 'cantidad_formatted' que ya viene del backend.
         const saldoFormateado = moneda ? moneda.cantidad_formatted : '0.00000000';
         DOMElements.spanSaldoDisponible.text(`${saldoFormateado} ${ticker}`);
     },
-
-    /**
-     * Establece el valor del campo de entrada de monto.
-     * @param {string|number} valor - El valor a establecer en el input.
-     * @side-effects Modifica el valor de `inputMonto`.
-     */
+    
+    // ... (el resto de las funciones: setInputMonto, resetSlider, renderHistorial, mostrarMensajeError no cambian) ...
     setInputMonto(valor) {
         DOMElements.inputMonto.val(valor);
     },
 
-    /**
-     * Reinicia el control deslizante de monto a su valor inicial (0).
-     * @side-effects Modifica el valor de `sliderMonto`.
-     */
     resetSlider() {
         DOMElements.sliderMonto.val(0);
     },
 
-    /**
-     * Renderiza la tabla del historial de transacciones.
-     * @param {Array<object>} historialData - Un array de objetos de transacciones.
-     * @side-effects Modifica el `innerHTML` de `tabla-historial`.
-     */
     renderHistorial(historialData) {
         const tablaHistorial = $('#tabla-historial');
         if (!tablaHistorial.length) return;
@@ -2634,12 +2742,6 @@ export const UIUpdater = {
         tablaHistorial.html(historialHTML);
     },
 
-    /**
-     * Muestra un mensaje de error en un contenedor específico de la UI.
-     * @param {string} mensaje - El mensaje de error a mostrar.
-     * @param {string} [containerSelector='#error-container'] - El selector del contenedor donde se mostrará el error.
-     * @side-effects Modifica el `innerHTML` del contenedor de errores.
-     */
     mostrarMensajeError(mensaje, containerSelector = '#error-container') {
         const errorContainer = $(containerSelector);
         if (!errorContainer.length) {
@@ -2655,7 +2757,6 @@ export const UIUpdater = {
         errorContainer.html(alertHTML);
     }
 };
-
 
 ==================================================
 === ARCHIVO: ./frontend/static/js/pages/billeteraPage.js ===
@@ -2821,40 +2922,36 @@ import { UIUpdater } from '../components/uiUpdater.js';
 import { FormLogic } from '../components/formLogic.js';
 import { initializeChart, updateChartData } from '../components/chartRenderer.js';
 import { fetchCotizaciones, fetchEstadoBilletera, fetchHistorial, fetchVelas } from '../services/apiService.js';
+import { AppState } from '../services/appState.js';
+// Esta importación ahora funcionará porque el archivo existe en la ruta correcta.
+import { saveTradingState, loadTradingState } from '../services/statePersistence.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    /** @type {string} El ticker de la criptomoneda actualmente seleccionada en el gráfico. */
-    let currentTicker = 'BTC';
-    /** @type {string} La temporalidad (intervalo) actual del gráfico (ej. '1d', '1h'). */
-    let currentInterval = '1d';
-    /** @type {boolean} Bandera para prevenir cargas concurrentes de datos para el gráfico. */
+    let currentTicker;
+    let currentInterval;
     let isChartLoading = false;
 
-    /**
-     * Configura la interfaz de usuario para el modo de operación especificado (compra o venta).
-     * @param {'comprar' | 'vender'} mode - El modo de trading a activar.
-     */
-    function setTradeMode(mode) {
+    function setTradeMode(mode, defaultTicker) {
         DOMElements.inputAccion.val(mode);
-
         UIUpdater.actualizarBotones();
         UIUpdater.actualizarVisibilidadCampos();
 
         let tickerForBalance = '';
+        const allCryptos = AppState.getAllCryptos();
+        const ownedCoins = AppState.getOwnedCoins();
+
         if (UIState.esModoCompra()) {
-            // En modo COMPRA, el selector principal muestra todas las criptos disponibles para comprar.
-            const cryptosWithoutUSDT = window.allCryptos.filter(c => c.ticker !== 'USDT');
-            FormLogic.popularSelector(DOMElements.selectorPrincipal, cryptosWithoutUSDT, 'BTC');
-            // El saldo a mostrar es el de la moneda con la que se paga (ej. USDT).
+            const cryptosWithoutUSDT = allCryptos.filter(c => c.ticker !== 'USDT');
+            FormLogic.popularSelector(DOMElements.selectorPrincipal, cryptosWithoutUSDT, defaultTicker);
             tickerForBalance = UIState.getTickerPago();
         } else {
-            // En modo VENTA, el selector principal muestra solo las criptos que el usuario posee.
-            if (!window.ownedCoins || window.ownedCoins.length === 0) {
+            if (!ownedCoins || ownedCoins.length === 0) {
                 console.warn("No se encontraron monedas en propiedad para configurar el modo de venta.");
-                tickerForBalance = null; // No se puede mostrar saldo si no hay monedas.
+                FormLogic.popularSelector(DOMElements.selectorPrincipal, [], null);
+                tickerForBalance = null;
             } else {
-                const defaultTicker = window.ownedCoins[0].ticker;
-                tickerForBalance = FormLogic.popularSelector(DOMElements.selectorPrincipal, window.ownedCoins, defaultTicker);
+                const validDefault = ownedCoins.some(c => c.ticker === defaultTicker) ? defaultTicker : ownedCoins[0].ticker;
+                tickerForBalance = FormLogic.popularSelector(DOMElements.selectorPrincipal, ownedCoins, validDefault);
             }
         }
 
@@ -2863,13 +2960,6 @@ document.addEventListener('DOMContentLoaded', () => {
         UIUpdater.resetSlider();
     }
 
-    /**
-     * Obtiene los datos de velas para un par y temporalidad específicos y actualiza el gráfico.
-     * Utiliza una bandera (`isChartLoading`) para evitar peticiones concurrentes.
-     * @async
-     * @param {string} ticker - El ticker de la criptomoneda (ej. 'BTC').
-     * @param {string} interval - La temporalidad del gráfico (ej. '1d', '15m').
-     */
     async function actualizarGrafico(ticker, interval) {
         if (isChartLoading) {
             console.log("Petición de actualización de gráfico ignorada: carga en curso.");
@@ -2882,18 +2972,15 @@ document.addEventListener('DOMContentLoaded', () => {
             updateChartData(nuevosDatosVelas);
         } catch (error) {
             console.error(`Error al actualizar el gráfico para ${ticker}/${interval}:`, error);
-            updateChartData([]); // En caso de error, limpia el gráfico y muestra un mensaje.
+            updateChartData([]);
         } finally {
-            isChartLoading = false; // Restablece la bandera para permitir futuras peticiones.
+            isChartLoading = false;
         }
     }
 
-    /**
-     * Configura todos los manejadores de eventos para los elementos interactivos de la página.
-     */
     function setupEventListeners() {
-        DOMElements.botonComprar.on('click', () => setTradeMode('comprar'));
-        DOMElements.botonVender.on('click', () => setTradeMode('vender'));
+        DOMElements.botonComprar.on('click', () => setTradeMode('comprar', currentTicker));
+        DOMElements.botonVender.on('click', () => setTradeMode('vender', currentTicker));
 
         DOMElements.selectorPrincipal.on('change', () => {
             currentTicker = UIState.getTickerPrincipal();
@@ -2902,18 +2989,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 UIUpdater.mostrarSaldo(currentTicker);
             }
             actualizarGrafico(currentTicker, currentInterval);
+            saveTradingState(currentTicker, currentInterval);
         });
 
-        // Delega el evento de clic para los botones de temporalidad.
         $('#timeframe-selector').on('click', '.timeframe-btn', function() {
             const $btn = $(this);
             if ($btn.hasClass('active')) return;
-
             $('#timeframe-selector .timeframe-btn').removeClass('active');
             $btn.addClass('active');
-
             currentInterval = $btn.data('interval');
             actualizarGrafico(currentTicker, currentInterval);
+            saveTradingState(currentTicker, currentInterval);
         });
 
         DOMElements.selectorPagarCon.on('change', () => {
@@ -2930,31 +3016,29 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /**
-     * Función principal que inicializa la página de trading.
-     * Carga datos críticos en paralelo, renderiza componentes y configura los listeners.
-     * @async
-     */
     async function initialize() {
         console.log("Inicializando página de trading...");
+        
+        const savedState = loadTradingState();
+        currentTicker = savedState?.ticker || 'BTC';
+        currentInterval = savedState?.interval || '1d';
+        console.log(`Estado cargado: Ticker=${currentTicker}, Intervalo=${currentInterval}`);
+
         try {
-            // Carga todos los datos necesarios de forma concurrente para optimizar el tiempo de carga.
             const [cotizaciones, estadoBilletera, historial, velas] = await Promise.all([
                 fetchCotizaciones(),
                 fetchEstadoBilletera(),
                 fetchHistorial(),
-                fetchVelas(currentTicker, currentInterval) // Carga inicial para BTC en 1D.
+                fetchVelas(currentTicker, currentInterval)
             ]);
 
-            // Almacena los datos en el objeto `window` para acceso global dentro de la página.
-            window.allCryptos = cotizaciones;
-            window.ownedCoins = estadoBilletera.filter(moneda => parseFloat(moneda.cantidad) > 0);
-
-            // Renderiza los componentes que dependen de los datos cargados.
+            AppState.setAllCryptos(cotizaciones);
+            const ownedCoins = estadoBilletera.filter(moneda => parseFloat(moneda.cantidad) > 0);
+            AppState.setOwnedCoins(ownedCoins);
+            
             UIUpdater.renderHistorial(historial);
             initializeChart(velas);
 
-            // Inicializa la biblioteca Select2 en los selectores para mejorar su apariencia y funcionalidad.
             [DOMElements.selectorPrincipal, DOMElements.selectorPagarCon, DOMElements.selectorRecibirEn].forEach(sel => {
                 sel.select2({
                     width: '100%',
@@ -2963,17 +3047,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             });
 
-            // Popula los selectores con las opciones correspondientes.
-            FormLogic.popularSelector(DOMElements.selectorPagarCon, window.ownedCoins, 'USDT');
-            FormLogic.popularSelector(DOMElements.selectorRecibirEn, window.allCryptos, 'USDT');
+            FormLogic.popularSelector(DOMElements.selectorPagarCon, AppState.getOwnedCoins(), 'USDT');
+            FormLogic.popularSelector(DOMElements.selectorRecibirEn, AppState.getAllCryptos().filter(c => c.ticker !== 'USDT'), 'USDT');
 
             setupEventListeners();
+            setTradeMode('comprar', currentTicker);
             
-            // Establece el estado inicial de la UI en modo 'comprar'.
-            setTradeMode('comprar');
-            
-            // Marca visualmente la temporalidad '1d' como activa.
-            $('#timeframe-selector .timeframe-btn[data-interval="1d"]').addClass('active');
+            $('#timeframe-selector .timeframe-btn').removeClass('active');
+            $(`#timeframe-selector .timeframe-btn[data-interval="${currentInterval}"]`).addClass('active');
 
             console.log("Página de trading inicializada correctamente.");
         } catch (error) {
@@ -2982,7 +3063,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Inicia todo el proceso de inicialización.
     initialize();
 });
 
@@ -3058,6 +3138,110 @@ export const fetchVelas = (ticker, interval) =>
  */
 export const triggerActualizacionDatos = () => 
     _fetchData('/api/actualizar', {}, 'La solicitud para actualizar los datos falló');
+
+==================================================
+=== ARCHIVO: ./frontend/static/js/services/appState.js ===
+==================================================
+
+/**
+ * @module services/appState
+ * @description Centraliza el estado de la aplicación para evitar el uso de variables globales.
+ * Proporciona métodos seguros para leer y escribir en el estado.
+ */
+
+const state = {
+    allCryptos: [],
+    ownedCoins: []
+};
+
+export const AppState = {
+    /**
+     * Establece la lista completa de cotizaciones.
+     * @param {Array<object>} cryptos - La lista de criptomonedas.
+     */
+    setAllCryptos: (cryptos) => {
+        state.allCryptos = cryptos || [];
+    },
+
+    /**
+     * Establece la lista de monedas que el usuario posee.
+     * @param {Array<object>} coins - La lista de monedas en la billetera.
+     */
+    setOwnedCoins: (coins) => {
+        state.ownedCoins = coins || [];
+    },
+
+    /**
+     * Obtiene la lista completa de cotizaciones.
+     * @returns {Array<object>}
+     */
+    getAllCryptos: () => state.allCryptos,
+
+    /**
+     * Obtiene la lista de monedas que el usuario posee.
+     * @returns {Array<object>}
+     */
+    getOwnedCoins: () => state.ownedCoins,
+
+    /**
+     * Busca una moneda específica que el usuario posee por su ticker.
+     * @param {string} ticker - El ticker de la moneda.
+     * @returns {object | undefined} El objeto de la moneda o undefined si no se encuentra.
+     */
+    getOwnedCoinByTicker: (ticker) => {
+        return state.ownedCoins.find(coin => coin.ticker === ticker);
+    }
+};
+
+==================================================
+=== ARCHIVO: ./frontend/static/js/services/statePersistance.js ===
+==================================================
+
+/**
+ * @module services/statePersistence
+ * @description Gestiona el guardado y la carga del estado de la aplicación
+ * en el Almacenamiento Local (LocalStorage) del navegador.
+ */
+
+// Usamos una clave constante para evitar errores de tipeo.
+const TRADING_STATE_KEY = 'tradingViewState';
+
+/**
+ * Guarda el estado actual de la vista de trading (ticker e intervalo).
+ * @param {string} ticker - El ticker de la criptomoneda actual.
+ * @param {string} interval - El intervalo de tiempo actual.
+ */
+export function saveTradingState(ticker, interval) {
+    if (!ticker || !interval) {
+        console.warn("Intento de guardar estado de trading inválido.");
+        return;
+    }
+    const state = { ticker, interval };
+    try {
+        // Los objetos deben ser convertidos a string (JSON) para guardarse en LocalStorage.
+        localStorage.setItem(TRADING_STATE_KEY, JSON.stringify(state));
+    } catch (error) {
+        console.error("Error al guardar el estado en LocalStorage:", error);
+    }
+}
+
+/**
+ * Carga el estado de la vista de trading desde LocalStorage.
+ * @returns {{ticker: string, interval: string} | null} El estado guardado o null si no se encuentra nada.
+ */
+export function loadTradingState() {
+    try {
+        const savedStateJSON = localStorage.getItem(TRADING_STATE_KEY);
+        if (savedStateJSON) {
+            // Si encontramos datos, los convertimos de nuevo a un objeto JavaScript.
+            return JSON.parse(savedStateJSON);
+        }
+        return null; // No hay estado guardado.
+    } catch (error) {
+        console.error("Error al cargar el estado desde LocalStorage:", error);
+        return null;
+    }
+}
 
 ==================================================
 === ARCHIVO: ./frontend/templates/billetera.html ===
@@ -3577,6 +3761,7 @@ Jinja2==3.1.6
 MarkupSafe==3.0.2
 requests==2.32.3
 Werkzeug==3.1.3
+python-dotenv==1.0.1
 
 
 
