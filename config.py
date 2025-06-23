@@ -1,5 +1,5 @@
 import os
-from decimal import getcontext, ROUND_HALF_DOWN
+from decimal import getcontext, ROUND_HALF_DOWN, Decimal # <-- Añadir Decimal a la importación
 from dotenv import load_dotenv
 
 # Cargar variables de entorno desde el archivo .env
@@ -15,9 +15,13 @@ COTIZACIONES_PATH = os.path.join(BASE_DATA_DIR, "cotizaciones.json")
 BILLETERA_PATH = os.path.join(BASE_DATA_DIR, "billetera.json")
 HISTORIAL_PATH = os.path.join(BASE_DATA_DIR, "historial.json")
 VELAS_PATH = os.path.join(BASE_DATA_DIR, "velas.json")
+COMISIONES_PATH = os.path.join(BASE_DATA_DIR, "comisiones.json")
 
-# Configuración general
+# Configuración inicial de los USDT con los cuales inicializa la app
 BALANCE_INICIAL_USDT = "10000"
+
+# Comisión por trade
+TASA_COMISION = Decimal("0.005")  # 0.5% de comisión
 
 # Clave secreta para Flask
 FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "clave_por_defecto_insegura")

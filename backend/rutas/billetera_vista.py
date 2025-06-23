@@ -8,6 +8,7 @@ y para proporcionar datos financieros (estado actual y transacciones pasadas)
 
 from flask import Blueprint, render_template, jsonify
 from backend.servicios.estado_billetera import estado_actual_completo, obtener_historial_formateado
+from backend.acceso_datos.datos_comisiones import cargar_comisiones
 
 bp = Blueprint("billetera", __name__)
 
@@ -56,3 +57,10 @@ def get_historial_transacciones():
             Ejemplo: `[{"id": 1, "fecha": "21/06/2025", "tipo": "compra", ...}]`
     """
     return jsonify(obtener_historial_formateado())
+
+@bp.route("/api/comisiones")
+def get_historial_comisiones():
+    """
+    Endpoint de API que devuelve el historial completo de comisiones cobradas.
+    """
+    return jsonify(cargar_comisiones())

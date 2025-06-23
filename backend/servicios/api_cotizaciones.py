@@ -8,7 +8,11 @@ realizar las peticiones, procesar los datos y guardarlos localmente.
 
 from decimal import Decimal
 import requests
-from backend.servicios.velas_logica import guardar_datos_cotizaciones
+import json
+# === INICIO DE LA MODIFICACIÓN ===
+# La importación ahora apunta a la capa de acceso a datos, que es más correcto.
+from backend.acceso_datos.datos_cotizaciones import guardar_datos_cotizaciones
+# === FIN DE LA MODIFICACIÓN ===
 from config import COINGECKO_URL, BINANCE_URL, CANTIDAD_CRIPTOMONEDAS, CANTIDAD_VELAS
 
 def obtener_datos_criptos_coingecko() -> list[dict]:
@@ -18,22 +22,6 @@ def obtener_datos_criptos_coingecko() -> list[dict]:
     Realiza una petición para obtener una lista de las principales criptomonedas,
     procesa la respuesta JSON y guarda los datos crudos en un archivo local.
     El formateo para la UI se delega a otra capa de servicio.
-
-    Returns:
-        list[dict]: Una lista de diccionarios, donde cada uno representa una
-                    criptomoneda con sus datos crudos. Retorna una
-                    lista vacía si ocurre un error.
-
-    Objetivo:
-        - Guardar los datos de cotizaciones en un archivo JSON local a través de
-          `guardar_datos_cotizaciones()`.
-        - Imprimir logs en la consola sobre el estado de la petición.
-
-    Ejemplo de lo que retorna la funcion:
-        {
-            'id': 1, 'nombre': 'Bitcoin', 'ticker': 'BTC', 'precio_usd': '65000.10',
-            'market_cap': '1280000000000', ...
-        }
     """
     params = {
         "vs_currency": "usd",
@@ -57,14 +45,11 @@ def obtener_datos_criptos_coingecko() -> list[dict]:
         datos = respuesta.json()
         resultado = []
         for i, dato in enumerate(datos, start=1):
-            # Procesa cada criptomoneda de forma segura, guardando únicamente datos crudos.
             resultado.append({
                 "id": i,
                 "nombre": dato.get("name"),
                 "ticker": dato.get('symbol', '').upper(),
                 "logo": dato.get("image"),
-                
-                # Datos crudos convertidos a string para consistencia y para usar con Decimal
                 "precio_usd": str(Decimal(str(dato.get("current_price", 0)))),
                 "1h_%": str(Decimal(str(dato.get("price_change_percentage_1h_in_currency", 0)))),
                 "24h_%": str(Decimal(str(dato.get("price_change_percentage_24h_in_currency", 0)))),
@@ -72,15 +57,6 @@ def obtener_datos_criptos_coingecko() -> list[dict]:
                 "market_cap": str(Decimal(str(dato.get("market_cap", 0)))),
                 "volumen_24h": str(Decimal(str(dato.get("total_volume", 0)))),
                 "circulating_supply": str(Decimal(str(dato.get("circulating_supply", 0)))),
-
-                # --- DATOS FORMATEADOS ELIMINADOS ---
-                # "precio_usd_formatted": formato_valor_monetario(...) # <-- ELIMINADO
-                # "1h_%_formatted": formato_porcentaje(...) # <-- ELIMINADO
-                # "24h_%_formatted": formato_porcentaje(...) # <-- ELIMINADO
-                # "7d_%_formatted": formato_porcentaje(...) # <-- ELIMINADO
-                # "market_cap_formatted": formato_numero_grande(...) # <-- ELIMINADO
-                # "volumen_24h_formatted": formato_numero_grande(...) # <-- ELIMINADO
-                # "circulating_supply_formatted": f"{...}" # <-- ELIMINADO
             })
     except (KeyError, TypeError, ValueError, json.JSONDecodeError) as e:
         print(f"❌ Error al procesar los datos de CoinGecko: {str(e)}")
@@ -94,23 +70,7 @@ def obtener_datos_criptos_coingecko() -> list[dict]:
 def obtener_velas_de_api(ticker: str, interval: str) -> list[dict]:
     """
     Obtiene datos históricos de velas (K-lines) desde la API de Binance.
-
-    Args:
-        ticker (str): El ticker de la criptomoneda (ej. "BTC").
-        interval (str): El intervalo de tiempo para las velas (ej. "1h", "4h", "1d").
-
-    Returns:
-        list[dict]: Una lista de diccionarios, donde cada uno representa una vela
-                    con datos OHLCV (Open, High, Low, Close, Volume). Retorna
-                    una lista vacía si ocurre un error.
-
-    Example of a returned item:
-        {
-            'time': 1622505600, 'open': '49000.00', 'high': '49500.00',
-            'low': '48800.00', 'close': '49300.00', 'volume': '1234.56'
-        }
     """
-    # La API de Binance espera el par completo (ej. 'BTCUSDT')
     params = {
         "symbol": f"{ticker.upper()}USDT",
         "interval": interval,
@@ -131,7 +91,6 @@ def obtener_velas_de_api(ticker: str, interval: str) -> list[dict]:
             print(f"⚠️ Respuesta inesperada de Binance para {ticker} ({interval}): {datos}")
             return []
         
-        # Transforma la lista de listas de Binance a una lista de diccionarios
         resultado = [
             {
                 "time": int(vela[0] / 1000), "open": str(Decimal(vela[1])),

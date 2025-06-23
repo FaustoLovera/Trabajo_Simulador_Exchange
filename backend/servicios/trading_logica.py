@@ -2,9 +2,7 @@
 Servicio para la lógica de negocio de operaciones de trading (swap).
 
 Este módulo contiene toda la lógica para procesar, validar y ejecutar un
-intercambio de criptomonedas. Está diseñado para ser llamado desde la capa de
-vistas (rutas), recibiendo datos de un formulario y orquestando los pasos
-necesarios para completar la operación.
+intercambio de criptomonedas, incluyendo el cálculo y cobro de comisiones.
 """
 
 from decimal import Decimal, InvalidOperation
@@ -13,6 +11,10 @@ from typing import Tuple
 from backend.acceso_datos.datos_billetera import cargar_billetera, guardar_billetera
 from backend.acceso_datos.datos_cotizaciones import obtener_precio
 from backend.acceso_datos.datos_historial import guardar_en_historial
+# Importamos el nuevo registrador de comisiones y la tasa desde la configuración.
+from backend.acceso_datos.datos_comisiones import registrar_comision
+from config import TASA_COMISION
+
 
 def procesar_operacion_trading(formulario: dict) -> Tuple[bool, str]:
     """
@@ -21,13 +23,6 @@ def procesar_operacion_trading(formulario: dict) -> Tuple[bool, str]:
     Esta función actúa como una capa de adaptación entre la vista y la lógica de
     negocio. Extrae, valida y convierte los datos del formulario antes de
     invocar a la función principal `realizar_swap`.
-
-    Args:
-        formulario (dict): Un diccionario con los datos del formulario de trading.
-                           Ej: {'ticker': 'BTC', 'accion': 'comprar', 'monto': '100', ...}
-
-    Returns:
-        Tuple[bool, str]: Una tupla con un booleano de éxito y un mensaje para el usuario.
     """
     try:
         ticker_principal = formulario["ticker"].upper()
@@ -54,22 +49,18 @@ def procesar_operacion_trading(formulario: dict) -> Tuple[bool, str]:
 
     return realizar_swap(moneda_origen, moneda_destino, monto_form, modo_ingreso, accion)
 
-def _calcular_detalles_swap(accion: str, modo_ingreso: str, monto_form: Decimal, precio_origen_usdt: Decimal, precio_destino_usdt: Decimal) -> Tuple[bool, dict | str]:
+
+def _calcular_detalles_swap_bruto(
+    accion: str,
+    modo_ingreso: str,
+    monto_form: Decimal,
+    precio_origen_usdt: Decimal,
+    precio_destino_usdt: Decimal
+) -> dict:
     """
-    Calcula las cantidades de origen, destino y el valor total en USD del swap.
-
-    Es una función interna y pura que solo realiza cálculos sin efectos secundarios.
-
-    Returns:
-        Tuple[bool, dict | str]: `(True, {'origen': ..., 'destino': ..., 'valor_usd': ...})` en caso de éxito,
-                                 o `(False, "mensaje de error")` si falla.
+    Calcula las cantidades de origen y destino ANTES de aplicar comisiones.
+    Esta función es ahora un cálculo puro sin validaciones lógicas de negocio.
     """
-    if accion == 'vender' and modo_ingreso == 'total':
-        return False, "❌ Al vender, debe ingresar la cantidad en modo 'Monto' (Cripto)."
-
-    if accion not in ['comprar', 'vender']:
-        return False, "❌ Acción de trading desconocida."
-
     if accion == 'comprar':
         if modo_ingreso == 'monto':  # Usuario ingresa la cantidad de CRIPTO a recibir
             cantidad_destino = monto_form
@@ -80,53 +71,44 @@ def _calcular_detalles_swap(accion: str, modo_ingreso: str, monto_form: Decimal,
             valor_total_usd = cantidad_origen * precio_origen_usdt
             cantidad_destino = valor_total_usd / precio_destino_usdt
     else:  # accion == 'vender'
+        # En modo venta, el único modo permitido es 'monto' (cantidad de cripto a vender).
         cantidad_origen = monto_form
         valor_total_usd = cantidad_origen * precio_origen_usdt
         cantidad_destino = valor_total_usd / precio_destino_usdt
 
-    return True, {
+    return {
         "origen": cantidad_origen,
         "destino": cantidad_destino,
         "valor_usd": valor_total_usd
     }
 
+
 def _validar_saldo_suficiente(billetera: dict, moneda_origen: str, cantidad_requerida: Decimal) -> Tuple[bool, str | None]:
     """Verifica si hay suficiente saldo en la billetera para la operación."""
     saldo_disponible = billetera.get(moneda_origen, Decimal("0"))
     if cantidad_requerida > saldo_disponible:
-        mensaje_error = f"❌ Saldo insuficiente. Tienes {saldo_disponible:.8f} {moneda_origen}."
+        mensaje_error = f"❌ Saldo insuficiente. Tienes {saldo_disponible:.8f} {moneda_origen} pero se requieren {cantidad_requerida:.8f}."
         return False, mensaje_error
     return True, None
 
-def _actualizar_billetera_y_guardar(billetera: dict, moneda_origen: str, cantidad_origen: Decimal, moneda_destino: str, cantidad_destino: Decimal):
+
+def _actualizar_billetera_y_guardar(billetera: dict, moneda_origen: str, cantidad_origen_total: Decimal, moneda_destino: str, cantidad_destino_neta: Decimal):
     """
     Actualiza los saldos en la billetera y persiste los cambios.
-
-    Resta la cantidad de la moneda de origen y suma la de destino. Si el saldo
-    restante es insignificante ("polvo"), lo elimina. Finalmente, guarda el
-    estado actualizado de la billetera.
-
-    Side Effects:
-        - Modifica el diccionario `billetera`.
-        - Llama a `guardar_billetera` para escribir en el archivo.
+    Resta la cantidad TOTAL de origen y suma la NETA de destino.
     """
-    billetera[moneda_origen] -= cantidad_origen
+    billetera[moneda_origen] -= cantidad_origen_total
     
-    # Si el saldo es muy pequeño ("polvo"), se elimina la moneda de la billetera
     if billetera[moneda_origen] <= Decimal("1e-8"):
         billetera.pop(moneda_origen, None)
 
-    billetera[moneda_destino] = billetera.get(moneda_destino, Decimal("0")) + cantidad_destino
+    billetera[moneda_destino] = billetera.get(moneda_destino, Decimal("0")) + cantidad_destino_neta
     
     guardar_billetera(billetera)
 
-def _registrar_operacion_historial(moneda_origen: str, cantidad_origen: Decimal, moneda_destino: str, cantidad_destino: Decimal, valor_usd: Decimal):
-    """
-    Determina el tipo de operación y la guarda en el historial.
 
-    Side Effects:
-        - Llama a `guardar_en_historial` para escribir en el archivo.
-    """
+def _registrar_operacion_historial(moneda_origen: str, cantidad_origen_neta: Decimal, moneda_destino: str, cantidad_destino_neta: Decimal, valor_usd_neto: Decimal):
+    """Guarda la operación NETA (después de comisión) en el historial."""
     if moneda_origen == "USDT":
         tipo_operacion = "compra"
     elif moneda_destino == "USDT":
@@ -137,52 +119,80 @@ def _registrar_operacion_historial(moneda_origen: str, cantidad_origen: Decimal,
     guardar_en_historial(
         tipo_operacion,
         moneda_origen,
-        cantidad_origen.quantize(Decimal("0.00000001")),
+        cantidad_origen_neta.quantize(Decimal("0.00000001")),
         moneda_destino,
-        cantidad_destino.quantize(Decimal("0.00000001")),
-        valor_usd,
+        cantidad_destino_neta.quantize(Decimal("0.00000001")),
+        valor_usd_neto,
     )
+
 
 def realizar_swap(moneda_origen: str, moneda_destino: str, monto_form: Decimal, modo_ingreso: str, accion: str) -> Tuple[bool, str]:
     """
-    Orquesta la operación de swap completa: obtiene precios, calcula, valida y ejecuta.
-
-    Esta es la función principal de la lógica de negocio. Sigue una secuencia de
-    pasos para asegurar que la operación sea válida y se complete correctamente.
-
-    Returns:
-        Tuple[bool, str]: Una tupla con un booleano de éxito y un mensaje para el usuario.
+    Orquesta la operación de swap completa, incluyendo el cálculo de comisiones.
     """
-    # 1. Obtener precios actuales
+    # 1. Validaciones previas de la lógica de negocio
+    if accion == 'vender' and modo_ingreso == 'total':
+        return False, "❌ Al vender, debe ingresar la cantidad en modo 'Cantidad (Cripto)'."
+
+    # 2. Obtener precios actuales
     precio_origen_usdt = obtener_precio(moneda_origen)
     precio_destino_usdt = obtener_precio(moneda_destino)
 
-    if precio_origen_usdt is None or precio_destino_usdt is None or precio_destino_usdt.is_zero():
+    if precio_origen_usdt is None or precio_destino_usdt is None or precio_origen_usdt.is_zero() or precio_destino_usdt.is_zero():
         return False, "❌ No se pudo obtener la cotización para realizar el swap."
 
-    # 2. Calcular los detalles del swap
-    exito_calculo, resultado = _calcular_detalles_swap(
+    # 3. Calcular los detalles BRUTOS del swap (lo que el usuario quiere, antes de fees)
+    resultado_bruto = _calcular_detalles_swap_bruto(
         accion, modo_ingreso, monto_form, precio_origen_usdt, precio_destino_usdt
     )
-    if not exito_calculo:
-        return False, resultado  # resultado aquí es el mensaje de error
+    cantidad_origen_bruta = resultado_bruto["origen"]
 
-    cantidad_origen = resultado["origen"]
-    cantidad_destino = resultado["destino"]
-    valor_total_usd = resultado["valor_usd"]
+    # 4. Calcular y registrar la comisión
+    # La comisión se cobra sobre la cantidad de la moneda que el usuario está entregando.
+    cantidad_comision = cantidad_origen_bruta * TASA_COMISION
+    valor_comision_usd = cantidad_comision * precio_origen_usdt
+    
+    # La cantidad total a debitar de la billetera es la cantidad bruta (swap + comisión)
+    cantidad_total_a_debitar = cantidad_origen_bruta
 
-    # 3. Cargar billetera y validar saldo
+    # 5. Cargar billetera y validar que el saldo sea suficiente para la operación + comisión
     billetera = cargar_billetera()
-    exito_validacion, mensaje_error = _validar_saldo_suficiente(billetera, moneda_origen, cantidad_origen)
+    exito_validacion, mensaje_error = _validar_saldo_suficiente(billetera, moneda_origen, cantidad_total_a_debitar)
     if not exito_validacion:
         return False, mensaje_error
 
-    # 4. Ejecutar la operación (si todo es válido hasta ahora)
-    _actualizar_billetera_y_guardar(billetera, moneda_origen, cantidad_origen, moneda_destino, cantidad_destino)
+    # --- A partir de aquí, la operación es válida y se ejecutará ---
     
-    # 5. Registrar en el historial
-    _registrar_operacion_historial(moneda_origen, cantidad_origen, moneda_destino, cantidad_destino, valor_total_usd)
+    # 6. Registrar la comisión cobrada
+    registrar_comision(moneda_origen, cantidad_comision, valor_comision_usd)
 
-    # 6. Devolver mensaje de éxito
-    mensaje_exito = f"✅ Swap exitoso: {cantidad_origen:.8f} {moneda_origen} → {cantidad_destino:.8f} {moneda_destino}."
+    # 7. Calcular las cantidades NETAS finales del intercambio
+    cantidad_origen_neta_swap = cantidad_origen_bruta - cantidad_comision
+    valor_neto_usd = cantidad_origen_neta_swap * precio_origen_usdt
+    cantidad_destino_neta = valor_neto_usd / precio_destino_usdt
+
+    # 8. Ejecutar la operación en la billetera
+    _actualizar_billetera_y_guardar(
+        billetera,
+        moneda_origen,
+        cantidad_total_a_debitar,
+        moneda_destino,
+        cantidad_destino_neta
+    )
+    
+    # 9. Registrar la operación NETA en el historial
+    _registrar_operacion_historial(
+        moneda_origen,
+        cantidad_origen_neta_swap,
+        moneda_destino,
+        cantidad_destino_neta,
+        valor_neto_usd
+    )
+
+    # 10. Devolver mensaje de éxito detallado
+    mensaje_exito = (
+        f"✅ Operación exitosa: Se intercambiaron {cantidad_origen_neta_swap:.8f} {moneda_origen} "
+        f"por {cantidad_destino_neta:.8f} {moneda_destino}. "
+        f"Comisión aplicada: {cantidad_comision:.8f} {moneda_origen}."
+    )
     return True, mensaje_exito

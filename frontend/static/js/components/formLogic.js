@@ -6,34 +6,63 @@
 
 import { DOMElements } from './domElements.js';
 import { UIState } from './uiState.js';
-// Importamos AppState para acceder a los datos de la billetera.
 import { AppState } from '../services/appState.js';
 
-/**
- * @typedef {Object} Moneda
- * @property {string} ticker - El símbolo de la moneda (ej. 'BTC').
- * @property {string} nombre - El nombre completo de la moneda (ej. 'Bitcoin').
- */
-
 export const FormLogic = {
-    popularSelector(selector, lista, valorPorDefecto) {
+    /**
+     * Rellena un elemento <select> con una lista de opciones. Ahora maneja mejor las listas vacías.
+     * @param {JQuery} selector - El objeto jQuery para el elemento <select>.
+     * @param {Array<object>} lista - Un array de objetos para crear las opciones.
+     * @param {string} valorPorDefecto - El ticker del ítem a seleccionar por defecto.
+     * @param {string} [placeholderVacio='No hay opciones'] - Mensaje a mostrar si la lista está vacía.
+     */
+    popularSelector(selector, lista, valorPorDefecto, placeholderVacio = 'No hay opciones') {
+        const valorActual = selector.val();
         selector.empty();
+
         if (!lista || lista.length === 0) {
-            selector.append(new Option('No hay opciones', '')).prop('disabled', true);
-            return null;
+            selector.append(new Option(placeholderVacio, '')).prop('disabled', true);
+            selector.trigger('change');
+            return;
         }
 
         selector.prop('disabled', false);
         lista.forEach(({ ticker, nombre }) => selector.append(new Option(`${nombre} (${ticker})`, ticker)));
-
-        const valorFinal = (valorPorDefecto && lista.some(m => m.ticker === valorPorDefecto))
-            ? valorPorDefecto
-            : lista[0].ticker;
-
-        if (valorFinal) {
-            selector.val(valorFinal).trigger('change');
+        
+        let valorFinal;
+        if (valorPorDefecto && lista.some(m => m.ticker === valorPorDefecto)) {
+            valorFinal = valorPorDefecto;
+        } else if (valorActual && lista.some(m => m.ticker === valorActual)) {
+            valorFinal = valorActual;
+        } else {
+            valorFinal = lista[0].ticker;
         }
-        return valorFinal;
+        
+        selector.val(valorFinal).trigger('change');
+    },
+
+    /**
+     * Orquesta la actualización de todos los selectores del formulario basándose en el estado actual.
+     * Esta es la función clave para la lógica dinámica y excluyente.
+     */
+    actualizarOpcionesDeSelectores() {
+        const esCompra = UIState.esModoCompra();
+        const tickerPrincipal = UIState.getTickerPrincipal();
+        
+        const allCryptos = AppState.getAllCryptos();
+        const ownedCoins = AppState.getOwnedCoins();
+
+        if (esCompra) {
+            // --- MODO COMPRA ---
+            // Selector "Pagar con": Muestra todas las monedas que poseo, excluyendo la que quiero comprar.
+            const opcionesPagarCon = ownedCoins.filter(c => c.ticker !== tickerPrincipal);
+            FormLogic.popularSelector(DOMElements.selectorPagarCon, opcionesPagarCon, 'USDT', 'No tienes fondos');
+        } else {
+            // --- MODO VENTA ---
+            // Selector "Recibir en": Muestra todas las criptos disponibles, excluyendo la que quiero vender.
+            const opcionesRecibirEn = allCryptos.filter(c => c.ticker !== tickerPrincipal);
+            FormLogic.popularSelector(DOMElements.selectorRecibirEn, opcionesRecibirEn, 'USDT');
+        }
     },
 
     calcularMontoSlider() {
@@ -43,7 +72,6 @@ export const FormLogic = {
         const tickerDeSaldo = esCompra ? UIState.getTickerPago() : UIState.getTickerPrincipal();
         if (!tickerDeSaldo) return 0;
 
-        // Usamos AppState en lugar de 'window' para obtener la moneda.
         const moneda = AppState.getOwnedCoinByTicker(tickerDeSaldo);
         const saldoDisponible = moneda ? parseFloat(moneda.cantidad) : 0;
 

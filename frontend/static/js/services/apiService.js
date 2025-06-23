@@ -66,3 +66,10 @@ export const fetchVelas = (ticker, interval) =>
  */
 export const triggerActualizacionDatos = () => 
     _fetchData('/api/actualizar', {}, 'La solicitud para actualizar los datos falló');
+
+/**
+ * Obtiene el historial de comisiones cobradas.
+ * @returns {Promise<Array<object>>} Una promesa que se resuelve con un array de objetos de comisión.
+ */
+export const fetchComisiones = () => 
+    _fetchData('/api/comisiones', {}, 'No se pudo cargar el historial de comisiones');
