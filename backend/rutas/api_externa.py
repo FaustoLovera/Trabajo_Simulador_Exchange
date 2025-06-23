@@ -8,7 +8,7 @@ u otros clientes.
 
 from flask import Blueprint, jsonify
 from backend.servicios.api_cotizaciones import obtener_datos_criptos_coingecko, obtener_velas_de_api
-from backend.acceso_datos.datos_cotizaciones import cargar_datos_cotizaciones
+from backend.servicios.presentacion_datos import obtener_cotizaciones_formateadas
 
 bp = Blueprint("api_externa", __name__, url_prefix="/api")
 
@@ -33,14 +33,17 @@ def actualizar():
 @bp.route("/cotizaciones")
 def get_cotizaciones():
     """
-    Retorna la lista completa de cotizaciones almacenadas localmente.
+    Retorna la lista completa de cotizaciones, formateada para la presentación.
+
+    Esta ruta utiliza el servicio de presentación para tomar los datos crudos
+    y enriquecerlos con formato antes de enviarlos al frontend.
 
     Returns:
         Response: Un objeto JSON que contiene una lista de todas las criptomonedas
-                  y sus datos de cotización.
-                  Ejemplo: `[{"ticker": "BTC", "precio_usd": "65000.00", ...}]`
+                  y sus datos de cotización listos para ser mostrados.
+                  Ejemplo: `[{"ticker": "BTC", "precio_usd_formatted": "$65,000.10", ...}]`
     """
-    return jsonify(cargar_datos_cotizaciones())
+    return jsonify(obtener_cotizaciones_formateadas())
 
 
 @bp.route("/velas/<string:ticker>/<string:interval>")
