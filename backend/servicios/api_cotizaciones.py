@@ -10,30 +10,29 @@ from decimal import Decimal
 import requests
 from backend.servicios.velas_logica import guardar_datos_cotizaciones
 from config import COINGECKO_URL, BINANCE_URL, CANTIDAD_CRIPTOMONEDAS, CANTIDAD_VELAS
-from backend.utils.formatters import formato_numero_grande, formato_porcentaje, formato_valor_monetario
 
 def obtener_datos_criptos_coingecko() -> list[dict]:
     """
     Obtiene y procesa datos de mercado desde la API de CoinGecko.
 
     Realiza una petición para obtener una lista de las principales criptomonedas,
-    procesa la respuesta JSON, enriquece los datos con campos formateados para la UI,
-    y finalmente guarda las cotizaciones en un archivo local.
+    procesa la respuesta JSON y guarda los datos crudos en un archivo local.
+    El formateo para la UI se delega a otra capa de servicio.
 
     Returns:
         list[dict]: Una lista de diccionarios, donde cada uno representa una
-                    criptomoneda con datos brutos y formateados. Retorna una
+                    criptomoneda con sus datos crudos. Retorna una
                     lista vacía si ocurre un error.
 
-    Side Effects:
-        - Guarda los datos de cotizaciones en un archivo JSON local a través de
+    Objetivo:
+        - Guardar los datos de cotizaciones en un archivo JSON local a través de
           `guardar_datos_cotizaciones()`.
-        - Imprime logs en la consola sobre el estado de la petición.
+        - Imprimir logs en la consola sobre el estado de la petición.
 
-    Example of a returned item:
+    Ejemplo de lo que retorna la funcion:
         {
             'id': 1, 'nombre': 'Bitcoin', 'ticker': 'BTC', 'precio_usd': '65000.10',
-            'precio_usd_formatted': '$65,000.10', 'market_cap_formatted': '$1.28T', ...
+            'market_cap': '1280000000000', ...
         }
     """
     params = {
@@ -58,14 +57,14 @@ def obtener_datos_criptos_coingecko() -> list[dict]:
         datos = respuesta.json()
         resultado = []
         for i, dato in enumerate(datos, start=1):
-            # Procesa cada criptomoneda de forma segura
+            # Procesa cada criptomoneda de forma segura, guardando únicamente datos crudos.
             resultado.append({
                 "id": i,
                 "nombre": dato.get("name"),
                 "ticker": dato.get('symbol', '').upper(),
                 "logo": dato.get("image"),
                 
-                # Datos crudos convertidos a string para consistencia
+                # Datos crudos convertidos a string para consistencia y para usar con Decimal
                 "precio_usd": str(Decimal(str(dato.get("current_price", 0)))),
                 "1h_%": str(Decimal(str(dato.get("price_change_percentage_1h_in_currency", 0)))),
                 "24h_%": str(Decimal(str(dato.get("price_change_percentage_24h_in_currency", 0)))),
@@ -74,14 +73,14 @@ def obtener_datos_criptos_coingecko() -> list[dict]:
                 "volumen_24h": str(Decimal(str(dato.get("total_volume", 0)))),
                 "circulating_supply": str(Decimal(str(dato.get("circulating_supply", 0)))),
 
-                # Datos pre-formateados para la UI
-                "precio_usd_formatted": formato_valor_monetario(Decimal(str(dato.get("current_price", 0)))),
-                "1h_%_formatted": formato_porcentaje(Decimal(str(dato.get("price_change_percentage_1h_in_currency", 0)))),
-                "24h_%_formatted": formato_porcentaje(Decimal(str(dato.get("price_change_percentage_24h_in_currency", 0)))),
-                "7d_%_formatted": formato_porcentaje(Decimal(str(dato.get("price_change_percentage_7d_in_currency", 0)))),
-                "market_cap_formatted": formato_numero_grande(Decimal(str(dato.get("market_cap", 0)))),
-                "volumen_24h_formatted": formato_numero_grande(Decimal(str(dato.get("total_volume", 0)))),
-                "circulating_supply_formatted": f"{Decimal(str(dato.get('circulating_supply', 0))):,.0f} {dato.get('symbol', '').upper()}"
+                # --- DATOS FORMATEADOS ELIMINADOS ---
+                # "precio_usd_formatted": formato_valor_monetario(...) # <-- ELIMINADO
+                # "1h_%_formatted": formato_porcentaje(...) # <-- ELIMINADO
+                # "24h_%_formatted": formato_porcentaje(...) # <-- ELIMINADO
+                # "7d_%_formatted": formato_porcentaje(...) # <-- ELIMINADO
+                # "market_cap_formatted": formato_numero_grande(...) # <-- ELIMINADO
+                # "volumen_24h_formatted": formato_numero_grande(...) # <-- ELIMINADO
+                # "circulating_supply_formatted": f"{...}" # <-- ELIMINADO
             })
     except (KeyError, TypeError, ValueError, json.JSONDecodeError) as e:
         print(f"❌ Error al procesar los datos de CoinGecko: {str(e)}")
