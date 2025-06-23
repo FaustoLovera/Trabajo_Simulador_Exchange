@@ -10,6 +10,7 @@
         "cantidad_origen": "1830",
         "cantidad_destino": "3",
         "precio_disparo": "610",
-        "estado": "pendiente"
+        "estado": "cancelada",
+        "timestamp_cancelacion": "2025-06-23T17:24:24.781740"
     }
 ]

@@ -1,8 +1,6 @@
 /**
  * @module pages/tradingPage
- * @description Orquesta toda la lógica de la página de trading. Se encarga de la inicialización,
- * la gestión del estado, la interacción del usuario y la comunicación con otros módulos
- * como el gráfico, el formulario y los servicios de API.
+ * @description Orquesta toda la lógica de la página de trading.
  */
 
 import { DOMElements } from '../components/domElements.js';
@@ -10,13 +8,13 @@ import { UIState } from '../components/uiState.js';
 import { UIUpdater } from '../components/uiUpdater.js';
 import { FormLogic } from '../components/formLogic.js';
 import { initializeChart, updateChartData } from '../components/chartRenderer.js';
-import { 
-    fetchCotizaciones, 
-    fetchEstadoBilletera, 
-    fetchHistorial, 
-    fetchVelas, 
-    fetchOrdenesAbiertas, 
-    cancelarOrden 
+import {
+    fetchCotizaciones,
+    fetchEstadoBilletera,
+    fetchHistorial,
+    fetchVelas,
+    fetchOrdenesAbiertas,
+    cancelarOrden
 } from '../services/apiService.js';
 import { AppState } from '../services/appState.js';
 import { saveTradingState, loadTradingState } from '../services/statePersistence.js';
@@ -136,19 +134,49 @@ document.addEventListener('DOMContentLoaded', () => {
             const calculatedValue = FormLogic.calcularMontoSlider();
             UIUpdater.setInputMonto(calculatedValue.toFixed(8));
         });
-        $('#tabla-ordenes-abiertas').on('click', '.btn-cancelar-orden', async function() {
+
+        // Event listener para cancelar orden con SweetAlert
+        $('#tabla-ordenes-abiertas').on('click', '.btn-cancelar-orden', function() {
             const $button = $(this);
             const orderId = $button.data('id-orden');
-            $button.prop('disabled', true).text('...');
-            try {
-                const respuesta = await cancelarOrden(orderId);
-                console.log(respuesta.mensaje);
-                $button.closest('tr').fadeOut(400, function() { $(this).remove(); if ($('#tabla-ordenes-abiertas tr').length === 0) { renderOrdenesAbiertas(); } });
-            } catch (error) {
-                console.error(`Error al cancelar la orden ${orderId}:`, error);
-                $button.prop('disabled', false).text('Cancelar');
-                alert('Error al cancelar la orden. Por favor, refresca la página e intenta de nuevo.');
-            }
+            
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: "No podrás revertir esta acción.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sí, ¡cancelar orden!',
+                cancelButtonText: 'No',
+                background: '#212529', // Un gris más oscuro para el popup
+                color: '#f8f9fa'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const respuesta = await cancelarOrden(orderId);
+                        // Usar el Toast que definimos globalmente en el HTML
+                        Toast.fire({
+                            icon: 'success',
+                            title: respuesta.mensaje
+                        });
+                        $button.closest('tr').fadeOut(400, function() {
+                            $(this).remove();
+                            if ($('#tabla-ordenes-abiertas tr').length === 0) {
+                                renderOrdenesAbiertas();
+                            }
+                        });
+                    } catch (error) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'No se pudo cancelar la orden. Por favor, intenta de nuevo.',
+                            background: '#212529',
+                            color: '#f8f9fa'
+                        });
+                    }
+                }
+            });
         });
     }
 
@@ -169,10 +197,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ]);
 
             AppState.setAllCryptos(cotizaciones);
-            // CAMBIO CLAVE: Ahora el backend nos da los datos correctos para filtrar.
             const ownedCoins = estadoBilletera.filter((moneda) => parseFloat(moneda.cantidad) > 1e-8);
             AppState.setOwnedCoins(ownedCoins);
-
             renderOrdenesAbiertas();
             UIUpdater.renderHistorial(historial);
             initializeChart(velas);
@@ -180,18 +206,23 @@ document.addEventListener('DOMContentLoaded', () => {
             [DOMElements.selectorPrincipal, DOMElements.selectorPagarCon, DOMElements.selectorRecibirEn].forEach((sel) => {
                 sel.select2({ width: '100%', dropdownCssClass: 'text-dark', theme: 'bootstrap-5' });
             });
-
             setupEventListeners();
             setTradeMode('comprar');
             handleTipoOrdenChange();
-
             DOMElements.selectorPrincipal.val(currentTicker).trigger('change.select2');
             $('#timeframe-selector .timeframe-btn').removeClass('active').filter(`[data-interval="${currentInterval}"]`).addClass('active');
 
             console.log('Página de trading inicializada correctamente.');
         } catch (error) {
             console.error('Error fatal durante la inicialización de la página de trading:', error);
-            UIUpdater.mostrarMensajeError('No se pudieron cargar los datos esenciales. Por favor, recarga la página.');
+            // Mostrar error de inicialización con SweetAlert
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de Conexión',
+                text: 'No se pudieron cargar los datos esenciales. Por favor, recarga la página.',
+                background: '#212529',
+                color: '#f8f9fa'
+            });
         }
     }
 
