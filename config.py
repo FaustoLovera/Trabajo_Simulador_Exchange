@@ -16,6 +16,7 @@ BILLETERA_PATH = os.path.join(BASE_DATA_DIR, "billetera.json")
 HISTORIAL_PATH = os.path.join(BASE_DATA_DIR, "historial.json")
 VELAS_PATH = os.path.join(BASE_DATA_DIR, "velas.json")
 COMISIONES_PATH = os.path.join(BASE_DATA_DIR, "comisiones.json")
+ORDENES_PENDIENTES_PATH = os.path.join(BASE_DATA_DIR, "ordenes_pendientes.json")
 
 # Configuración inicial de los USDT con los cuales inicializa la app
 BALANCE_INICIAL_USDT = "10000"

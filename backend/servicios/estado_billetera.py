@@ -5,9 +5,6 @@ Este módulo centraliza la lógica de negocio para procesar los datos crudos de 
 billetera, el historial de transacciones y las cotizaciones. Genera una vista
 completa y enriquecida con cálculos financieros (ganancias/pérdidas, precios
 promedio) y campos formateados listos para ser consumidos por el frontend.
-
-La reescritura se enfoca en la claridad, separando la lógica en funciones más
-pequeñas y con responsabilidades únicas.
 """
 
 from decimal import Decimal
@@ -30,69 +27,45 @@ def _preparar_datos_compra(historial: list[dict]) -> dict[str, dict]:
     """
     Procesa el historial de transacciones UNA SOLA VEZ para agregar los costos
     y cantidades de compra por cada criptomoneda.
-
-    Esto es mucho más eficiente que filtrar el historial para cada moneda individualmente.
-
-    Args:
-        historial (list[dict]): El historial completo de transacciones.
-
-    Returns:
-        dict[str, dict]: Un diccionario donde la clave es el ticker de la criptomoneda
-                         y el valor es otro diccionario con 'total_invertido' y
-                         'cantidad_comprada'.
-                         Ej: {'BTC': {'total_invertido': 5000, 'cantidad_comprada': 0.1}}
     """
     datos_compra_por_ticker = {}
     for operacion in historial:
-        if operacion.get("tipo") == "compra":
+        # Solo consideramos las compras para el cálculo de P&L
+        if operacion.get("tipo") == "compra" or (isinstance(operacion.get("tipo"), str) and operacion.get("tipo").endswith("-compra")):
             destino = operacion.get("destino", {})
             ticker = destino.get("ticker")
             if not ticker:
                 continue
 
-            # Inicializa el diccionario para el ticker si es la primera vez que lo vemos
             if ticker not in datos_compra_por_ticker:
                 datos_compra_por_ticker[ticker] = {
                     "total_invertido": Decimal("0"),
                     "cantidad_comprada": Decimal("0"),
                 }
             
-            # Agrega los valores de la transacción actual
             datos_compra_por_ticker[ticker]["total_invertido"] += Decimal(str(operacion.get("valor_usd", "0")))
             datos_compra_por_ticker[ticker]["cantidad_comprada"] += Decimal(str(destino.get("cantidad", "0")))
             
     return datos_compra_por_ticker
 
 
-def _calcular_metricas_activo(ticker: str, cantidad_actual: Decimal, precio_actual: Decimal, datos_compra: dict) -> dict:
+def _calcular_metricas_activo(ticker: str, cantidad_total: Decimal, precio_actual: Decimal, datos_compra: dict) -> dict:
     """
     Calcula las métricas financieras clave (sin formato) para un único activo.
-    Esta función se enfoca puramente en los cálculos matemáticos.
-
-    Args:
-        ticker (str): El ticker del activo (ej. "BTC").
-        cantidad_actual (Decimal): La cantidad del activo en la billetera.
-        precio_actual (Decimal): El precio de mercado actual del activo.
-        datos_compra (dict): La información de compra pre-procesada para este activo.
-
-    Returns:
-        dict: Un diccionario con las métricas calculadas (valor, P&L, etc.) como objetos Decimal.
     """
-    valor_actual_usd = cantidad_actual * precio_actual
+    valor_actual_usd = cantidad_total * precio_actual
 
-    # Obtiene los datos de compra para este activo específico
     total_invertido = datos_compra.get("total_invertido", Decimal("0"))
     cantidad_comprada = datos_compra.get("cantidad_comprada", Decimal("0"))
 
-    # Calcula las métricas
     precio_promedio_compra = _division_segura(total_invertido, cantidad_comprada)
-    costo_base_actual = cantidad_actual * precio_promedio_compra
-    ganancia_o_perdida = valor_actual_usd - costo_base_actual
+    costo_base_actual = cantidad_total * precio_promedio_compra
+    ganancia_o_perdida = valor_actual_usd - costo_base_actual if costo_base_actual > 0 else Decimal("0")
     porcentaje_ganancia = _division_segura(ganancia_o_perdida, costo_base_actual) * Decimal("100")
 
     return {
         "ticker": ticker,
-        "cantidad": cantidad_actual,
+        "cantidad": cantidad_total,
         "precio_actual": precio_actual,
         "valor_usdt": valor_actual_usd,
         "precio_promedio_compra": precio_promedio_compra,
@@ -101,23 +74,12 @@ def _calcular_metricas_activo(ticker: str, cantidad_actual: Decimal, precio_actu
         "porcentaje_ganancia": porcentaje_ganancia,
     }
 
-
-def _formatear_activo_para_presentacion(activo_calculado: dict, total_billetera_usd: Decimal, info_cripto: dict) -> dict:
+def _formatear_activo_para_presentacion(activo_calculado: dict, saldos: dict, total_billetera_usd: Decimal, info_cripto: dict) -> dict:
     """
-    Toma un activo con métricas calculadas y le añade todos los campos formateados
-    para ser mostrados en la interfaz de usuario.
-
-    Args:
-        activo_calculado (dict): Un diccionario con las métricas del activo (valores Decimal).
-        total_billetera_usd (Decimal): El valor total de toda la billetera en USD.
-        info_cripto (dict): Un diccionario con información estática de la cripto (nombre, logo).
-
-    Returns:
-        dict: Un diccionario final listo para ser enviado como JSON, con todos los valores como strings.
+    Toma un activo con métricas calculadas y le añade todos los campos formateados.
     """
     porcentaje_en_billetera = _division_segura(activo_calculado["valor_usdt"], total_billetera_usd) * Decimal("100")
 
-    # Formato condicional para la cantidad (USDT vs otras criptos)
     if activo_calculado["ticker"] == 'USDT':
         cantidad_formateada = formato_valor_monetario(activo_calculado["cantidad"], simbolo="")
     else:
@@ -128,70 +90,72 @@ def _formatear_activo_para_presentacion(activo_calculado: dict, total_billetera_
         "nombre": info_cripto.get("nombre", activo_calculado["ticker"]),
         "es_polvo": activo_calculado["valor_usdt"] < Decimal("0.01"),
         
-        # === INICIO DE LA CORRECCIÓN ===
-        # Devolvemos tanto el valor crudo (para la lógica del JS) como el formateado (para la vista).
+        # Cantidades
         "cantidad": str(activo_calculado["cantidad"]),
         "cantidad_formatted": cantidad_formateada,
-        # === FIN DE LA CORRECCIÓN ===
+        "cantidad_disponible": str(saldos.get("disponible", "0")),
+        "cantidad_reservada": str(saldos.get("reservado", "0")),
 
+        # Valores monetarios
         "precio_actual_formatted": formato_valor_monetario(activo_calculado["precio_actual"], decimales=4),
         "valor_usdt_formatted": formato_valor_monetario(activo_calculado["valor_usdt"]),
+        "ganancia_perdida": str(activo_calculado["ganancia_perdida"]),
         "ganancia_perdida_formatted": formato_valor_monetario(activo_calculado["ganancia_perdida"]),
+        
+        # Porcentajes
         "porcentaje_ganancia_formatted": formato_porcentaje(activo_calculado["porcentaje_ganancia"]),
         "porcentaje_formatted": formato_porcentaje(porcentaje_en_billetera),
-
-        # Incluir el valor crudo de ganancia/pérdida para lógica de color en el frontend
-        "ganancia_perdida": str(activo_calculado["ganancia_perdida"]),
     }
 
-# --- Función Principal de la Billetera ---
+# --- Función Principal de la Billetera (CORREGIDA) ---
 
 def estado_actual_completo() -> list[dict]:
     """
-    Genera un estado completo y formateado de todos los activos en la billetera.
-    El proceso está dividido en pasos claros para mejorar la legibilidad.
+    Genera un estado completo y formateado de todos los activos en la billetera,
+    manejando la nueva estructura con saldos disponibles y reservados.
     """
-    # PASO 1: Cargar todos los datos crudos necesarios
     billetera = cargar_billetera()
     historial = cargar_historial()
     todas_las_cotizaciones = cargar_datos_cotizaciones()
     
-    # Crear mapas para acceso rápido a la información
     info_cripto_map = {c.get('ticker'): c for c in todas_las_cotizaciones}
-    precios_actuales = {ticker: obtener_precio(ticker) or Decimal("0") for ticker in billetera.keys()}
-
-    # PASO 2: Pre-procesar el historial para optimizar los cálculos
     datos_compra_por_ticker = _preparar_datos_compra(historial)
 
-    # PASO 3: Calcular las métricas financieras para cada activo en la billetera
     activos_calculados = []
-    for ticker, cantidad in billetera.items():
-        if cantidad <= Decimal("1e-8"):  # Ignorar saldos de polvo insignificantes
+    # === INICIO DE LA CORRECCIÓN ===
+    for ticker, saldos in billetera.items():
+        # 1. Extraer saldos de la nueva estructura
+        saldo_disponible = saldos.get("disponible", Decimal("0"))
+        saldo_reservado = saldos.get("reservado", Decimal("0"))
+        cantidad_total = saldo_disponible + saldo_reservado
+
+        # 2. Comparar la CANTIDAD TOTAL, no el diccionario
+        if cantidad_total <= Decimal("1e-8"):
             continue
             
+        precio_actual = obtener_precio(ticker) or Decimal("0")
         datos_compra_activo = datos_compra_por_ticker.get(ticker, {})
+
+        # 3. Calcular métricas usando la CANTIDAD TOTAL
         metricas = _calcular_metricas_activo(
             ticker,
-            cantidad,
-            precios_actuales.get(ticker, Decimal("0")),
+            cantidad_total,
+            precio_actual,
             datos_compra_activo
         )
+        # Guardamos los saldos para el formateador
+        metricas['saldos'] = saldos
         activos_calculados.append(metricas)
+    # === FIN DE LA CORRECCIÓN ===
 
-    # PASO 4: Calcular el valor total de la billetera
     total_billetera_usd = sum(activo["valor_usdt"] for activo in activos_calculados)
 
-    # PASO 5: Formatear cada activo para la presentación final
     activos_para_presentacion = []
     for activo in activos_calculados:
         ticker = activo["ticker"]
-        # Asignar información básica (nombre, logo)
-        if ticker == "USDT":
-            info_cripto = {'nombre': 'Tether'}
-        else:
-            info_cripto = info_cripto_map.get(ticker, {'nombre': ticker})
+        info_cripto = info_cripto_map.get(ticker, {'nombre': ticker}) if ticker != "USDT" else {'nombre': 'Tether'}
         
-        activo_formateado = _formatear_activo_para_presentacion(activo, total_billetera_usd, info_cripto)
+        activo_formateado = _formatear_activo_para_presentacion(activo, activo['saldos'], total_billetera_usd, info_cripto)
         activos_para_presentacion.append(activo_formateado)
 
     return activos_para_presentacion
@@ -201,14 +165,14 @@ def estado_actual_completo() -> list[dict]:
 def obtener_historial_formateado() -> list[dict]:
     """
     Carga y formatea el historial de transacciones para su visualización.
-    La lógica de formato está contenida para mayor claridad.
     """
     historial_crudo = cargar_historial()
     historial_formateado = []
 
     for item in historial_crudo:
+        tipo_op = item.get('tipo', '')
         # Determinar el par y la cantidad principal de la operación
-        if item.get('tipo') == 'compra':
+        if tipo_op.endswith('compra'):
             par_origen = item.get('origen', {}).get('ticker', '?')
             par_destino = item.get('destino', {}).get('ticker', '?')
             cantidad = Decimal(str(item.get('destino', {}).get('cantidad', '0')))
@@ -217,13 +181,12 @@ def obtener_historial_formateado() -> list[dict]:
             par_destino = item.get('destino', {}).get('ticker', '?')
             cantidad = Decimal(str(item.get('origen', {}).get('cantidad', '0')))
 
-        # Ensamblar el diccionario final con campos formateados
         item_formateado = {
             "id": item.get("id"),
-            "tipo": item.get("tipo"),
+            "tipo": tipo_op,
             "fecha_formatted": formato_fecha_hora(item.get('timestamp')),
             "par_formatted": f"{par_destino}/{par_origen}",
-            "tipo_formatted": item.get('tipo', '').capitalize(),
+            "tipo_formatted": tipo_op.replace('-', ' ').capitalize(),
             "cantidad_formatted": formato_cantidad_cripto(cantidad),
             "valor_total_formatted": formato_valor_monetario(Decimal(str(item.get('valor_usd', '0')))),
         }

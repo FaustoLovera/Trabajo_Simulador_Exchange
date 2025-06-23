@@ -73,3 +73,20 @@ export const triggerActualizacionDatos = () =>
  */
 export const fetchComisiones = () => 
     _fetchData('/api/comisiones', {}, 'No se pudo cargar el historial de comisiones');
+
+/**
+ * Obtiene la lista de órdenes de trading abiertas (pendientes).
+ * @returns {Promise<Array<object>>} Una promesa que se resuelve con un array de objetos de órdenes.
+ */
+export const fetchOrdenesAbiertas = () =>
+    _fetchData('/api/ordenes-abiertas', {}, 'No se pudo cargar la lista de órdenes abiertas');
+
+/**
+ * Envía una solicitud para cancelar una orden pendiente.
+ * @param {string} idOrden - El ID de la orden a cancelar.
+ * @returns {Promise<object>} Una promesa que se resuelve con la respuesta del servidor.
+ */
+export const cancelarOrden = (idOrden) => 
+    _fetchData(`/api/orden/cancelar/${idOrden}`, {
+        method: 'POST'
+    }, 'No se pudo cancelar la orden');

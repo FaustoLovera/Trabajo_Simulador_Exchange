@@ -1,3 +1,5 @@
+# backend/rutas/trading_vista.py (SIN CAMBIOS, YA ES CORRECTO)
+
 """
 Define las rutas para la funcionalidad de trading.
 
@@ -39,6 +41,7 @@ def procesar_trading_form():
     # Obtenemos el ticker principal de la operación desde el formulario.
     ticker_operado = request.form.get("ticker", "BTC").upper()
 
+    # Se pasa el 'request.form' completo, que incluirá los nuevos campos cuando el frontend los envíe.
     exito, mensaje = procesar_operacion_trading(request.form)
     flash(mensaje, "success" if exito else "danger")
     

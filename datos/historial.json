@@ -1,0 +1,16 @@
+[
+    {
+        "id": 1,
+        "timestamp": "2025-06-23T17:02:03.903316",
+        "tipo": "compra",
+        "origen": {
+            "ticker": "USDT",
+            "cantidad": "626.69080000"
+        },
+        "destino": {
+            "ticker": "BNB",
+            "cantidad": "0.99500000"
+        },
+        "valor_usd": "626.69"
+    }
+]

@@ -6,9 +6,11 @@ y para proporcionar datos financieros (estado actual y transacciones pasadas)
  a través de una API REST al frontend.
 """
 
-from flask import Blueprint, render_template, jsonify
+from flask import Blueprint, render_template, jsonify, request, flash, redirect, url_for
 from backend.servicios.estado_billetera import estado_actual_completo, obtener_historial_formateado
 from backend.acceso_datos.datos_comisiones import cargar_comisiones
+from backend.acceso_datos.datos_ordenes import cargar_ordenes_pendientes
+from backend.servicios.trading_logica import cancelar_orden_pendiente
 
 bp = Blueprint("billetera", __name__)
 
@@ -64,3 +66,26 @@ def get_historial_comisiones():
     Endpoint de API que devuelve el historial completo de comisiones cobradas.
     """
     return jsonify(cargar_comisiones())
+
+@bp.route("/api/ordenes-abiertas")
+def get_ordenes_abiertas():
+    """
+    Endpoint de API que devuelve la lista de órdenes que están pendientes de ejecución.
+    """
+    todas_las_ordenes = cargar_ordenes_pendientes()
+    # Filtramos para devolver solo las que están activas
+    ordenes_abiertas = [o for o in todas_las_ordenes if o.get("estado") == "pendiente"]
+    return jsonify(ordenes_abiertas)
+
+@bp.route("/api/orden/cancelar/<string:id_orden>", methods=["POST"])
+def cancelar_orden_api(id_orden: str):
+    """
+    Endpoint de API para cancelar una orden pendiente.
+    """
+    exito, mensaje = cancelar_orden_pendiente(id_orden)
+    
+    # Usamos jsonify para una respuesta de API estándar
+    if exito:
+        return jsonify({"estado": "ok", "mensaje": mensaje}), 200
+    else:
+        return jsonify({"estado": "error", "mensaje": mensaje}), 400
