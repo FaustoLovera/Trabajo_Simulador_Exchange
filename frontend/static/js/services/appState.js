@@ -45,5 +45,16 @@ export const AppState = {
      */
     getOwnedCoinByTicker: (ticker) => {
         return state.ownedCoins.find(coin => coin.ticker === ticker);
+    },
+
+    /**
+     * Busca el precio de una criptomoneda específica por su ticker.
+     * @param {string} ticker - El ticker de la moneda.
+     * @returns {number | null} El precio de la moneda o null si no se encuentra.
+     */
+    getPriceByTicker: (ticker) => {
+        const crypto = state.allCryptos.find(c => c.ticker === ticker);
+        // La propiedad 'precio_usd' viene del backend como un string, lo convertimos a número.
+        return crypto ? parseFloat(crypto.precio_usd) : null;
     }
 };

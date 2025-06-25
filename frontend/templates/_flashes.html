@@ -2,22 +2,19 @@
 {% if messages %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // El filtro |tojson convierte el objeto de Python a una cadena JSON.
-        // El filtro |safe le dice a Jinja que no escape los caracteres especiales (como "),
-        // lo que nos permite tener un objeto JavaScript válido en el script.
         const flashedMessages = {{ messages|tojson|safe }};
 
         if (typeof Toast !== 'undefined') {
-            // Iteramos sobre el array de mensajes con JavaScript puro.
             flashedMessages.forEach(([category, message]) => {
-                const iconType = category === 'danger' ? 'error' : category;
+                const iconType = category === 'danger' ? 'error' : 'success';
                 Toast.fire({
                     icon: iconType,
-                    title: message
+                    title: category === 'danger' ? 'Error en la operación' : 'Operación Procesada',
+                    html: message 
                 });
             });
         } else {
-            console.error("SweetAlert Toast no está definido. Asegúrate de que sweetalert-init.js se cargue antes que este script.");
+            console.error("SweetAlert Toast no está definido.");
         }
     });
 </script>

@@ -1,7 +1,4 @@
-/**
- * @module pages/tradingPage
- * @description Orquesta toda la lógica de la página de trading.
- */
+// frontend/static/js/pages/tradingPage.js
 
 import { DOMElements } from '../components/domElements.js';
 import { UIState } from '../components/uiState.js';
@@ -25,22 +22,6 @@ function createOrdenAbiertaRowHTML(orden) {
     const cantidad = orden.accion === 'comprar' ? orden.cantidad_destino : orden.cantidad_origen;
     const tickerCantidad = orden.par.split('/')[0];
     return `<tr><td class="text-start ps-3 small">${fechaCreacion}</td><td class="fw-bold">${orden.par}</td><td>${orden.tipo_orden.charAt(0).toUpperCase() + orden.tipo_orden.slice(1)}</td><td class="${tipoOrdenClase}">${orden.accion.charAt(0).toUpperCase() + orden.accion.slice(1)}</td><td>$${parseFloat(orden.precio_disparo).toFixed(4)}</td><td>${parseFloat(cantidad).toFixed(6)} ${tickerCantidad}</td><td><button class="btn btn-sm btn-outline-danger btn-cancelar-orden" data-id-orden="${orden.id_orden}">Cancelar</button></td></tr>`;
-}
-
-async function renderOrdenesAbiertas() {
-    const tablaBody = $('#tabla-ordenes-abiertas');
-    if (!tablaBody.length) return;
-    try {
-        const ordenes = await fetchOrdenesAbiertas();
-        if (ordenes.length === 0) {
-            tablaBody.html('<tr><td colspan="7" class="text-center text-muted py-3">No hay órdenes abiertas.</td></tr>');
-        } else {
-            tablaBody.html(ordenes.map(createOrdenAbiertaRowHTML).join(''));
-        }
-    } catch (error) {
-        console.error("Error al renderizar órdenes abiertas:", error);
-        tablaBody.html('<tr><td colspan="7" class="text-center text-danger py-3">Error al cargar órdenes.</td></tr>');
-    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -67,23 +48,50 @@ document.addEventListener('DOMContentLoaded', () => {
         UIUpdater.actualizarLabelMonto();
     }
 
+    // ### INICIO DE LA SOLUCIÓN ###
+    // Función central para actualizar la UI del formulario
     function actualizarFormularioUI() {
         const esCompra = UIState.esModoCompra();
         const allCryptos = AppState.getAllCryptos();
         const ownedCoins = AppState.getOwnedCoins();
+
+        // Desactivamos temporalmente el listener para evitar el bucle infinito
+        DOMElements.selectorPrincipal.off('change');
+
+        // Poblamos el selector principal
         if (esCompra) {
             const listaParaComprar = allCryptos.filter((c) => c.ticker !== 'USDT');
-            FormLogic.popularSelector(DOMElements.selectorPrincipal, listaParaComprar, currentTicker);
+            FormLogic.popularSelector(DOMElements.selectorPrincipal, listaParaComprar);
         } else {
             const ownedCoinsToSell = ownedCoins.filter(c => c.ticker !== 'USDT');
-            FormLogic.popularSelector(DOMElements.selectorPrincipal, ownedCoinsToSell, currentTicker, 'No tienes monedas para vender');
+            FormLogic.popularSelector(DOMElements.selectorPrincipal, ownedCoinsToSell, 'No tienes monedas para vender');
         }
+        
+        // Establecemos el valor y disparamos la actualización visual de Select2
+        DOMElements.selectorPrincipal.val(currentTicker).trigger('change.select2');
+        
+        // Volvemos a activar el listener para la interacción del usuario
+        DOMElements.selectorPrincipal.on('change', handleSelectorPrincipalChange);
+        
+        // Actualizamos el resto de los componentes del formulario
         FormLogic.actualizarOpcionesDeSelectores();
         const tickerParaBalance = esCompra ? UIState.getTickerPago() : UIState.getTickerPrincipal();
         UIUpdater.mostrarSaldo(tickerParaBalance);
         UIUpdater.actualizarLabelMonto();
-        UIUpdater.resetSlider();
     }
+
+    // Función manejadora de eventos para el cambio del selector principal
+    function handleSelectorPrincipalChange() {
+        const nuevoTicker = UIState.getTickerPrincipal();
+        if (!nuevoTicker || nuevoTicker === currentTicker) return;
+        
+        currentTicker = nuevoTicker;
+        // Llamamos a la actualización completa de la UI
+        actualizarFormularioUI();
+        actualizarGrafico(currentTicker, currentInterval);
+        saveTradingState(currentTicker, currentInterval);
+    }
+    // ### FIN DE LA SOLUCIÓN ###
 
     function setTradeMode(mode) {
         DOMElements.inputAccion.val(mode);
@@ -91,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
         UIUpdater.actualizarVisibilidadCampos();
         actualizarFormularioUI();
     }
-
+    
     async function actualizarGrafico(ticker, interval) {
         if (!ticker || isChartLoading) { return; }
         isChartLoading = true;
@@ -105,75 +113,66 @@ document.addEventListener('DOMContentLoaded', () => {
             isChartLoading = false;
         }
     }
-
+    
+    function validarInputNumerico(event, maxDecimales = 8) {
+        const input = event.target;
+        let value = input.value;
+        value = value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+        const parts = value.split('.');
+        if (parts[1] && parts[1].length > maxDecimales) {
+            value = parts[0] + '.' + parts[1].substring(0, maxDecimales);
+        }
+        if (input.value !== value) {
+            input.value = value;
+        }
+    }
+    
     function setupEventListeners() {
         DOMElements.botonComprar.on('click', () => setTradeMode('comprar'));
         DOMElements.botonVender.on('click', () => setTradeMode('vender'));
-        DOMElements.selectorPrincipal.on('change', () => {
-            const nuevoTicker = UIState.getTickerPrincipal();
-            if (!nuevoTicker || nuevoTicker === currentTicker) return;
-            currentTicker = nuevoTicker;
-            actualizarFormularioUI();
-            actualizarGrafico(currentTicker, currentInterval);
-            saveTradingState(currentTicker, currentInterval);
+        
+        // El listener ahora apunta a la nueva función manejadora
+        DOMElements.selectorPrincipal.on('change', handleSelectorPrincipalChange);
+        
+        DOMElements.selectorPagarCon.on('change', () => {
+            UIUpdater.mostrarSaldo(UIState.getTickerPago());
+            UIUpdater.actualizarLabelMonto();
         });
-        DOMElements.selectorPagarCon.on('change', () => { UIUpdater.mostrarSaldo(UIState.getTickerPago()); UIUpdater.actualizarLabelMonto(); });
+        
         DOMElements.selectorRecibirEn.on('change', UIUpdater.actualizarLabelMonto);
+        
         $('#timeframe-selector').on('click', '.timeframe-btn', function () {
-            const $btn = $(this);
-            if ($btn.hasClass('active')) return;
-            $('#timeframe-selector .timeframe-btn').removeClass('active');
-            $btn.addClass('active');
-            currentInterval = $btn.data('interval');
+            currentInterval = $(this).data('interval');
+            $(this).addClass('active').siblings().removeClass('active');
             actualizarGrafico(currentTicker, currentInterval);
             saveTradingState(currentTicker, currentInterval);
-        });
-        $('input[name="tipo-orden"]').on('change', handleTipoOrdenChange);
-        DOMElements.radioModoIngreso.on('change', UIUpdater.actualizarLabelMonto);
-        DOMElements.sliderMonto.on('input', () => {
-            const calculatedValue = FormLogic.calcularMontoSlider();
-            UIUpdater.setInputMonto(calculatedValue.toFixed(8));
         });
 
-        // Event listener para cancelar orden con SweetAlert
+        $('input[name="tipo-orden"]').on('change', handleTipoOrdenChange);
+        DOMElements.radioModoIngreso.on('change', UIUpdater.actualizarLabelMonto);
+        
+        DOMElements.inputMonto.on('input', (e) => validarInputNumerico(e, 8));
+        $('#precio_disparo').on('input', (e) => validarInputNumerico(e, 4));
+
         $('#tabla-ordenes-abiertas').on('click', '.btn-cancelar-orden', function() {
-            const $button = $(this);
-            const orderId = $button.data('id-orden');
-            
+            const orderId = $(this).data('id-orden');
             Swal.fire({
-                title: '¿Estás seguro?',
-                text: "No podrás revertir esta acción.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Sí, ¡cancelar orden!',
-                cancelButtonText: 'No',
-                background: '#212529', // Un gris más oscuro para el popup
-                color: '#f8f9fa'
+                title: '¿Estás seguro?', text: "No podrás revertir esta acción.",
+                icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6', confirmButtonText: 'Sí, ¡cancelar orden!',
+                cancelButtonText: 'No', background: '#212529', color: '#f8f9fa'
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     try {
                         const respuesta = await cancelarOrden(orderId);
-                        // Usar el Toast que definimos globalmente en el HTML
-                        Toast.fire({
-                            icon: 'success',
-                            title: respuesta.mensaje
-                        });
-                        $button.closest('tr').fadeOut(400, function() {
-                            $(this).remove();
-                            if ($('#tabla-ordenes-abiertas tr').length === 0) {
-                                renderOrdenesAbiertas();
-                            }
-                        });
+                        Toast.fire({ icon: 'success', html: respuesta.mensaje });
+                        $(this).closest('tr').fadeOut(400, function() { $(this).remove(); if ($('#tabla-ordenes-abiertas tr').length === 0) {
+                            // Si la tabla queda vacía, volvemos a renderizar el mensaje "no hay órdenes"
+                            const tablaBody = $('#tabla-ordenes-abiertas');
+                            tablaBody.html('<tr><td colspan="7" class="text-center text-muted py-3">No hay órdenes abiertas.</td></tr>');
+                        }});
                     } catch (error) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'No se pudo cancelar la orden. Por favor, intenta de nuevo.',
-                            background: '#212529',
-                            color: '#f8f9fa'
-                        });
+                        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cancelar la orden.', background: '#212529', color: '#f8f9fa' });
                     }
                 }
             });
@@ -188,40 +187,45 @@ document.addEventListener('DOMContentLoaded', () => {
         currentTicker = tickerDesdeUrl || savedState?.ticker || 'BTC';
         currentInterval = savedState?.interval || '1d';
         if (tickerDesdeUrl) saveTradingState(currentTicker, currentInterval);
+        
         try {
-            const [cotizaciones, estadoBilletera, historial, velas] = await Promise.all([
-                fetchCotizaciones(),
-                fetchEstadoBilletera(),
-                fetchHistorial(),
-                fetchVelas(currentTicker, currentInterval),
+            const [cotizaciones, estadoBilletera, historial, ordenesAbiertas] = await Promise.all([
+                fetchCotizaciones(), fetchEstadoBilletera(), fetchHistorial(), fetchOrdenesAbiertas()
             ]);
 
             AppState.setAllCryptos(cotizaciones);
-            const ownedCoins = estadoBilletera.filter((moneda) => parseFloat(moneda.cantidad) > 1e-8);
-            AppState.setOwnedCoins(ownedCoins);
-            renderOrdenesAbiertas();
+            AppState.setOwnedCoins(estadoBilletera);
+
             UIUpdater.renderHistorial(historial);
-            initializeChart(velas);
+            const tablaOrdenesBody = $('#tabla-ordenes-abiertas');
+            if (ordenesAbiertas.length === 0) {
+                tablaOrdenesBody.html('<tr><td colspan="7" class="text-center text-muted py-3">No hay órdenes abiertas.</td></tr>');
+            } else {
+                tablaOrdenesBody.html(ordenesAbiertas.map(createOrdenAbiertaRowHTML).join(''));
+            }
+
+            const datosVelas = await fetchVelas(currentTicker, currentInterval);
+            initializeChart(datosVelas);
             
             [DOMElements.selectorPrincipal, DOMElements.selectorPagarCon, DOMElements.selectorRecibirEn].forEach((sel) => {
                 sel.select2({ width: '100%', dropdownCssClass: 'text-dark', theme: 'bootstrap-5' });
             });
+
             setupEventListeners();
-            setTradeMode('comprar');
+            setTradeMode('comprar'); // Inicia en modo compra
             handleTipoOrdenChange();
-            DOMElements.selectorPrincipal.val(currentTicker).trigger('change.select2');
+
+            // La actualización inicial ahora se maneja dentro de actualizarFormularioUI
+            // DOMElements.selectorPrincipal.val(currentTicker).trigger('change.select2');
             $('#timeframe-selector .timeframe-btn').removeClass('active').filter(`[data-interval="${currentInterval}"]`).addClass('active');
 
             console.log('Página de trading inicializada correctamente.');
         } catch (error) {
-            console.error('Error fatal durante la inicialización de la página de trading:', error);
-            // Mostrar error de inicialización con SweetAlert
+            console.error('Error fatal durante la inicialización:', error);
             Swal.fire({
-                icon: 'error',
-                title: 'Error de Conexión',
+                icon: 'error', title: 'Error de Conexión',
                 text: 'No se pudieron cargar los datos esenciales. Por favor, recarga la página.',
-                background: '#212529',
-                color: '#f8f9fa'
+                background: '#212529', color: '#f8f9fa'
             });
         }
     }

@@ -58,18 +58,15 @@ export const UIUpdater = {
 
         // Usamos AppState en lugar de 'window'
         const moneda = AppState.getOwnedCoinByTicker(ticker);
-        // Ahora usamos el campo 'cantidad_formatted' que ya viene del backend.
+        // Usamos 'cantidad_formatted' para mostrar, que ya viene del backend y es más preciso.
+        // Además, nos aseguramos de que el saldo mostrado sea el DISPONIBLE.
         const saldoFormateado = moneda ? moneda.cantidad_formatted : '0.00000000';
-        DOMElements.spanSaldoDisponible.text(`${saldoFormateado} ${ticker}`);
+        const tickerMostrado = moneda ? moneda.ticker : ticker;
+        DOMElements.spanSaldoDisponible.text(`${saldoFormateado} ${tickerMostrado}`);
     },
     
-    // ... (el resto de las funciones: setInputMonto, resetSlider, renderHistorial, mostrarMensajeError no cambian) ...
     setInputMonto(valor) {
         DOMElements.inputMonto.val(valor);
-    },
-
-    resetSlider() {
-        DOMElements.sliderMonto.val(0);
     },
 
     renderHistorial(historialData) {

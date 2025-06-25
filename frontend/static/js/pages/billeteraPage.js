@@ -1,24 +1,22 @@
 /**
  * @module pages/billeteraPage
- * @description Orquesta la inicialización y la lógica principal de la página de la billetera,
- * incluyendo la obtención de datos y la renderización de la tabla de activos y comisiones.
+ * @description Orquesta la inicialización y la lógica principal de la página de la billetera.
  */
 
-// Importamos la nueva función para obtener comisiones junto con la existente.
 import { fetchEstadoBilletera, fetchComisiones } from '../services/apiService.js';
 import { UIUpdater } from '../components/uiUpdater.js';
 
 /**
  * @typedef {object} ActivoBilletera
- * @property {string} ticker - El símbolo de la criptomoneda (ej. "BTC").
- * @property {boolean} es_polvo - Indica si la cantidad es considerada "polvo" (muy pequeña).
- * @property {string} cantidad_formatted - La cantidad de la criptomoneda, formateada como string.
- * @property {string} precio_actual_formatted - El precio actual por unidad, formateado.
- * @property {string} valor_usdt_formatted - El valor total en USDT, formateado.
- * @property {string|number} ganancia_perdida - El valor numérico de la ganancia o pérdida.
- * @property {string} ganancia_perdida_formatted - La ganancia o pérdida, formateada.
- * @property {string} porcentaje_ganancia_formatted - El porcentaje de ganancia o pérdida, formateado.
- * @property {string} porcentaje_formatted - El porcentaje que este activo representa en la billetera.
+ * @property {string} ticker - El símbolo de la criptomoneda.
+ * @property {boolean} es_polvo - Indica si la cantidad es considerada "polvo".
+ * @property {string} ganancia_perdida_cruda - El valor numérico de la ganancia o pérdida (como string).
+ * @property {string} cantidad_formatted - La cantidad formateada.
+ * @property {string} precio_actual_formatted - El precio actual formateado.
+ * @property {string} valor_usdt_formatted - El valor total en USDT formateado.
+ * @property {string} ganancia_perdida_formatted - La ganancia o pérdida formateada.
+ * @property {string} porcentaje_ganancia_formatted - El porcentaje de G/P formateado.
+ * @property {string} porcentaje_formatted - El % que representa en la billetera.
  */
 
 /**
@@ -28,15 +26,18 @@ import { UIUpdater } from '../components/uiUpdater.js';
  */
 function createBilleteraRowHTML(cripto) {
     // Determina la clase CSS para el color basado en si la ganancia/pérdida es positiva o negativa.
-    const colorGanancia = parseFloat(cripto.ganancia_perdida) >= 0 ? 'positivo' : 'negativo';
+    const colorGanancia = parseFloat(cripto.ganancia_perdida_cruda) >= 0 ? 'text-success' : 'text-danger';
     
-    // Utiliza directamente los campos con el sufijo `_formatted` que ya vienen preparados del backend.
+    // ### MODIFICACIÓN: Añadimos la clase 'fila-polvo' si el activo es polvo.
+    const claseFila = cripto.es_polvo ? 'fila-polvo' : '';
+    const etiquetaPolvo = cripto.es_polvo ? ' <span class="text-muted small fst-italic">(polvo)</span>' : '';
+
     return `
-        <tr>
-            <td class="text-center">${cripto.ticker} ${cripto.es_polvo ? '<span class="text-muted small">(polvo)</span>' : ''}</td>
+        <tr class="${claseFila}">
+            <td class="text-center">${cripto.ticker}${etiquetaPolvo}</td>
             <td class="text-center">${cripto.cantidad_formatted}</td>
             <td class="text-center">${cripto.precio_actual_formatted}</td>
-            <td class="text-center">${cripto.valor_usdt_formatted}</td>
+            <td class="text-center fw-bold">${cripto.valor_usdt_formatted}</td>
             <td class="text-center ${colorGanancia}">${cripto.ganancia_perdida_formatted}</td>
             <td class="text-center ${colorGanancia}">${cripto.porcentaje_ganancia_formatted}</td>
             <td class="text-center">${cripto.porcentaje_formatted}</td>
@@ -74,7 +75,6 @@ async function renderBilletera() {
  * @returns {string} Una cadena de texto con el HTML de la fila.
  */
 function createComisionRowHTML(comision) {
-    // Formatea la fecha para que sea legible.
     const fecha = new Date(comision.timestamp).toLocaleString('es-AR', {
         day: '2-digit', month: '2-digit', year: 'numeric',
         hour: '2-digit', minute: '2-digit', second: '2-digit'
@@ -114,16 +114,36 @@ async function renderComisiones() {
 }
 
 /**
+ * ### NUEVO: Configura la lógica para el switch de ocultar polvo.
+ */
+function setupEventListeners() {
+    const switchOcultarPolvo = document.getElementById('ocultar-polvo-switch');
+    if (switchOcultarPolvo) {
+        switchOcultarPolvo.addEventListener('change', (event) => {
+            const filasPolvo = document.querySelectorAll('.fila-polvo');
+            const estaActivado = event.target.checked;
+            
+            filasPolvo.forEach(fila => {
+                // Ocultamos la fila si el switch está activado, la mostramos si no.
+                fila.style.display = estaActivado ? 'none' : 'table-row';
+            });
+        });
+    }
+}
+
+
+/**
  * Listener que se ejecuta cuando el DOM está completamente cargado.
- * Inicia el renderizado de AMBAS tablas en paralelo para mejorar el rendimiento.
  */
 document.addEventListener('DOMContentLoaded', () => {
     console.log("Página de Billetera cargada. Obteniendo datos...");
     
-    // Usamos Promise.all para que ambas peticiones a la API se realicen
-    // de forma concurrente, en lugar de una después de la otra.
+    // Promise.all espera a que ambas funciones de renderizado terminen.
     Promise.all([
         renderBilletera(),
         renderComisiones()
-    ]);
+    ]).then(() => {
+        // Una vez que las tablas están renderizadas, configuramos los event listeners.
+        setupEventListeners();
+    });
 });

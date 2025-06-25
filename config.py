@@ -1,5 +1,8 @@
+# config.py
+### MODIFICADO ###
+
 import os
-from decimal import getcontext, ROUND_HALF_DOWN, Decimal # <-- Añadir Decimal a la importación
+from decimal import getcontext, ROUND_HALF_DOWN, Decimal
 from dotenv import load_dotenv
 
 # Cargar variables de entorno desde el archivo .env
@@ -35,6 +38,18 @@ BINANCE_URL = "https://api.binance.com/api/v3/klines"
 CANTIDAD_CRIPTOMONEDAS = 100
 CANTIDAD_VELAS = 250
 
-# Decimal global
+# --- CONFIGURACIÓN NUMÉRICA GLOBAL --- ### NUEVO ###
+# Precisión para los cálculos intermedios de la librería Decimal
 getcontext().prec = 28
 getcontext().rounding = ROUND_HALF_DOWN
+
+# Precisión estándar para el almacenamiento y la visualización
+# de cantidades de criptomonedas (8 decimales)
+PRECISION_CRIPTOMONEDA = Decimal("0.00000001")
+
+# Precisión de decimales 4 para valores en USD
+PRECISION_USD = Decimal("0.0001")
+
+# Umbrales para la lógica de "polvo" (saldos pequeños)
+UMBRAL_POLVO_USD = Decimal("0.01") # Valor en USD por debajo del cual se considera polvo
+UMBRAL_CASI_CERO = Decimal("0.00000001") # Cantidad por debajo de la cual se considera cero para ciertas validaciones

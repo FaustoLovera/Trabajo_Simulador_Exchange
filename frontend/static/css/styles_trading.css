@@ -152,3 +152,8 @@ body {
 .form-control::placeholder {
     color: var(--color-texto) !important;
 }
+
+
+.custom-toast-position {
+    margin-top: 60px;
+}

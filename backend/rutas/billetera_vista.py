@@ -10,7 +10,7 @@ from flask import Blueprint, render_template, jsonify, request, flash, redirect,
 from backend.servicios.estado_billetera import estado_actual_completo, obtener_historial_formateado
 from backend.acceso_datos.datos_comisiones import cargar_comisiones
 from backend.acceso_datos.datos_ordenes import cargar_ordenes_pendientes
-from backend.servicios.trading_logica import cancelar_orden_pendiente
+from backend.servicios.trading.gestor import cancelar_orden_pendiente
 
 bp = Blueprint("billetera", __name__)
 

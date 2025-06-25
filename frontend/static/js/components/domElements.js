@@ -35,10 +35,11 @@ export const DOMElements = {
     spanSaldoDisponible: $('#saldo-disponible'),
     // Botones de radio para cambiar entre modos de ingreso ('monto' vs 'total')
     radioModoIngreso: $('input[name="modo-ingreso"]'),
+    // Etiqueta para el botón de radio 'Cantidad (Cripto)'
+    labelModoMonto: $('#label-modo-monto'),
     // Etiqueta para el campo de entrada de monto
     labelMonto: $('label[for="monto"]'),
     // Campo de entrada principal para el monto
     inputMonto: $('#monto'),
-    // Slider para ajustar el monto
-    sliderMonto: $('#slider-monto'),
+
 };

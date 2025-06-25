@@ -11,8 +11,8 @@ u otros clientes.
 from flask import Blueprint, jsonify
 from backend.servicios.api_cotizaciones import obtener_datos_criptos_coingecko, obtener_velas_de_api
 from backend.servicios.presentacion_datos import obtener_cotizaciones_formateadas
-# --- ¡Importamos nuestro nuevo motor! ---
-from backend.servicios.trading_logica import verificar_y_ejecutar_ordenes_pendientes
+
+from backend.servicios.trading.motor import verificar_y_ejecutar_ordenes_pendientes
 
 bp = Blueprint("api_externa", __name__, url_prefix="/api")
 

@@ -8,7 +8,7 @@ de las operaciones de compra y venta de criptomonedas enviadas por el usuario.
 """
 
 from flask import Blueprint, request, redirect, url_for, render_template, flash
-from backend.servicios.trading_logica import procesar_operacion_trading
+from backend.servicios.trading.procesador import procesar_operacion_trading
 
 bp = Blueprint("trading", __name__)
 

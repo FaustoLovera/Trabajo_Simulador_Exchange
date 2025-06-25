@@ -119,8 +119,8 @@
                 <!-- CAMPO NUEVO: Precio de Disparo -->
                 <div class="mb-3" id="campo-precio-disparo" style="display: none;">
                     <label for="precio_disparo" class="form-label" id="label-precio-disparo">Precio Límite</label>
-                    <input type="number" class="form-control" id="precio_disparo" placeholder="0.00"
-                        name="precio_disparo" min="0.00000001" step="any">
+                    <input type="text" class="form-control" id="precio_disparo" placeholder="0.00"
+                        name="precio_disparo" inputmode="decimal">
                 </div>
 
                 <div class="mb-3">
@@ -128,8 +128,7 @@
                     <div class="btn-group w-100" role="group">
                         <input type="radio" class="btn-check" name="modo-ingreso" id="modo-monto" value="monto"
                             autocomplete="off" checked>
-                        <label class="btn btn-outline-primary rounded-start-pill" for="modo-monto">Cantidad
-                            (Cripto)</label>
+                        <label class="btn btn-outline-primary rounded-start-pill" for="modo-monto" id="label-modo-monto">Cantidad (Cripto)</label>
                         <input type="radio" class="btn-check" name="modo-ingreso" id="modo-total" value="total"
                             autocomplete="off">
                         <label class="btn btn-outline-primary rounded-end-pill" for="modo-total">Total (USD)</label>
@@ -137,14 +136,11 @@
                 </div>
                 <div class="mb-3">
                     <label for="monto" class="form-label" id="label-monto">Cantidad</label>
-                    <input type="number" class="form-control" id="monto" placeholder="0.00" name="monto" required
-                        min="0.00000001" step="any">
+                    <input type="text" class="form-control" id="monto" name="monto" placeholder="0.00" required inputmode="decimal">
                 </div>
                 <div class="mb-3">
-                    <input type="range" class="form-range" min="0" max="100" step="1" id="slider-monto" value="0">
-                    <div class="d-flex justify-content-between text-white-50 small">
-                        <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
-                    </div>
+
+
                 </div>
                 <div class="mb-3 text-end text-secondary">
                     <small>Disponible: <span id="saldo-disponible">--</span></small>
