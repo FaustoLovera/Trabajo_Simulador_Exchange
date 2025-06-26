@@ -19,8 +19,8 @@ import { saveTradingState, loadTradingState } from '../services/statePersistence
 function createOrdenAbiertaRowHTML(orden) {
     const fechaCreacion = new Date(orden.timestamp_creacion).toLocaleString('es-AR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     const tipoOrdenClase = orden.accion === 'comprar' ? 'text-success' : 'text-danger';
-    const cantidad = orden.accion === 'comprar' ? orden.cantidad_destino : orden.cantidad_origen;
-    const tickerCantidad = orden.par.split('/')[0];
+    const cantidad = orden.cantidad_cripto_principal; 
+    const tickerCantidad = orden.accion === 'vender' ? orden.moneda_origen : orden.moneda_destino;
     return `<tr><td class="text-start ps-3 small">${fechaCreacion}</td><td class="fw-bold">${orden.par}</td><td>${orden.tipo_orden.charAt(0).toUpperCase() + orden.tipo_orden.slice(1)}</td><td class="${tipoOrdenClase}">${orden.accion.charAt(0).toUpperCase() + orden.accion.slice(1)}</td><td>$${parseFloat(orden.precio_disparo).toFixed(4)}</td><td>${parseFloat(cantidad).toFixed(6)} ${tickerCantidad}</td><td><button class="btn btn-sm btn-outline-danger btn-cancelar-orden" data-id-orden="${orden.id_orden}">Cancelar</button></td></tr>`;
 }
 
@@ -29,36 +29,33 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentInterval;
     let isChartLoading = false;
 
+    // --- CAMBIO PRINCIPAL EN EL FRONTEND ---
+    // La función ahora es mucho más simple. Solo se encarga de mostrar/ocultar el campo de precio.
+    // Los botones "Ingresar por" ya no se tocan, por lo que siempre estarán visibles.
     function handleTipoOrdenChange() {
         const tipoOrden = $('input[name="tipo-orden"]:checked').val();
         const campoPrecioDisparo = $('#campo-precio-disparo');
         const inputPrecioDisparo = $('#precio_disparo');
         const labelPrecioDisparo = $('#label-precio-disparo');
+
         if (tipoOrden === 'market') {
             campoPrecioDisparo.hide();
             inputPrecioDisparo.prop('required', false);
-            $('#modo-total').prop('disabled', false).parent().removeClass('disabled');
         } else {
             campoPrecioDisparo.show();
             inputPrecioDisparo.prop('required', true);
             labelPrecioDisparo.text(tipoOrden === 'limit' ? 'Precio Límite' : 'Precio Stop');
-            $('#modo-monto').prop('checked', true).trigger('change');
-            $('#modo-total').prop('disabled', true).parent().addClass('disabled');
         }
+        
         UIUpdater.actualizarLabelMonto();
     }
 
-    // ### INICIO DE LA SOLUCIÓN ###
-    // Función central para actualizar la UI del formulario
+    // El resto del archivo no necesita cambios significativos
     function actualizarFormularioUI() {
         const esCompra = UIState.esModoCompra();
         const allCryptos = AppState.getAllCryptos();
         const ownedCoins = AppState.getOwnedCoins();
-
-        // Desactivamos temporalmente el listener para evitar el bucle infinito
         DOMElements.selectorPrincipal.off('change');
-
-        // Poblamos el selector principal
         if (esCompra) {
             const listaParaComprar = allCryptos.filter((c) => c.ticker !== 'USDT');
             FormLogic.popularSelector(DOMElements.selectorPrincipal, listaParaComprar);
@@ -66,34 +63,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const ownedCoinsToSell = ownedCoins.filter(c => c.ticker !== 'USDT');
             FormLogic.popularSelector(DOMElements.selectorPrincipal, ownedCoinsToSell, 'No tienes monedas para vender');
         }
-        
-        // Establecemos el valor y disparamos la actualización visual de Select2
         DOMElements.selectorPrincipal.val(currentTicker).trigger('change.select2');
-        
-        // Volvemos a activar el listener para la interacción del usuario
         DOMElements.selectorPrincipal.on('change', handleSelectorPrincipalChange);
-        
-        // Actualizamos el resto de los componentes del formulario
         FormLogic.actualizarOpcionesDeSelectores();
         const tickerParaBalance = esCompra ? UIState.getTickerPago() : UIState.getTickerPrincipal();
         UIUpdater.mostrarSaldo(tickerParaBalance);
         UIUpdater.actualizarLabelMonto();
-
         UIUpdater.actualizarLabelsModoIngreso();
     }
 
-    // Función manejadora de eventos para el cambio del selector principal
     function handleSelectorPrincipalChange() {
         const nuevoTicker = UIState.getTickerPrincipal();
         if (!nuevoTicker || nuevoTicker === currentTicker) return;
-        
         currentTicker = nuevoTicker;
-        // Llamamos a la actualización completa de la UI
         actualizarFormularioUI();
         actualizarGrafico(currentTicker, currentInterval);
         saveTradingState(currentTicker, currentInterval);
     }
-    // ### FIN DE LA SOLUCIÓN ###
 
     function setTradeMode(mode) {
         DOMElements.inputAccion.val(mode);
@@ -132,8 +118,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupEventListeners() {
         DOMElements.botonComprar.on('click', () => setTradeMode('comprar'));
         DOMElements.botonVender.on('click', () => setTradeMode('vender'));
-        
-        // El listener ahora apunta a la nueva función manejadora
         DOMElements.selectorPrincipal.on('change', handleSelectorPrincipalChange);
         
         DOMElements.selectorPagarCon.on('change', () => {
@@ -143,7 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         DOMElements.selectorRecibirEn.on('change', () => {
-            UIUpdater.mostrarSaldo(UIState.getTickerRecibo());
             UIUpdater.actualizarLabelMonto();
             UIUpdater.actualizarLabelsModoIngreso();
         });
@@ -159,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
         DOMElements.radioModoIngreso.on('change', UIUpdater.actualizarLabelMonto);
         
         DOMElements.inputMonto.on('input', (e) => validarInputNumerico(e, 8));
-        $('#precio_disparo').on('input', (e) => validarInputNumerico(e, 4));
+        $('#precio_disparo').on('input', (e) => validarInputNumerico(e, 8));
 
         $('#tabla-ordenes-abiertas').on('click', '.btn-cancelar-orden', function() {
             const orderId = $(this).data('id-orden');
@@ -174,7 +157,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         const respuesta = await cancelarOrden(orderId);
                         Toast.fire({ icon: 'success', html: respuesta.mensaje });
                         $(this).closest('tr').fadeOut(400, function() { $(this).remove(); if ($('#tabla-ordenes-abiertas tr').length === 0) {
-                            // Si la tabla queda vacía, volvemos a renderizar el mensaje "no hay órdenes"
                             const tablaBody = $('#tabla-ordenes-abiertas');
                             tablaBody.html('<tr><td colspan="7" class="text-center text-muted py-3">No hay órdenes abiertas.</td></tr>');
                         }});
@@ -219,11 +201,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             setupEventListeners();
-            setTradeMode('comprar'); // Inicia en modo compra
+            setTradeMode('comprar');
             handleTipoOrdenChange();
 
-            // La actualización inicial ahora se maneja dentro de actualizarFormularioUI
-            // DOMElements.selectorPrincipal.val(currentTicker).trigger('change.select2');
             $('#timeframe-selector .timeframe-btn').removeClass('active').filter(`[data-interval="${currentInterval}"]`).addClass('active');
 
             console.log('Página de trading inicializada correctamente.');
