@@ -1,6 +1,3 @@
-# backend/servicios/estado_billetera.py
-### VERSIÓN FINAL Y CORRECTA ###
-
 from decimal import Decimal
 from backend.acceso_datos.datos_billetera import cargar_billetera
 from backend.acceso_datos.datos_historial import cargar_historial
@@ -75,7 +72,7 @@ def estado_actual_completo() -> list[dict]:
     datos_compra_por_ticker = _preparar_datos_compra(historial)
 
     activos_calculados = []
-    # ### INICIO DE LA CORRECCIÓN ###
+    
     # Iteramos sobre la nueva estructura de billetera
     for ticker, activo_data in billetera.items():
         saldos = activo_data.get("saldos", {}) # Obtenemos el diccionario de saldos
@@ -100,9 +97,11 @@ def estado_actual_completo() -> list[dict]:
         metricas['nombre'] = activo_data.get('nombre', ticker)
         metricas['saldos'] = saldos
         activos_calculados.append(metricas)
-    # ### FIN DE LA CORRECCIÓN ###
 
-    total_billetera_usd = sum(activo["valor_usdt"] for activo in activos_calculados)
+    # Ordenar los activos por su valor en USDT de mayor a menor
+    activos_calculados.sort(key=lambda x: x['valor_usdt'], reverse=True)
+
+    total_billetera_usd = sum(activo['valor_usdt'] for activo in activos_calculados)
 
     activos_para_presentacion = [
         _formatear_activo_para_presentacion(activo, activo['nombre'], activo['saldos'], total_billetera_usd)

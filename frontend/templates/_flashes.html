@@ -1,16 +1,72 @@
+<!-- frontend/templates/_flashes.html -->
+<!-- ### REFACTORIZADO ### - Ahora es un componente inteligente que construye el HTML. -->
+
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        /**
+         * Construye el contenido HTML para la notificación Toast a partir de los datos
+         * estructurados que envía el backend.
+         * @param {object} data - El objeto de datos parseado desde el JSON.
+         * @returns {string} El HTML para el cuerpo de la notificación.
+         */
+        function buildFlashMessageHTML(data) {
+            // Estilo común para el cuerpo del mensaje
+            const baseStyle = 'text-align: left; font-size: 0.9rem;';
+            const hr = "<hr style='margin: 4px 0; border-color: #555;'>";
+
+            if (data.tipo === 'mercado') {
+                const d = data.detalles;
+                return `
+                    <div style="${baseStyle}">
+                        <span>Recibiste: <strong style='color: #1FB371;'>${d.recibiste.cantidad} ${d.recibiste.ticker}</strong></span><br>
+                        <span>Pagaste: <strong style='color: #FFA500;'>${d.pagaste.cantidad} ${d.pagaste.ticker}</strong></span><br>
+                        <span style='font-size: 0.8rem; color: #999;'>Comisión: ${d.comision.cantidad} ${d.comision.ticker}</span>
+                    </div>
+                `;
+            } else if (data.tipo === 'limit' || data.tipo === 'stop-loss') {
+                const d = data.detalles;
+                return `
+                    <div style="${baseStyle}">
+                        <span>Acción: <strong>${d.accion}</strong></span><br>
+                        <span>Precio Disparo: <strong>${d.precio_disparo}</strong></span><br>
+                        <span style='font-size: 0.8rem; color: #999;'>Los fondos han sido reservados.</span>
+                    </div>
+                `;
+            }
+            return 'Detalles no disponibles.'; // Fallback
+        }
+
         const flashedMessages = {{ messages|tojson|safe }};
 
         if (typeof Toast !== 'undefined') {
             flashedMessages.forEach(([category, message]) => {
                 const iconType = category === 'danger' ? 'error' : 'success';
+                let title, htmlContent;
+
+                if (category === 'success') {
+                    try {
+                        // El mensaje de éxito es un JSON, lo parseamos
+                        const data = JSON.parse(message);
+                        title = data.titulo || 'Operación Procesada';
+                        htmlContent = buildFlashMessageHTML(data);
+                    } catch (e) {
+                        // Si falla el parseo, lo mostramos como texto plano
+                        console.error("Error al parsear el mensaje flash JSON:", e);
+                        title = 'Operación Exitosa';
+                        htmlContent = message;
+                    }
+                } else {
+                    // El mensaje de error es un string simple
+                    title = 'Error en la operación';
+                    htmlContent = message;
+                }
+                
                 Toast.fire({
                     icon: iconType,
-                    title: category === 'danger' ? 'Error en la operación' : 'Operación Procesada',
-                    html: message 
+                    title: title,
+                    html: htmlContent
                 });
             });
         } else {

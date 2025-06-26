@@ -1,91 +1,56 @@
-/**
- * @module services/apiService
- * @description Centraliza todas las llamadas a la API del backend. Proporciona una función
- * genérica para las solicitudes y exporta funciones específicas para cada endpoint, 
- * manejando errores de forma consistente.
- */
+// frontend/static/js/services/apiService.js
 
 /**
- * Realiza una solicitud `fetch` a un endpoint de la API y maneja la respuesta.
- * @private
- * @async
- * @param {string} url - El endpoint de la API al que se va a llamar.
- * @param {RequestInit} [options={}] - Opciones para la solicitud `fetch` (método, headers, body, etc.).
- * @param {string} [errorMessage='Error en la solicitud a la API'] - Mensaje de error personalizado para lanzar si la respuesta no es `ok`.
- * @returns {Promise<any>} Una promesa que se resuelve con la respuesta JSON de la API.
- * @throws {Error} Lanza un error si la solicitud de red falla o si la respuesta del servidor no es exitosa (status no es 2xx).
+ * ### REFACTORIZADO ###
+ * Realiza una solicitud `fetch` y maneja respuestas de éxito y de error estructuradas.
  */
 async function _fetchData(url, options = {}, errorMessage = 'Error en la solicitud a la API') {
     try {
         const response = await fetch(url, options);
+
         if (!response.ok) {
-            // Si la respuesta del servidor no es exitosa, construye un error informativo.
-            throw new Error(`${errorMessage} (status: ${response.status})`);
+            // Si la respuesta no es OK, intentamos leer el cuerpo del error.
+            const errorData = await response.json().catch(() => null); // Si el cuerpo no es JSON, devuelve null.
+            const message = errorData?.mensaje || response.statusText; // Usa el mensaje del backend o el texto de estado HTTP.
+            
+            // Creamos un error que contiene los datos estructurados.
+            const error = new Error(message);
+            error.datos = errorData; // Adjuntamos todos los datos del error.
+            error.status = response.status;
+            throw error;
         }
+
         return await response.json();
     } catch (error) {
         console.error(`Error en la llamada a la API [${url}]:`, error);
-        // Re-lanza el error para que el código que invoca la función pueda manejarlo (ej. en un Promise.all).
-        throw error;
+        throw error; // Re-lanzamos el error para que el código que llama pueda manejarlo.
     }
 }
 
-/**
- * Obtiene la lista completa de cotizaciones de criptomonedas desde el backend.
- * @returns {Promise<Array<object>>} Una promesa que se resuelve con un array de objetos de cotización.
- */
+// El resto de las funciones (fetchCotizaciones, fetchEstadoBilletera, etc.) NO CAMBIAN.
+// Siguen usando _fetchData, que ahora es más potente.
+
 export const fetchCotizaciones = () => 
     _fetchData('/api/cotizaciones', {}, 'No se pudieron cargar las cotizaciones');
 
-/**
- * Obtiene el estado completo y formateado de la billetera del usuario.
- * @returns {Promise<Array<object>>} Una promesa que se resuelve con un array de objetos, donde cada objeto representa una moneda en la billetera.
- */
 export const fetchEstadoBilletera = () => 
     _fetchData('/api/billetera/estado-completo', {}, 'No se pudo cargar el estado de la billetera');
 
-/**
- * Obtiene el historial de transacciones del usuario.
- * @returns {Promise<Array<object>>} Una promesa que se resuelve con un array de objetos de transacciones.
- */
 export const fetchHistorial = () => 
     _fetchData('/api/historial', {}, 'No se pudo cargar el historial de transacciones');
 
-/**
- * Obtiene los datos de velas (candlestick) para un ticker y un intervalo de tiempo específicos.
- * @param {string} ticker - El ticker de la criptomoneda (ej. 'BTC').
- * @param {string} interval - La temporalidad de las velas (ej. '1d', '1h', '15m').
- * @returns {Promise<Array<object>>} Una promesa que se resuelve con un array de datos de velas.
- */
 export const fetchVelas = (ticker, interval) => 
     _fetchData(`/api/velas/${ticker}/${interval}`, {}, `No se pudieron cargar los datos de velas para ${ticker} (${interval})`);
 
-/**
- * Envía una solicitud al backend para que actualice los datos de cotizaciones desde la fuente externa.
- * @returns {Promise<object>} Una promesa que se resuelve con un mensaje de éxito o estado de la actualización.
- */
 export const triggerActualizacionDatos = () => 
     _fetchData('/api/actualizar', {}, 'La solicitud para actualizar los datos falló');
 
-/**
- * Obtiene el historial de comisiones cobradas.
- * @returns {Promise<Array<object>>} Una promesa que se resuelve con un array de objetos de comisión.
- */
 export const fetchComisiones = () => 
     _fetchData('/api/comisiones', {}, 'No se pudo cargar el historial de comisiones');
 
-/**
- * Obtiene la lista de órdenes de trading abiertas (pendientes).
- * @returns {Promise<Array<object>>} Una promesa que se resuelve con un array de objetos de órdenes.
- */
 export const fetchOrdenesAbiertas = () =>
     _fetchData('/api/ordenes-abiertas', {}, 'No se pudo cargar la lista de órdenes abiertas');
 
-/**
- * Envía una solicitud para cancelar una orden pendiente.
- * @param {string} idOrden - El ID de la orden a cancelar.
- * @returns {Promise<object>} Una promesa que se resuelve con la respuesta del servidor.
- */
 export const cancelarOrden = (idOrden) => 
     _fetchData(`/api/orden/cancelar/${idOrden}`, {
         method: 'POST'

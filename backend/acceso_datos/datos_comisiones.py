@@ -32,8 +32,6 @@ def registrar_comision(
     os.makedirs(os.path.dirname(COMISIONES_PATH), exist_ok=True)
     comisiones = cargar_comisiones()
 
-    # ### ANTES: usaba .quantize() con valores mágicos.
-    # ### DESPUÉS: usamos las utilidades centralizadas.
     cantidad_comision_q = cuantizar_cripto(cantidad_comision)
     valor_usd_comision_q = cuantizar_usd(valor_usd_comision)
 

@@ -9,10 +9,8 @@ realizar las peticiones, procesar los datos y guardarlos localmente.
 from decimal import Decimal
 import requests
 import json
-# === INICIO DE LA MODIFICACIÓN ===
-# La importación ahora apunta a la capa de acceso a datos, que es más correcto.
+
 from backend.acceso_datos.datos_cotizaciones import guardar_datos_cotizaciones
-# === FIN DE LA MODIFICACIÓN ===
 from config import COINGECKO_URL, BINANCE_URL, CANTIDAD_CRIPTOMONEDAS, CANTIDAD_VELAS
 
 def obtener_datos_criptos_coingecko() -> list[dict]:

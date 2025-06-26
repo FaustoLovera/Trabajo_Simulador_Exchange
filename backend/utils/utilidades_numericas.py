@@ -12,14 +12,11 @@ Funciones:
 """
 
 from decimal import Decimal, InvalidOperation
-from typing import Union
 
 from config import PRECISION_CRIPTOMONEDA, PRECISION_USD
 
-# Alias de tipo para valores que pueden ser convertidos a Decimal.
-EntradaNumerica = Union[int, float, str, Decimal, None]
 
-def a_decimal(valor: EntradaNumerica) -> Decimal:
+def a_decimal(valor) -> Decimal:
     """
     Convierte de forma segura un valor a un objeto Decimal.
 
@@ -92,7 +89,7 @@ def formato_cantidad_usd(valor: Decimal, simbolo: str = "$") -> str:
         El valor formateado. Ej: "$1,234.56".
     """
     # La cantidad de decimales en la f-string debe coincidir con la precisión en config.py
-    # Si PRECISION_USD es Decimal('0.01'), usa .2f. Si es Decimal('0.0001'), usa .4f.
+    # Decimal('0.0001'), usa .4f.
     decimales = abs(PRECISION_USD.as_tuple().exponent)
     return f"{simbolo}{cuantizar_usd(valor):,.{decimales}f}"
 

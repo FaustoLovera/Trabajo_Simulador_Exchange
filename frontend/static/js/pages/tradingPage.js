@@ -78,6 +78,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const tickerParaBalance = esCompra ? UIState.getTickerPago() : UIState.getTickerPrincipal();
         UIUpdater.mostrarSaldo(tickerParaBalance);
         UIUpdater.actualizarLabelMonto();
+
+        UIUpdater.actualizarLabelsModoIngreso();
     }
 
     // Función manejadora de eventos para el cambio del selector principal
@@ -137,9 +139,14 @@ document.addEventListener('DOMContentLoaded', () => {
         DOMElements.selectorPagarCon.on('change', () => {
             UIUpdater.mostrarSaldo(UIState.getTickerPago());
             UIUpdater.actualizarLabelMonto();
+            UIUpdater.actualizarLabelsModoIngreso();
         });
         
-        DOMElements.selectorRecibirEn.on('change', UIUpdater.actualizarLabelMonto);
+        DOMElements.selectorRecibirEn.on('change', () => {
+            UIUpdater.mostrarSaldo(UIState.getTickerRecibo());
+            UIUpdater.actualizarLabelMonto();
+            UIUpdater.actualizarLabelsModoIngreso();
+        });
         
         $('#timeframe-selector').on('click', '.timeframe-btn', function () {
             currentInterval = $(this).data('interval');

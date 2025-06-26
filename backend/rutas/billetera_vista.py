@@ -80,12 +80,21 @@ def get_ordenes_abiertas():
 @bp.route("/api/orden/cancelar/<string:id_orden>", methods=["POST"])
 def cancelar_orden_api(id_orden: str):
     """
-    Endpoint de API para cancelar una orden pendiente.
+    ### REFACTORIZADO ### - Endpoint de API para cancelar una orden pendiente.
+    Devuelve una respuesta JSON estandarizada.
     """
-    exito, mensaje = cancelar_orden_pendiente(id_orden)
+    resultado = cancelar_orden_pendiente(id_orden)
     
-    # Usamos jsonify para una respuesta de API estándar
-    if exito:
-        return jsonify({"estado": "ok", "mensaje": mensaje}), 200
+    if "error" in resultado:
+        # Si el diccionario de resultado contiene un error, devolvemos un estado 400 (Bad Request).
+        return jsonify({
+            "estado": "error",
+            "mensaje": resultado["error"]
+        }), 400
     else:
-        return jsonify({"estado": "error", "mensaje": mensaje}), 400
+        # Si no hay error, devolvemos un estado 200 (OK).
+        return jsonify({
+            "estado": "ok",
+            "mensaje": resultado["mensaje"],
+            "datos": resultado.get("datos", {})
+        }), 200

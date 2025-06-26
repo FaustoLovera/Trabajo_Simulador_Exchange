@@ -1,5 +1,3 @@
-# backend/utils/formatters.py
-### MODIFICADO ###
 """
 Utilidades de formateo para la presentación de datos no numéricos.
 
@@ -12,8 +10,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Union
 
-# Los formateadores numéricos se han movido a number_utils,
-# pero aún podemos necesitar esta función para los indicadores de rendimiento.
+
 def get_performance_indicator(value: Union[str, Decimal]) -> dict:
     """
     Analiza un valor de rendimiento y devuelve un diccionario con la clase CSS y
@@ -26,8 +23,6 @@ def get_performance_indicator(value: Union[str, Decimal]) -> dict:
         dict: Un diccionario con las claves 'className' y 'arrow'.
     """
     try:
-        # Se usa to_decimal de number_utils para consistencia, aunque aquí no lo importamos
-        # para mantener los módulos lo más desacoplados posible. La conversión simple funciona.
         valor_decimal = Decimal(str(value))
         if valor_decimal >= 0:
             return {"className": "positivo", "arrow": "▲"}

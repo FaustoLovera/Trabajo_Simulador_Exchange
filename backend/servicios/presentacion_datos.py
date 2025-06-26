@@ -1,6 +1,3 @@
-# backend/servicios/presentacion_datos.py
-### MODIFICADO Y CORREGIDO ###
-
 """
 Servicio de Presentación de Datos.
 
@@ -11,8 +8,6 @@ por el frontend. Utiliza el módulo `utilidades_numericas` para todo el formateo
 
 from backend.acceso_datos.datos_cotizaciones import cargar_datos_cotizaciones
 from backend.utils.formatters import get_performance_indicator
-
-# ### CORRECCIÓN: Apuntar al módulo y funciones correctas
 from backend.utils.utilidades_numericas import (
     formato_cantidad_usd,
     formato_porcentaje,
@@ -29,7 +24,6 @@ def obtener_cotizaciones_formateadas() -> list[dict]:
     cotizaciones_presentacion = []
 
     for cripto in cotizaciones_crudas:
-        # ### CORRECCIÓN: Usar a_decimal
         precio_usd = a_decimal(cripto.get("precio_usd"))
         perf_1h = a_decimal(cripto.get("1h_%"))
         perf_24h = a_decimal(cripto.get("24h_%"))
@@ -45,7 +39,6 @@ def obtener_cotizaciones_formateadas() -> list[dict]:
             "ticker": ticker,
             "logo": cripto.get("logo"),
 
-            # ### CORRECCIÓN: Usar los formateadores en castellano
             "precio_usd_formatted": formato_cantidad_usd(precio_usd),
             "market_cap_formatted": formato_numero_grande(market_cap),
             "volumen_24h_formatted": formato_numero_grande(volumen_24h),

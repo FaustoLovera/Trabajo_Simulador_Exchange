@@ -41,5 +41,8 @@ export const DOMElements = {
     labelMonto: $('label[for="monto"]'),
     // Campo de entrada principal para el monto
     inputMonto: $('#monto'),
-
+    // Etiqueta para el botón de radio 'Cantidad (Cripto)'
+    labelModoMonto: $('#label-modo-monto'),
+    // Etiqueta para el botón de radio 'Total (USDT)'
+    labelModoTotal: $('#label-modo-total'),
 };

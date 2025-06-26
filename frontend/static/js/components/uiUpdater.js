@@ -7,12 +7,10 @@
 
 import { DOMElements } from './domElements.js';
 import { UIState } from './uiState.js';
-// Importamos AppState para acceder a los datos de la billetera.
 import { AppState } from '../services/appState.js';
 
 
 export const UIUpdater = {
-    // ... (las funciones actualizarBotones, actualizarVisibilidadCampos, actualizarLabelMonto no cambian) ...
     actualizarBotones() {
         const esCompra = UIState.esModoCompra();
         DOMElements.botonConfirmar
@@ -50,6 +48,25 @@ export const UIUpdater = {
         DOMElements.labelMonto.text(`${etiqueta} (${tickerRelevante || '...'})`);
     },
 
+    actualizarLabelsModoIngreso() {
+        const tickerPrincipal = UIState.getTickerPrincipal();
+        let tickerSecundario;
+
+        if (UIState.esModoCompra()) {
+            // Si compramos, el "Total" se refiere a la moneda con la que pagamos.
+            tickerSecundario = UIState.getTickerPago();
+        } else {
+            // Si vendemos, el "Total" se refiere a la moneda que recibimos.
+            tickerSecundario = UIState.getTickerRecibo();
+        }
+        
+        // El modo "Cantidad" siempre se refiere a la criptomoneda principal de la operación.
+        DOMElements.labelModoMonto.text(`Cantidad (${tickerPrincipal || 'Cripto'})`);
+        
+        // El modo "Total" se refiere a la otra moneda del par.
+        DOMElements.labelModoTotal.text(`Total (${tickerSecundario || 'USDT'})`);
+    },
+
     mostrarSaldo(ticker) {
         if (!ticker) {
             DOMElements.spanSaldoDisponible.text('--');
@@ -82,7 +99,7 @@ export const UIUpdater = {
 
         const historialHTML = historialData
             .map((item) => {
-                const claseTipo = item.tipo === 'compra' ? 'text-success' : 'text-danger';
+                const claseTipo = item.tipo.toLowerCase() === 'compra' ? 'text-success' : 'text-danger';
 
                 return `
                 <tr>
