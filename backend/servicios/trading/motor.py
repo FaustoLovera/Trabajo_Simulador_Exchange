@@ -9,35 +9,82 @@ from backend.acceso_datos.datos_ordenes import cargar_ordenes_pendientes, guarda
 from backend.servicios.trading.ejecutar_orden import ejecutar_transaccion
 from backend.utils.utilidades_numericas import a_decimal, cuantizar_cripto
 
-# ### INICIO DE LA REFACTORIZACIÓN DE FASE 4 ###
-
 def _verificar_condicion_orden(orden: dict, precio_actual: Decimal) -> bool:
-    """(SIN CAMBIOS) Verifica si el precio actual cumple la condición de disparo de la orden."""
+    """Verifica si el precio actual cumple la condición de DISPARO (Stop) de la orden."""
     precio_disparo = a_decimal(orden["precio_disparo"])
-    if orden["accion"] == "compra":
-        return precio_actual <= precio_disparo if orden["tipo_orden"] == "limit" else precio_actual >= precio_disparo
-    elif orden["accion"] == "venta":
-        return precio_actual >= precio_disparo if orden["tipo_orden"] == "limit" else precio_actual <= precio_disparo
+    tipo_orden = orden.get("tipo_orden", "limit") # Por defecto, 'limit' si no está definido
+    
+    # Para órdenes Límite
+    if tipo_orden == "limit":
+        if orden["accion"] == "compra":
+            return precio_actual <= precio_disparo
+        elif orden["accion"] == "venta":
+            return precio_actual >= precio_disparo
+            
+    # Para órdenes Stop-Limit (antes 'stop-loss')
+    elif tipo_orden == "stop-limit":
+        # Para una compra stop, queremos comprar cuando el precio SUBE a un nivel.
+        if orden["accion"] == "compra":
+            return precio_actual >= precio_disparo
+        # Para una venta stop, queremos vender cuando el precio CAE a un nivel.
+        elif orden["accion"] == "venta":
+            return precio_actual <= precio_disparo
+
     return False
 
 def _ejecutar_orden_pendiente(orden: dict, billetera: dict) -> dict:
     """
-    ### REFACTORIZADO ### - La lógica es ahora mucho más simple y directa.
+    Ejecuta una orden pendiente que ya ha sido disparada,
+    con lógica especial para la verificación del precio límite en órdenes Stop-Limit.
     """
-    # Gracias a la nueva estructura de orden, los datos necesarios son explícitos.
+    # ### NUEVO: VERIFICACIÓN DEL PRECIO LÍMITE PARA ÓRDENES STOP-LIMIT ###
+    if orden.get("tipo_orden") == "stop-limit":
+        precio_limite = a_decimal(orden.get("precio_limite"))
+        
+        # Si no hay precio límite en la orden, es un error de datos.
+        if not precio_limite or precio_limite.is_zero():
+             print(f"❌ ERROR DE DATOS: Orden Stop-Limit {orden['id_orden']} no tiene precio límite válido.")
+             orden["estado"] = "error_datos"
+             return billetera
+             
+        # Obtenemos el precio de mercado actual para la comprobación del límite.
+        ticker_base = orden["par"].split('/')[0]
+        precio_actual_mercado = obtener_precio(ticker_base)
+
+        if not precio_actual_mercado:
+             print(f"⚠️ No se pudo obtener precio para la verificación límite de la orden {orden['id_orden']}. Se reintentará.")
+             return billetera # No hacemos nada, esperamos al siguiente ciclo
+
+        # Condición de ejecución para COMPRA LÍMITE (después del stop)
+        if orden["accion"] == "compra" and precio_actual_mercado > precio_limite:
+            print(f"🚦 ORDEN STOP-LIMIT {orden['id_orden']} DISPARADA, PERO NO EJECUTADA: Precio actual ({precio_actual_mercado}) > Precio Límite ({precio_limite}).")
+            return billetera # Se mantiene pendiente hasta que el precio sea favorable
+        
+        # Condición de ejecución para VENTA LÍMITE (después del stop)
+        elif orden["accion"] == "venta" and precio_actual_mercado < precio_limite:
+            print(f"🚦 ORDEN STOP-LIMIT {orden['id_orden']} DISPARADA, PERO NO EJECUTADA: Precio actual ({precio_actual_mercado}) < Precio Límite ({precio_limite}).")
+            return billetera # Se mantiene pendiente hasta que el precio sea favorable
+
+    # --- Lógica de ejecución de la transacción (común a Limit y Stop-Limit que pasaron el filtro) ---
     moneda_origen = orden["moneda_reservada"]
     cantidad_origen_bruta = a_decimal(orden["cantidad_reservada"])
+    # Para una compra, el destino es la cripto principal. Para una venta, el origen es la cripto principal.
     moneda_destino = orden["moneda_destino"] if orden["accion"] == "compra" else orden["moneda_origen"]
-    
-    tipo_op_historial = f"{orden['tipo_orden']}-{orden['accion']}"
+
+    # Aquí es importante determinar correctamente el destino final de la transacción
+    # Si es una compra, la moneda destino es la moneda principal del par.
+    # Si es una venta, la moneda destino es la moneda cotizada (quote).
+    moneda_destino_final = orden["moneda_destino"]
+
+    tipo_op_historial = f"{orden['tipo_orden'].replace('-', ' ').title()} {orden['accion'].title()}"
     
     exito_ejecucion, detalles_ejecucion = ejecutar_transaccion(
         billetera=billetera,
         moneda_origen=moneda_origen,
         cantidad_origen_bruta=cantidad_origen_bruta,
-        moneda_destino=moneda_destino,
+        moneda_destino=moneda_destino_final,
         tipo_operacion_historial=tipo_op_historial,
-        es_orden_pendiente=True # Usa saldo 'reservado'
+        es_orden_pendiente=True
     )
     
     if not exito_ejecucion:
@@ -53,8 +100,6 @@ def _ejecutar_orden_pendiente(orden: dict, billetera: dict) -> dict:
     })
     
     return billetera
-
-# --- Punto de Entrada Público del Módulo ---
 
 def verificar_y_ejecutar_ordenes_pendientes():
     """Motor principal que itera sobre órdenes pendientes y las ejecuta si cumplen la condición."""
@@ -75,11 +120,11 @@ def verificar_y_ejecutar_ordenes_pendientes():
         precio_actual = precios_cacheados[ticker_principal]
         if precio_actual and _verificar_condicion_orden(orden, precio_actual):
             billetera = _ejecutar_orden_pendiente(orden, billetera)
-            alguna_orden_ejecutada = True
+            # Verificamos si la orden cambió de estado
+            if orden.get("estado") != "pendiente":
+                alguna_orden_ejecutada = True
 
     if alguna_orden_ejecutada:
         print("💾 Guardando cambios en billetera y lista de órdenes...")
         guardar_billetera(billetera)
         guardar_ordenes_pendientes(todas_las_ordenes)
-
-# ### FIN DE LA REFACTORIZACIÓN DE FASE 4 ###

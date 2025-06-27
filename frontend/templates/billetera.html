@@ -31,7 +31,8 @@
                         <a class="nav-link text-white" href="{{ url_for('trading.mostrar_trading_page') }}">Trading</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-white active" href="{{ url_for('billetera.mostrar_billetera') }}">Billetera</a>
+                        <a class="nav-link text-white active"
+                            href="{{ url_for('billetera.mostrar_billetera') }}">Billetera</a>
                     </li>
                 </ul>
             </div>
@@ -56,27 +57,28 @@
         </div>
 
         <!-- Tabla de Activos en la Billetera -->
-        <div class="table-responsive">
-            <table class="table table-dark table-bordered align-middle text-center">
-                <thead class="table-secondary">
-                    <tr class="table-dark">
-                        <th>Activo</th>
-                        <th>Cantidad</th>
-                        <th>Precio Actual</th>
-                        <th>Valor Total (USD)</th>
-                        <th>G/P (USD)</th>
-                        <th>G/P (%)</th>
-                        <th>% Billetera</th>
-                    </tr>
-                </thead>
-                <tbody id="tabla-billetera">
-                    <!-- El contenido será renderizado aquí por billeteraPage.js -->
-                    <tr>
-                        <td colspan="7" class="text-center text-muted py-4">Cargando billetera...</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <table class="table table-dark table-striped align-middle"> <!-- Quitamos table-bordered -->
+            <thead>
+                <!-- Añadimos clases de alineación a las cabeceras -->
+                <tr>
+                    <th class="text-start ps-3">Activo</th>
+                    <th class="text-end pe-3">Total</th>
+                    <th class="text-end pe-3">Disponible</th>
+                    <th class="text-end pe-3">En Órdenes</th>
+                    <th class="text-end pe-3">Precio Actual</th>
+                    <th class="text-end pe-3">Valor Total (USD)</th>
+                    <th class="text-end pe-3">G/P (USD)</th>
+                    <th class="text-end pe-3">G/P (%)</th>
+                    <th class="text-end pe-3">% Billetera</th>
+                </tr>
+            </thead>
+            <tbody id="tabla-billetera">
+                <!-- El colspan sigue siendo 9, así que no cambia -->
+                <tr>
+                    <td colspan="9" class="text-center text-muted py-4">Cargando billetera...</td>
+                </tr>
+            </tbody>
+        </table>
 
         <!-- Historial de Comisiones -->
         <div class="text-center mt-5">
@@ -95,7 +97,9 @@
                 </thead>
                 <tbody id="tabla-comisiones">
                     <!-- El contenido será renderizado aquí por billeteraPage.js -->
-                    <tr><td colspan="4" class="text-center text-muted py-4">Cargando historial de comisiones...</td></tr>
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">Cargando historial de comisiones...</td>
+                    </tr>
                 </tbody>
             </table>
         </div>

@@ -29,24 +29,36 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentInterval;
     let isChartLoading = false;
 
-    // --- CAMBIO PRINCIPAL EN EL FRONTEND ---
-    // La función ahora es mucho más simple. Solo se encarga de mostrar/ocultar el campo de precio.
-    // Los botones "Ingresar por" ya no se tocan, por lo que siempre estarán visibles.
     function handleTipoOrdenChange() {
         const tipoOrden = $('input[name="tipo-orden"]:checked').val();
         const campoPrecioDisparo = $('#campo-precio-disparo');
         const inputPrecioDisparo = $('#precio_disparo');
         const labelPrecioDisparo = $('#label-precio-disparo');
+    
 
-        if (tipoOrden === 'market') {
-            campoPrecioDisparo.hide();
-            inputPrecioDisparo.prop('required', false);
-        } else {
+        const campoPrecioLimite = $('#campo-precio-limite');
+        const inputPrecioLimite = $('#precio_limite');
+    
+
+        campoPrecioDisparo.hide();
+        campoPrecioLimite.hide();
+        inputPrecioDisparo.prop('required', false);
+        inputPrecioLimite.prop('required', false);
+    
+        if (tipoOrden === 'limit') {
+            labelPrecioDisparo.text('Precio Límite'); // Lo llamamos "Precio Límite"
             campoPrecioDisparo.show();
             inputPrecioDisparo.prop('required', true);
-            labelPrecioDisparo.text(tipoOrden === 'limit' ? 'Precio Límite' : 'Precio Stop');
+    
+        } else if (tipoOrden === 'stop-limit') { // Cambiado de 'stop-loss'
+            labelPrecioDisparo.text('Precio Stop'); // Ahora este es el "Precio Stop"
+            campoPrecioDisparo.show();
+            campoPrecioLimite.show(); // Mostramos el segundo campo
+            inputPrecioDisparo.prop('required', true);
+            inputPrecioLimite.prop('required', true); // Ambos son requeridos
         }
         
+        // Para 'market', no se hace nada, ambos campos permanecen ocultos.
         UIUpdater.actualizarLabelMonto();
     }
 
@@ -63,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const ownedCoinsToSell = ownedCoins.filter(c => c.ticker !== 'USDT');
             FormLogic.popularSelector(DOMElements.selectorPrincipal, ownedCoinsToSell, 'No tienes monedas para vender');
         }
-        DOMElements.selectorPrincipal.val(currentTicker).trigger('change.select2');
+        DOMElements.selectorPrincipal.val(currentTicker);
         DOMElements.selectorPrincipal.on('change', handleSelectorPrincipalChange);
         FormLogic.actualizarOpcionesDeSelectores();
         const tickerParaBalance = esCompra ? UIState.getTickerPago() : UIState.getTickerPrincipal();

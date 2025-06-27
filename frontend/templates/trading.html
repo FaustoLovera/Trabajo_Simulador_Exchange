@@ -110,9 +110,9 @@
                         <input type="radio" class="btn-check" name="tipo-orden" id="tipo-limite" value="limit"
                             autocomplete="off">
                         <label class="btn btn-outline-primary" for="tipo-limite">Límite</label>
-                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-stop-limit" value="stop-loss"
+                        <input type="radio" class="btn-check" name="tipo-orden" id="tipo-stop-limit" value="stop-limit"
                             autocomplete="off">
-                        <label class="btn btn-outline-primary rounded-end-pill" for="tipo-stop-limit">Stop-Loss</label>
+                        <label class="btn btn-outline-primary rounded-end-pill" for="tipo-stop-limit">Stop-Limit</label>
                     </div>
                 </div>
 
@@ -120,6 +120,12 @@
                 <div class="mb-3" id="campo-precio-disparo" style="display: none;">
                     <label for="precio_disparo" class="form-label" id="label-precio-disparo">Precio Límite</label>
                     <input type="text" class="form-control" id="precio_disparo" placeholder="0.00" name="precio_disparo"
+                        inputmode="decimal">
+                </div>
+
+                <div class="mb-3" id="campo-precio-limite" style="display: none;">
+                    <label for="precio_limite" class="form-label">Precio Límite</label>
+                    <input type="text" class="form-control" id="precio_limite" placeholder="0.00" name="precio_limite"
                         inputmode="decimal">
                 </div>
 

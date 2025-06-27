@@ -25,22 +25,25 @@ import { UIUpdater } from '../components/uiUpdater.js';
  * @returns {string} Una cadena de texto con el HTML de la fila de la tabla.
  */
 function createBilleteraRowHTML(cripto) {
-    // Determina la clase CSS para el color basado en si la ganancia/pérdida es positiva o negativa.
     const colorGanancia = parseFloat(cripto.ganancia_perdida_cruda) >= 0 ? 'text-success' : 'text-danger';
-    
-    // ### MODIFICACIÓN: Añadimos la clase 'fila-polvo' si el activo es polvo.
     const claseFila = cripto.es_polvo ? 'fila-polvo' : '';
-    const etiquetaPolvo = cripto.es_polvo ? ' <span class="text-muted small fst-italic">(polvo)</span>' : '';
+    const reservadoClase = parseFloat(cripto.cantidad_reservada) > 0 ? 'text-warning' : '';
 
     return `
         <tr class="${claseFila}">
-            <td class="text-center">${cripto.ticker}${etiquetaPolvo}</td>
-            <td class="text-center">${cripto.cantidad_formatted}</td>
-            <td class="text-center">${cripto.precio_actual_formatted}</td>
-            <td class="text-center fw-bold">${cripto.valor_usdt_formatted}</td>
-            <td class="text-center ${colorGanancia}">${cripto.ganancia_perdida_formatted}</td>
-            <td class="text-center ${colorGanancia}">${cripto.porcentaje_ganancia_formatted}</td>
-            <td class="text-center">${cripto.porcentaje_formatted}</td>
+            <td class="text-start ps-3">
+                <img src="${cripto.logo}" width="24" class="me-3" style="vertical-align: middle;" alt="${cripto.ticker} logo">
+                <span class="fw-bold fs-6">${cripto.nombre}</span>
+                <span class="text-white-50 ms-2">(${cripto.ticker})</span>
+            </td>
+            <td class="text-end pe-3">${cripto.cantidad_total_formatted}</td>
+            <td class="text-end pe-3">${cripto.cantidad_disponible_formatted}</td>
+            <td class="text-end pe-3 ${reservadoClase}">${cripto.cantidad_reservada_formatted}</td>
+            <td class="text-end pe-3">${cripto.precio_actual_formatted}</td>
+            <td class="text-end pe-3 fw-bold">${cripto.valor_usdt_formatted}</td>
+            <td class="text-end pe-3 ${colorGanancia}">${cripto.ganancia_perdida_formatted}</td>
+            <td class="text-end pe-3 ${colorGanancia}">${cripto.porcentaje_ganancia_formatted}</td>
+            <td class="text-end pe-3">${cripto.porcentaje_formatted}</td>
         </tr>
     `;
 }

@@ -1,7 +1,10 @@
+# backend/servicios/estado_billetera.py
+
 from decimal import Decimal
 from backend.acceso_datos.datos_billetera import cargar_billetera
 from backend.acceso_datos.datos_historial import cargar_historial
-from backend.acceso_datos.datos_cotizaciones import obtener_precio
+# ### LÍNEA CORREGIDA ###
+from backend.acceso_datos.datos_cotizaciones import obtener_precio, cargar_datos_cotizaciones
 from backend.utils.utilidades_numericas import (
     a_decimal, formato_cantidad_usd, formato_cantidad_cripto, formato_porcentaje
 )
@@ -39,25 +42,28 @@ def _calcular_metricas_activo(ticker: str, cantidad_total: Decimal, precio_actua
         "porcentaje_ganancia": porcentaje_ganancia,
     }
 
-def _formatear_activo_para_presentacion(activo_calculado: dict, nombre: str, saldos: dict, total_billetera_usd: Decimal) -> dict:
+def _formatear_activo_para_presentacion(activo_calculado: dict, cripto_info: dict, saldos: dict, total_billetera_usd: Decimal) -> dict:
     porcentaje_en_billetera = _division_segura(activo_calculado["valor_usdt"], total_billetera_usd) * Decimal("100")
     es_polvo = activo_calculado["valor_usdt"] < UMBRAL_POLVO_USD
 
-    # Estoy probando si funciona sin esto:
-    
-    # if activo_calculado["ticker"] == 'USDT':
-    #     cantidad_formateada = formato_cantidad_usd(activo_calculado["cantidad"], simbolo="")
-    # else:
-    #     cantidad_formateada = formato_cantidad_cripto(activo_calculado["cantidad"])
-        
-    cantidad_formateada = formato_cantidad_cripto(saldos.get("disponible", a_decimal(0)))
+    cantidad_total = activo_calculado["cantidad"]
+    saldo_disponible = saldos.get("disponible", a_decimal(0))
+    saldo_reservado = saldos.get("reservado", a_decimal(0))
 
     return {
-        "ticker": activo_calculado["ticker"], "nombre": nombre, "es_polvo": es_polvo,
-        "cantidad": str(activo_calculado["cantidad"]),
-        "cantidad_disponible": str(saldos.get("disponible", "0")),
-        "cantidad_reservada": str(saldos.get("reservado", "0")),
-        "cantidad_formatted": cantidad_formateada,
+        "ticker": activo_calculado["ticker"],
+        "nombre": cripto_info.get("nombre", activo_calculado["ticker"]),
+        "logo": cripto_info.get("logo", ""),
+        "es_polvo": es_polvo,
+        
+        "cantidad_total": str(cantidad_total),
+        "cantidad_disponible": str(saldo_disponible),
+        "cantidad_reservada": str(saldo_reservado),
+
+        "cantidad_total_formatted": formato_cantidad_cripto(cantidad_total),
+        "cantidad_disponible_formatted": formato_cantidad_cripto(saldo_disponible),
+        "cantidad_reservada_formatted": formato_cantidad_cripto(saldo_reservado),
+        
         "precio_actual_formatted": formato_cantidad_usd(activo_calculado["precio_actual"]),
         "valor_usdt_formatted": formato_cantidad_usd(activo_calculado["valor_usdt"]),
         "ganancia_perdida_formatted": formato_cantidad_usd(activo_calculado["ganancia_perdida"]),
@@ -69,19 +75,31 @@ def _formatear_activo_para_presentacion(activo_calculado: dict, nombre: str, sal
 def estado_actual_completo() -> list[dict]:
     billetera = cargar_billetera()
     historial = cargar_historial()
-    datos_compra_por_ticker = _preparar_datos_compra(historial)
+    
+    info_criptos = {c['ticker']: c for c in cargar_datos_cotizaciones()}
+    
+    # ### LA SOLUCIÓN ESTÁ AQUÍ ###
+    # Forzamos el nombre y logo canónicos para USDT, ignorando lo que venga de la API.
+    # Esto asegura consistencia y evita nombres como "Polygon Bridged USDT".
+    info_criptos['USDT'] = {
+        'nombre': 'Tether', 
+        'logo': 'https://assets.coingecko.com/coins/images/325/large/Tether.png?1696501661',
+        'ticker': 'USDT'
+    }
 
+    datos_compra_por_ticker = _preparar_datos_compra(historial)
     activos_calculados = []
     
-    # Iteramos sobre la nueva estructura de billetera
     for ticker, activo_data in billetera.items():
-        saldos = activo_data.get("saldos", {}) # Obtenemos el diccionario de saldos
-        
+        saldos = activo_data.get("saldos", {})
         cantidad_total = saldos.get("disponible", a_decimal(0)) + saldos.get("reservado", a_decimal(0))
 
         if cantidad_total < UMBRAL_CASI_CERO:
             continue
             
+        # Obtenemos la información de la cripto de nuestro diccionario 'curado'.
+        cripto_info_actual = info_criptos.get(ticker, {"nombre": ticker, "logo": ""})
+
         if ticker == "USDT":
             metricas = {
                 "ticker": "USDT", "cantidad": cantidad_total, "precio_actual": a_decimal(1),
@@ -93,18 +111,15 @@ def estado_actual_completo() -> list[dict]:
             datos_compra_activo = datos_compra_por_ticker.get(ticker, {})
             metricas = _calcular_metricas_activo(ticker, cantidad_total, precio_actual, datos_compra_activo)
         
-        # Añadimos los datos necesarios para el formateo
-        metricas['nombre'] = activo_data.get('nombre', ticker)
+        metricas['cripto_info'] = cripto_info_actual
         metricas['saldos'] = saldos
         activos_calculados.append(metricas)
 
-    # Ordenar los activos por su valor en USDT de mayor a menor
     activos_calculados.sort(key=lambda x: x['valor_usdt'], reverse=True)
-
     total_billetera_usd = sum(activo['valor_usdt'] for activo in activos_calculados)
 
     activos_para_presentacion = [
-        _formatear_activo_para_presentacion(activo, activo['nombre'], activo['saldos'], total_billetera_usd)
+        _formatear_activo_para_presentacion(activo, activo['cripto_info'], activo['saldos'], total_billetera_usd)
         for activo in activos_calculados
     ]
     return activos_para_presentacion
