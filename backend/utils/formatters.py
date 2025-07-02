@@ -1,9 +1,7 @@
-"""
-Utilidades de formateo para la presentación de datos no numéricos.
+"""Utilidades para el formateo de datos en la interfaz de usuario.
 
-Este módulo proporciona un conjunto de funciones reutilizables para dar formato a
-diversos tipos de datos como fechas y otros indicadores de UI.
-La lógica de formateo numérico se ha movido a `utils.number_utils`.
+Este módulo ofrece funciones de ayuda para convertir datos brutos (como fechas
+o valores de rendimiento) en formatos legibles y con estilo para la vista.
 """
 
 from datetime import datetime
@@ -12,15 +10,19 @@ from typing import Union
 
 
 def get_performance_indicator(value: Union[str, Decimal]) -> dict:
-    """
-    Analiza un valor de rendimiento y devuelve un diccionario con la clase CSS y
-    el símbolo de flecha correspondiente.
+    """Genera datos de estilo para un indicador de rendimiento (positivo/negativo).
+
+    Analiza un valor numérico para determinar si es positivo o negativo y
+    devuelve un diccionario con una clase CSS y un símbolo de flecha, ideal
+    para la renderización en la interfaz de usuario.
 
     Args:
-        value (Union[str, Decimal]): El valor de rendimiento.
+        value (Union[str, Decimal]): El valor de rendimiento a analizar.
 
     Returns:
-        dict: Un diccionario con las claves 'className' y 'arrow'.
+        dict: Un diccionario con 'className' ('positivo' o 'negativo') y
+              'arrow' ('▲' o '▼'). Devuelve valores vacíos si la entrada
+              no es un número válido.
     """
     try:
         valor_decimal = Decimal(str(value))
@@ -32,17 +34,17 @@ def get_performance_indicator(value: Union[str, Decimal]) -> dict:
 
 
 def format_datetime(timestamp: Union[int, float, str]) -> str:
-    """
-    Formatea un timestamp o un string ISO a una fecha y hora local.
+    """Convierte un timestamp o un string ISO a un formato de fecha legible.
 
-    Maneja tanto timestamps numéricos (segundos desde la época) como strings
-    de fecha en formato ISO 8601.
+    Acepta timestamps numéricos (segundos desde la época) o strings en formato
+    ISO 8601 y los convierte a un formato local estándar 'dd/mm/YYYY HH:MM:SS'.
 
     Args:
-        timestamp: El timestamp o string a formatear.
+        timestamp: El valor de fecha/hora a formatear.
 
     Returns:
-        La fecha y hora formateada. Ej: "21/06/2024 15:45:12".
+        str: La fecha y hora formateada. Devuelve '--:--' si la entrada
+             es inválida o nula.
     """
     if not timestamp:
         return "--:--"

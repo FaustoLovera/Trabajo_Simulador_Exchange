@@ -13,7 +13,7 @@
 
 <body class="bg-dark text-white">
 
-
+	<!-- ========== BARRA DE NAVEGACIÓN ========== -->
 	<nav class="navbar navbar-expand-lg bg-black shadow">
 		<div class="container-fluid">
 			<a class="navbar-brand text-warning d-flex align-items-center gap-2" href="{{ url_for('home.index') }}">
@@ -39,10 +39,9 @@
 		</div>
 	</nav>
 
-	<!-- Contenedor para mensajes de error -->
 	<div id="error-container" class="container-fluid mt-3"></div>
 
-	<!-- Contenedor principal -->
+	<!-- ========== CONTENIDO PRINCIPAL ========== -->
 	<main class="container-fluid mt-4">
 		<div class="row">
 			<div class="col-12">
@@ -63,7 +62,6 @@
 							</tr>
 						</thead>
 						<tbody id="tabla-datos" class="align-middle">
-							<!-- Aquí se insertarán las filas con JS -->
 						</tbody>
 					</table>
 				</div>
@@ -71,6 +69,7 @@
 		</div>
 	</main>
 
+	<!-- ========== SCRIPTS ========== -->
 	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
 	<script type="module" src="{{ url_for('static', filename='js/pages/indexPage.js') }}"></script>

@@ -1,32 +1,43 @@
+"""
+Configuración centralizada para la aplicación de simulación de exchange.
+
+Este módulo define todas las constantes, rutas de archivos y variables de configuración
+necesarias para el funcionamiento del backend. Carga variables de entorno desde un
+archivo .env y establece rutas dinámicas basadas en la ubicación del proyecto.
+"""
+
 import os
+from decimal import Decimal, getcontext, ROUND_HALF_DOWN
+from dotenv import load_dotenv
 
-# --- CONSTANTES DE LA APLICACIÓN ---
-# Acciones de Trading
-ACCION_COMPRAR = "comprar"
-ACCION_VENDER = "vender"
+# Carga las variables de entorno desde un archivo .env en la raíz del proyecto.
+load_dotenv()
 
-# Tipos de Órdenes
-TIPO_ORDEN_MERCADO = "market"
-TIPO_ORDEN_LIMITE = "limit"
-TIPO_ORDEN_STOP_LIMIT = "stop-limit"
+# --- Constantes de Dominio del Negocio ---
 
-# Estados de Órdenes
+# Acciones de Trading: Definen las operaciones básicas que un usuario puede realizar.
+ACCION_COMPRAR = "compra"
+ACCION_VENDER = "venta"
+
+# Tipos de Órdenes: Clasifican las órdenes según su mecanismo de ejecución.
+TIPO_ORDEN_MERCADO = "market"      # Se ejecuta al mejor precio de mercado actual.
+TIPO_ORDEN_LIMITE = "limit"        # Se ejecuta a un precio específico o mejor.
+TIPO_ORDEN_STOP_LIMIT = "stop-limit"  # Se convierte en una orden límite cuando se alcanza un precio de stop.
+
+# Estados de Órdenes: Representan el ciclo de vida de una orden.
 ESTADO_PENDIENTE = "pendiente"
 ESTADO_EJECUTADA = "ejecutada"
 ESTADO_CANCELADA = "cancelada"
 ESTADO_ERROR = "error"
-from decimal import getcontext, ROUND_HALF_DOWN, Decimal
-from dotenv import load_dotenv
 
-# Cargar variables de entorno desde el archivo .env
-load_dotenv()
+# --- Configuración del Sistema de Archivos ---
 
-# Base del proyecto y carpeta de datos
+# Directorio base del proyecto y de la carpeta de datos para persistencia.
 PROYECTO_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DATA_DIR = os.path.join(PROYECTO_DIR, "datos")
-os.makedirs(BASE_DATA_DIR, exist_ok=True)
+os.makedirs(BASE_DATA_DIR, exist_ok=True)  # Asegura que el directorio de datos exista.
 
-# Rutas de archivos JSON
+# Rutas absolutas a los archivos JSON que actúan como base de datos.
 COTIZACIONES_PATH = os.path.join(BASE_DATA_DIR, "cotizaciones.json")
 BILLETERA_PATH = os.path.join(BASE_DATA_DIR, "billetera.json")
 HISTORIAL_PATH = os.path.join(BASE_DATA_DIR, "historial.json")
@@ -34,13 +45,18 @@ VELAS_PATH = os.path.join(BASE_DATA_DIR, "velas.json")
 COMISIONES_PATH = os.path.join(BASE_DATA_DIR, "comisiones.json")
 ORDENES_PENDIENTES_PATH = os.path.join(BASE_DATA_DIR, "ordenes_pendientes.json")
 
-# Configuración inicial de los USDT con los cuales inicializa la app
+# --- Parámetros de Simulación ---
+
+# Balance inicial en USDT con el que la billetera del usuario comienza.
 BALANCE_INICIAL_USDT = "10000"
 
-# Comisión por trade
-TASA_COMISION = Decimal("0.005")  # 0.5% de comisión
+# Tasa de comisión aplicada a cada operación de trading (compra o venta).
+TASA_COMISION = Decimal("0.005")  # Representa una comisión del 0.5%.
 
-# Clave secreta para Flask
+# --- Configuración de la Aplicación Web (Flask) ---
+
+# Clave secreta para firmar sesiones de Flask. Es crucial para la seguridad.
+# Se carga desde variables de entorno o usa un valor por defecto inseguro (solo para desarrollo).
 FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "clave_por_defecto_insegura")
 
 # URLs de APIs

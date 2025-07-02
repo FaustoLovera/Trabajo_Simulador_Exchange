@@ -6,6 +6,7 @@
 /datos/historial_operaciones.json
 /datos/ordenes_pendientes.json
 Trabajo_Simulador_Exchange_REPORT.txt
+eliminar_pyc.sh
 
 # Python
 __pycache__/

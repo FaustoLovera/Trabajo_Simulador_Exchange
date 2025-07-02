@@ -1,17 +1,14 @@
-"""
-Este módulo crea una instancia global de la aplicación Flask utilizando la
-'Application Factory' (`crear_app`).
+"""Punto de entrada para servidores WSGI.
 
-Esta instancia 'app' puede ser utilizada por otras herramientas, como un servidor
-WSGI (por ejemplo, Gunicorn o uWSGI), que esperan encontrar una variable de
-aplicación global.
+Este módulo expone la instancia global de la aplicación Flask (`app`), creada
+a través de la factory `crear_app`.
 
-El punto de entrada principal para iniciar el servidor de desarrollo es ahora
-el script `run.py` en el directorio raíz del proyecto.
+Servidores de producción como Gunicorn o uWSGI utilizan esta variable `app`
+para ejecutar la aplicación. Para desarrollo, se recomienda usar el script `run.py`.
 """
 
 from flask import Flask
 from . import crear_app
 
-# Se crea la instancia global de la aplicación llamando a la factory.
+# Instancia global de la aplicación, utilizada por servidores WSGI.
 app: Flask = crear_app()

@@ -1,6 +1,9 @@
 /**
+ * @file Punto de entrada y controlador para la página de la billetera (`billetera.html`).
  * @module pages/billeteraPage
- * @description Orquesta la inicialización y la lógica principal de la página de la billetera.
+ * @description Este script orquesta la inicialización de la página de la billetera, obteniendo
+ * y renderizando el estado de los activos y el historial de comisiones. También gestiona
+ * la interactividad de la página, como el filtro para ocultar activos de bajo valor ("polvo").
  */
 
 import { fetchEstadoBilletera, fetchComisiones } from '../services/apiService.js';
@@ -8,20 +11,27 @@ import { UIUpdater } from '../components/uiUpdater.js';
 
 /**
  * @typedef {object} ActivoBilletera
- * @property {string} ticker - El símbolo de la criptomoneda.
- * @property {boolean} es_polvo - Indica si la cantidad es considerada "polvo".
- * @property {string} ganancia_perdida_cruda - El valor numérico de la ganancia o pérdida (como string).
- * @property {string} cantidad_formatted - La cantidad formateada.
- * @property {string} precio_actual_formatted - El precio actual formateado.
- * @property {string} valor_usdt_formatted - El valor total en USDT formateado.
- * @property {string} ganancia_perdida_formatted - La ganancia o pérdida formateada.
- * @property {string} porcentaje_ganancia_formatted - El porcentaje de G/P formateado.
- * @property {string} porcentaje_formatted - El % que representa en la billetera.
+ * @property {string} ticker - El símbolo de la criptomoneda (ej. 'BTC').
+ * @property {string} nombre - El nombre completo de la criptomoneda (ej. 'Bitcoin').
+ * @property {string} logo - La URL del logo de la criptomoneda.
+ * @property {boolean} es_polvo - `true` si la cantidad del activo es considerada insignificante ("polvo").
+ * @property {string} ganancia_perdida_cruda - El valor numérico de la ganancia/pérdida, sin formato.
+ * @property {string} cantidad_total_formatted - La cantidad total del activo, formateada para mostrar.
+ * @property {string} cantidad_disponible_formatted - La cantidad disponible (no en órdenes), formateada.
+ * @property {string} cantidad_reservada_formatted - La cantidad reservada en órdenes abiertas, formateada.
+ * @property {string} cantidad_reservada - El valor numérico de la cantidad reservada.
+ * @property {string} precio_actual_formatted - El precio de mercado actual, formateado.
+ * @property {string} valor_usdt_formatted - El valor total del activo en USDT, formateado.
+ * @property {string} ganancia_perdida_formatted - La ganancia o pérdida total, formateada.
+ * @property {string} porcentaje_ganancia_formatted - El porcentaje de ganancia/pérdida, formateado.
+ * @property {string} porcentaje_formatted - El porcentaje que este activo representa en la billetera, formateado.
  */
 
 /**
- * Crea una fila HTML (`<tr>`) para la tabla de la billetera.
- * @param {ActivoBilletera} cripto - El objeto que contiene los datos del activo.
+ * @private
+ * @function createBilleteraRowHTML
+ * @description Función pura de template. Genera una fila HTML (`<tr>`) para un activo en la tabla de la billetera.
+ * @param {ActivoBilletera} cripto - El objeto que contiene los datos del activo a renderizar.
  * @returns {string} Una cadena de texto con el HTML de la fila de la tabla.
  */
 function createBilleteraRowHTML(cripto) {
@@ -49,31 +59,33 @@ function createBilleteraRowHTML(cripto) {
 }
 
 /**
- * Obtiene los datos de la billetera desde la API y los renderiza en la tabla.
+ * @private
+ * @description Obtiene los datos de la billetera desde la API y los renderiza en la tabla principal.
+ * Maneja los estados de carga, éxito (con o sin datos) y error.
+ * @effects Modifica el `innerHTML` del `<tbody>` de la tabla `#tabla-billetera`.
  */
 async function renderBilletera() {
     const cuerpoTabla = document.getElementById('tabla-billetera');
-    if (!cuerpoTabla) {
-        console.warn("El elemento #tabla-billetera no fue encontrado en el DOM.");
-        return;
-    }
+    if (!cuerpoTabla) return;
 
     try {
         const datosBilletera = await fetchEstadoBilletera();
         if (!datosBilletera || datosBilletera.length === 0) {
-            cuerpoTabla.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Tu billetera está vacía.</td></tr>';
+            cuerpoTabla.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">Tu billetera está vacía.</td></tr>';
         } else {
             cuerpoTabla.innerHTML = datosBilletera.map(createBilleteraRowHTML).join('');
         }
     } catch (error) {
         console.error('Error al renderizar la billetera:', error);
         UIUpdater.mostrarMensajeError('No se pudieron cargar los datos de la billetera.');
-        cuerpoTabla.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Error al cargar los datos.</td></tr>';
+        cuerpoTabla.innerHTML = '<tr><td colspan="9" class="text-center text-danger py-4">Error al cargar los datos.</td></tr>';
     }
 }
 
 /**
- * Crea una fila HTML para la tabla de historial de comisiones.
+ * @private
+ * @function createComisionRowHTML
+ * @description Función pura de template. Genera una fila HTML para la tabla de historial de comisiones.
  * @param {object} comision - El objeto de datos de la comisión.
  * @returns {string} Una cadena de texto con el HTML de la fila.
  */
@@ -94,14 +106,13 @@ function createComisionRowHTML(comision) {
 }
 
 /**
- * Obtiene los datos de comisiones desde la API y los renderiza en la tabla.
+ * @private
+ * @description Obtiene el historial de comisiones desde la API y lo renderiza en su tabla.
+ * @effects Modifica el `innerHTML` del `<tbody>` de la tabla `#tabla-comisiones`.
  */
 async function renderComisiones() {
     const cuerpoTabla = document.getElementById('tabla-comisiones');
-    if (!cuerpoTabla) {
-        console.warn("El elemento #tabla-comisiones no fue encontrado en el DOM.");
-        return;
-    }
+    if (!cuerpoTabla) return;
 
     try {
         const datosComisiones = await fetchComisiones();
@@ -117,7 +128,9 @@ async function renderComisiones() {
 }
 
 /**
- * ### NUEVO: Configura la lógica para el switch de ocultar polvo.
+ * @private
+ * @description Configura el listener para el interruptor que oculta o muestra los activos "polvo".
+ * @effects Añade un listener de evento 'change' al elemento `#ocultar-polvo-switch`.
  */
 function setupEventListeners() {
     const switchOcultarPolvo = document.getElementById('ocultar-polvo-switch');
@@ -127,26 +140,24 @@ function setupEventListeners() {
             const estaActivado = event.target.checked;
             
             filasPolvo.forEach(fila => {
-                // Ocultamos la fila si el switch está activado, la mostramos si no.
                 fila.style.display = estaActivado ? 'none' : 'table-row';
             });
         });
     }
 }
 
-
 /**
- * Listener que se ejecuta cuando el DOM está completamente cargado.
+ * @description Punto de entrada principal del script. Se ejecuta cuando el DOM está completamente cargado.
+ * Inicia el renderizado de las tablas y, una vez completado, configura los listeners de eventos.
  */
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("Página de Billetera cargada. Obteniendo datos...");
-    
-    // Promise.all espera a que ambas funciones de renderizado terminen.
+    // Promise.all asegura que ambas operaciones de renderizado se inicien en paralelo.
     Promise.all([
         renderBilletera(),
         renderComisiones()
-    ]).then(() => {
-        // Una vez que las tablas están renderizadas, configuramos los event listeners.
+    ]).finally(() => {
+        // .finally() asegura que los listeners se configuren independientemente de si las promesas tuvieron éxito o no.
+        // Esto es importante para que el switch de "ocultar polvo" funcione incluso si una de las tablas falló en cargar.
         setupEventListeners();
     });
 });

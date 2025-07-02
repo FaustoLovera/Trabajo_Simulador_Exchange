@@ -1,48 +1,63 @@
 /**
+ * @file Componente que centraliza las referencias a los elementos del DOM.
  * @module DOMElements
- * @description Centraliza las referencias a los elementos del DOM a los que se accede con frecuencia.
- * Este patrón mejora el rendimiento al cachear los objetos jQuery, evitando consultas
- * redundantes al DOM y facilitando el mantenimiento del código.
+ * @description Este módulo exporta un único objeto `DOMElements` que contiene referencias
+ * cacheadas a los elementos del DOM utilizados con frecuencia en la aplicación.
+ * Este enfoque mejora el rendimiento al evitar consultas repetitivas al DOM y
+ * facilita el mantenimiento al tener todos los selectores en un solo lugar.
  */
 
 /**
- * Un objeto que contiene referencias cacheadas de jQuery a los elementos del DOM
- * utilizados en la interfaz de trading.
+ * Almacena referencias cacheadas de jQuery a los elementos del DOM de la interfaz.
+ * @namespace DOMElements
  * @type {Object<string, JQuery>}
  */
 export const DOMElements = {
-    // Contenedor principal del formulario de trading
+    /** @type {JQuery} El formulario principal de operaciones de trading. */
     form: $('#formulario-trading'),
-    // Selector principal de criptomonedas (ej. BTC, ETH)
+
+    /** @type {JQuery} El selector principal para elegir la criptomoneda (ej. BTC, ETH). */
     selectorPrincipal: $('#cripto'),
-    // Desplegable para seleccionar la moneda de pago (en una compra)
+
+    /** @type {JQuery} El menú desplegable para seleccionar la moneda de pago en una compra. */
     selectorPagarCon: $('#moneda-pago'),
-    // Desplegable para seleccionar la moneda a recibir (en una venta)
+
+    /** @type {JQuery} El menú desplegable para seleccionar la moneda a recibir en una venta. */
     selectorRecibirEn: $('#moneda-recibir'),
-    // Botón de acción 'Comprar'
+
+    /** @type {JQuery} El botón de acción para iniciar una operación de 'Comprar'. */
     botonComprar: $('.boton-comprar'),
-    // Botón de acción 'Vender'
+
+    /** @type {JQuery} El botón de acción para iniciar una operación de 'Vender'. */
     botonVender: $('.boton-vender'),
-    // Botón final 'Confirmar' para la transacción
+
+    /** @type {JQuery} El botón final para confirmar y enviar la transacción. */
     botonConfirmar: $('.boton-confirmar'),
-    // Input oculto que almacena la acción actual ('comprar' o 'vender')
+
+    /** @type {JQuery} El campo de entrada oculto que almacena la acción actual ('compra' o 'venta'). */
     inputAccion: $('#accion'),
-    // Contenedor para el desplegable 'Pagar con'
+
+    /** @type {JQuery} El contenedor del campo 'Pagar con'. */
     campoPagarCon: $('#campo-pagar-con'),
-    // Contenedor para el desplegable 'Recibir en'
+
+    /** @type {JQuery} El contenedor del campo 'Recibir en'. */
     campoRecibirEn: $('#campo-recibir-en'),
-    // Span para mostrar el saldo disponible del usuario
+
+    /** @type {JQuery} El elemento `<span>` que muestra el saldo disponible del usuario. */
     spanSaldoDisponible: $('#saldo-disponible'),
-    // Botones de radio para cambiar entre modos de ingreso ('monto' vs 'total')
+
+    /** @type {JQuery} Los botones de radio para cambiar el modo de ingreso ('monto' vs 'total'). */
     radioModoIngreso: $('input[name="modo-ingreso"]'),
-    // Etiqueta para el botón de radio 'Cantidad (Cripto)'
+
+    /** @type {JQuery} La etiqueta para el botón de radio 'Cantidad (Cripto)'. */
     labelModoMonto: $('#label-modo-monto'),
-    // Etiqueta para el campo de entrada de monto
+
+    /** @type {JQuery} La etiqueta para el campo de entrada de monto/total. */
     labelMonto: $('label[for="monto"]'),
-    // Campo de entrada principal para el monto
+
+    /** @type {JQuery} El campo de entrada principal para el monto o total. */
     inputMonto: $('#monto'),
-    // Etiqueta para el botón de radio 'Cantidad (Cripto)'
-    labelModoMonto: $('#label-modo-monto'),
-    // Etiqueta para el botón de radio 'Total (USDT)'
+
+    /** @type {JQuery} La etiqueta para el botón de radio 'Total (USDT)'. */
     labelModoTotal: $('#label-modo-total'),
 };

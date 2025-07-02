@@ -1,77 +1,126 @@
-# --- FILENAME: tests/test_trading_gestor.py (VERSIÓN SIMPLIFICADA) ---
+"""Pruebas Unitarias para el Módulo Gestor de Trading.
+
+Este archivo contiene pruebas para la función `cancelar_orden_pendiente` del
+módulo `backend.servicios.trading.gestor`. Esta función es crítica para la
+interacción del usuario, ya que le permite revertir órdenes que aún no se han
+ejecutado.
+
+Las pruebas verifican los siguientes escenarios:
+- La cancelación exitosa de una orden, asegurando la correcta liberación de
+  fondos reservados en la billetera.
+- Los casos de error, como intentar cancelar una orden inexistente o una orden
+  que ya no está en estado 'pendiente'.
+
+Se utilizan fixtures para crear un entorno de prueba aislado y consistente.
+"""
 import pytest
-import json
 from decimal import Decimal
+import json
 
 # Importar la función a probar
 from backend.servicios.trading.gestor import cancelar_orden_pendiente
 # Importar funciones de acceso a datos para verificar
 from backend.acceso_datos.datos_billetera import cargar_billetera
-from backend.acceso_datos.datos_ordenes import cargar_ordenes_pendientes
-# Importar el módulo config para redirigir las rutas temporalmente
-import config
+from backend.acceso_datos.datos_ordenes import cargar_ordenes_pendientes, guardar_ordenes_pendientes
 
-def crear_archivo_json(ruta, contenido):
-    """Función de ayuda para crear archivos JSON en los tests."""
-    with open(ruta, 'w') as f:
-        json.dump(contenido, f, indent=4)
+def test_cancelar_orden_pendiente_debe_liberar_fondos_y_cambiar_estado_a_cancelada_cuando_orden_existe_y_esta_pendiente(entorno_con_orden_pendiente):
+    """Verifica la cancelación exitosa de una orden y la liberación de fondos.
 
-def test_cancelacion_exitosa_con_archivos(tmp_path):
+    Este es el "happy path" o caso de éxito. La prueba asegura que cuando un
+    usuario cancela una orden pendiente, ocurren dos efectos críticos:
+    1.  Los fondos que estaban 'reservados' para esa orden en la billetera son
+        devueltos al saldo 'disponible'.
+    2.  La orden cambia su estado a 'cancelada' para que no sea procesada por
+        el motor de trading.
+
+    La fixture `entorno_con_orden_pendiente` se encarga de crear el estado
+    inicial necesario (billetera con fondos reservados y una orden pendiente).
+
+    Args:
+        entorno_con_orden_pendiente: Fixture que prepara un escenario de prueba
+            con una orden de venta de BTC pendiente.
     """
-    Prueba que una orden pendiente se cancela y los fondos se liberan,
-    interactuando con archivos temporales.
-    """
-    # Arrange: Preparar el entorno de archivos temporales
-    datos_dir = tmp_path / "datos"
-    datos_dir.mkdir()
-    config.BILLETERA_PATH = str(datos_dir / "billetera.json")
-    config.ORDENES_PENDIENTES_PATH = str(datos_dir / "ordenes.json")
-    # Para la llamada a estado_actual_completo
-    config.HISTORIAL_PATH = str(datos_dir / "historial.json")
-    config.COTIZACIONES_PATH = str(datos_dir / "cotizaciones.json")
-    
-    crear_archivo_json(config.BILLETERA_PATH, {
-        "USDT": {"saldos": {"disponible": "10000.0", "reservado": "0.0"}},
-        "BTC": {"saldos": {"disponible": "1.0", "reservado": "0.5"}}
-    })
-    crear_archivo_json(config.ORDENES_PENDIENTES_PATH, [
-        {"id_orden": "btc_venta_1", "estado": "pendiente", "moneda_reservada": "BTC", "cantidad_reservada": "0.5", "par": "BTC/USDT"},
-        {"id_orden": "eth_compra_1", "estado": "ejecutada", "moneda_reservada": "USDT", "cantidad_reservada": "1000"}
-    ])
-    # Archivos vacíos necesarios para estado_actual_completo
-    crear_archivo_json(config.HISTORIAL_PATH, [])
-    crear_archivo_json(config.COTIZACIONES_PATH, [])
+    # Arrange: ¡Ya está hecho por el fixture!
 
     # Act
     resultado = cancelar_orden_pendiente("btc_venta_1")
 
     # Assert
-    assert "error" not in resultado
-    assert "Orden BTC/USDT cancelada" in resultado["mensaje"]
-    
-    # Verificar leyendo directamente los archivos modificados
-    billetera_final = cargar_billetera(config.BILLETERA_PATH)
-    ordenes_finales = cargar_ordenes_pendientes(config.ORDENES_PENDIENTES_PATH)
-    
+    assert resultado["estado"] == "ok"
+
+
+    billetera_final = cargar_billetera()
+    ordenes_finales = cargar_ordenes_pendientes()
+
     # Fondos liberados
     assert billetera_final["BTC"]["saldos"]["reservado"] == Decimal("0")
     assert billetera_final["BTC"]["saldos"]["disponible"] == Decimal("1.5")
-    
+
     # Estado de la orden cambiado
     orden_cancelada = next(o for o in ordenes_finales if o["id_orden"] == "btc_venta_1")
     assert orden_cancelada["estado"] == "cancelada"
 
-def test_cancelar_orden_inexistente(tmp_path):
-    """Prueba que falla al intentar cancelar una orden que no existe."""
-    # Arrange: Solo necesitamos un archivo de órdenes vacío
-    datos_dir = tmp_path / "datos"
-    datos_dir.mkdir()
-    config.ORDENES_PENDIENTES_PATH = str(datos_dir / "ordenes.json")
-    crear_archivo_json(config.ORDENES_PENDIENTES_PATH, [])
+
+def test_cancelar_orden_pendiente_debe_fallar_cuando_id_de_orden_no_existe(test_environment):
+    """Verifica que el sistema maneja correctamente un ID de orden inválido.
+
+    Esta prueba de robustez asegura que si se intenta cancelar una orden con un
+    ID que no corresponde a ninguna orden pendiente, la función falla de forma
+    controlada, devolviendo un estado de 'error' y un mensaje claro, sin
+    alterar el estado del sistema.
+
+    Args:
+        test_environment: Fixture que provee un entorno de prueba limpio y aislado.
+    """
+    # Arrange: El fixture `test_environment` ya creó un archivo de órdenes vacío.
 
     # Act
     resultado = cancelar_orden_pendiente("id_invalido")
 
     # Assert
-    assert "error" in resultado
-    assert "No se encontró una orden" in resultado["error"]
+    assert resultado["estado"] == "error"
+    assert "No se encontró una orden" in resultado["mensaje"]
+    assert "id_invalido" in resultado["mensaje"]
+
+
+def test_cancelar_orden_pendiente_debe_fallar_cuando_orden_no_esta_en_estado_pendiente(test_environment):
+    """Verifica que una orden solo puede cancelarse si su estado es 'pendiente'.
+
+    Esta prueba valida la lógica de la máquina de estados de una orden. Una vez
+    que una orden ha sido 'ejecutada' o 'cancelada', no puede volver a ser
+    cancelada. El test modifica el estado de una orden (preparada por el fixture)
+    a 'ejecutada' y luego a 'cancelada', y verifica que en ambos casos la
+    función `cancelar_orden_pendiente` rechace la operación con un error.
+
+    Args:
+        test_environment: Fixture que prepara el escenario base.
+    """
+    # Arrange: Crear un estado inicial con una orden ya 'ejecutada'
+    ruta_billetera = test_environment['billetera']
+    ruta_ordenes = test_environment['ordenes']
+
+    billetera_inicial = {
+        "USDT": {"nombre": "Tether", "saldos": {"disponible": "10000.0", "reservado": "0.0"}},
+        "BTC": {"nombre": "Bitcoin", "saldos": {"disponible": "1.0", "reservado": "0.5"}}
+    }
+    with open(ruta_billetera, 'w') as f:
+        json.dump(billetera_inicial, f)
+
+    orden_ejecutada = {
+        "id_orden": "btc_venta_1",
+        "ticker": "BTC/USDT",
+        "accion": "venta",
+        "tipo_orden": "limit",
+        "cantidad": "0.5",
+        "precio": "60000",
+        "estado": "ejecutada" # Estado clave para esta prueba
+    }
+    with open(ruta_ordenes, 'w') as f:
+        json.dump([orden_ejecutada], f)
+
+    # Act
+    resultado = cancelar_orden_pendiente("btc_venta_1")
+
+    # Assert
+    assert resultado["estado"] == "error"
+    assert "no puede ser cancelada porque su estado es 'ejecutada'" in resultado["mensaje"]

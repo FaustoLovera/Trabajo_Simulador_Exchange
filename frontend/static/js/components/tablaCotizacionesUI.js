@@ -1,37 +1,44 @@
 /**
+ * @file Gestiona la renderización de la tabla de cotizaciones.
  * @module tablaCotizacionesUI
- * @description Controla la renderización y actualización de la tabla de cotizaciones de criptomonedas.
+ * @description Este módulo es responsable de obtener los datos de cotizaciones desde la API,
+ * procesarlos para su presentación y renderizar la tabla de criptomonedas en el DOM.
+ * También maneja los estados de carga y error.
  */
 
 import { fetchCotizaciones } from '../services/apiService.js';
 import { UIUpdater } from './uiUpdater.js';
 
+/** La referencia al cuerpo de la tabla de cotizaciones. */
 const cuerpoTabla = document.getElementById('tabla-datos');
 
 /**
  * @typedef {object} CotizacionPresentacion
- * @property {string} logo - URL del logo de la criptomoneda.
- * @property {string} nombre - Nombre de la criptomoneda.
- * @property {string} ticker - Símbolo de la criptomoneda.
- * @property {string} precio_usd_formatted - Precio formateado en USD.
- * @property {string} '1h_formatted' - Variación porcentual formateada (1h).
- * @property {string} '24h_formatted' - Variación porcentual formateada (24h).
- * @property {string} '7d_formatted' - Variación porcentual formateada (7d).
- * @property {object} perf_1h - Objeto con {className, arrow} para rendimiento 1h.
- * @property {object} perf_24h - Objeto con {className, arrow} para rendimiento 24h.
- * @property {object} perf_7d - Objeto con {className, arrow} para rendimiento 7d.
- * @property {string} market_cap_formatted - Capitalización de mercado formateada.
- * @property {string} volumen_24h_formatted - Volumen de 24h formateado.
- * @property {string} circulating_supply_formatted - Suministro circulante formateado.
+ * @description Define la estructura de datos de una criptomoneda, ya procesada y formateada
+ * por el backend para su visualización directa en la UI.
+ * @property {string} logo - URL del ícono de la criptomoneda.
+ * @property {string} nombre - Nombre completo de la criptomoneda (ej. "Bitcoin").
+ * @property {string} ticker - Símbolo bursátil (ej. "BTC").
+ * @property {string} precio_usd_formatted - Precio actual en USD, formateado como cadena.
+ * @property {string} '1h_formatted' - Variación porcentual en la última hora, formateada.
+ * @property {string} '24h_formatted' - Variación porcentual en las últimas 24 horas, formateada.
+ * @property {string} '7d_formatted' - Variación porcentual en los últimos 7 días, formateada.
+ * @property {object} perf_1h - Contiene `className` ('positivo'/'negativo') y `arrow` ('▲'/'▼') para el estilo de la variación de 1h.
+ * @property {object} perf_24h - Contiene `className` y `arrow` para la variación de 24h.
+ * @property {object} perf_7d - Contiene `className` y `arrow` para la variación de 7d.
+ * @property {string} market_cap_formatted - Capitalización de mercado, formateada.
+ * @property {string} volumen_24h_formatted - Volumen de transacciones en 24h, formateado.
+ * @property {string} circulating_supply_formatted - Suministro circulante, formateado.
  */
 
 /**
- * Crea el HTML para una fila de la tabla de cotizaciones a partir de datos ya procesados.
+ * Crea una cadena de texto HTML para una fila (`<tr>`) de la tabla de cotizaciones.
+ * Es una función auxiliar pura que transforma un objeto de datos en una representación HTML.
  *
  * @private
- * @param {CotizacionPresentacion} cripto - El objeto de datos de la criptomoneda, ya formateado por el backend.
- * @param {number} index - El número de fila (índice + 1).
- * @returns {string} Una cadena de texto con el HTML del `<tr>` para la criptomoneda.
+ * @param {CotizacionPresentacion} cripto - Objeto con los datos de la criptomoneda a mostrar.
+ * @param {number} index - El número de fila, usado para la primera columna (ej. 1, 2, 3...).
+ * @returns {string} La cadena HTML que representa la fila de la tabla.
  */
 function createFilaCotizacionHTML(cripto, index) {
     return `
@@ -71,19 +78,20 @@ function createFilaCotizacionHTML(cripto, index) {
 }
 
 /**
- * Obtiene los datos de cotizaciones y renderiza la tabla en el DOM.
- * Si no hay cotizaciones, la tabla simplemente se mostrará vacía.
+ * Obtiene los datos de cotizaciones de la API y renderiza la tabla completa en el DOM.
+ * Utiliza `map` y `join` para construir el HTML de forma eficiente. En caso de fallo
+ * en la obtención de datos, muestra un mensaje de error en la consola y en la UI.
  * @async
  * @side-effects Modifica el `innerHTML` del elemento '#tabla-datos'.
- *               Puede mostrar un mensaje de error si la carga de datos falla.
  */
 export async function renderTabla() {
     if (!cuerpoTabla) return;
     try {
         const cotizaciones = (await fetchCotizaciones()) || [];
-        cuerpoTabla.innerHTML = cotizaciones
+        const tablaHTML = cotizaciones
             .map((cripto, index) => createFilaCotizacionHTML(cripto, index + 1))
             .join('');
+        cuerpoTabla.innerHTML = tablaHTML || '<tr><td colspan="9" class="text-center py-4">No hay datos disponibles.</td></tr>';
     } catch (error) {
         console.error('❌ Error al renderizar la tabla de cotizaciones:', error);
         UIUpdater.mostrarMensajeError(

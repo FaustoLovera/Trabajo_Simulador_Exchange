@@ -1,25 +1,28 @@
-"""
-Define la ruta principal (landing page) de la aplicación.
+"""Blueprint para las Rutas Generales y la Página Principal.
 
-Este módulo es responsable de servir la página de inicio (index.html),
-que actúa como el punto de entrada para los usuarios.
+Este módulo define las rutas estáticas y de renderizado principal de la aplicación.
+Su responsabilidad se limita a servir el 'cascarón' o 'shell' de la aplicación
+(el archivo `index.html`), que luego se encarga de cargar todo el contenido
+dinámico de forma asíncrona a través de llamadas a otros endpoints de la API.
 """
 
 from flask import Blueprint, render_template
 
+# Define el Blueprint para este módulo. El nombre 'home' se usa para la resolución
+# de URLs y la organización interna de Flask.
 bp = Blueprint("home", __name__)
 
 
 @bp.route("/")
 def index():
-    """
-    Renderiza la página de inicio de la aplicación.
+    """Renderiza la página de inicio de la aplicación (el 'shell').
 
-    Esta ruta sirve el archivo `index.html`, que es el esqueleto principal
-    de la interfaz. El contenido dinámico, como las cotizaciones, se carga
-    posteriormente de forma asíncrona mediante JavaScript.
+    Esta vista sirve el archivo `index.html`, que actúa como el punto de entrada
+    de la Single-Page Application (SPA). Este HTML contiene la estructura base,
+    y el resto del contenido (cotizaciones, billetera, etc.) es cargado y
+    renderizado por el código JavaScript del lado del cliente.
 
     Returns:
-        Response: El contenido HTML renderizado de la página de inicio.
+        La respuesta HTTP con el contenido de `index.html` renderizado.
     """
     return render_template("index.html")

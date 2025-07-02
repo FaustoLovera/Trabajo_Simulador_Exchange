@@ -1,37 +1,97 @@
-# backend/servicios/estado_billetera.py
+"""Servicio de Orquestación y Análisis del Estado de la Billetera.
+
+Este módulo es un servicio de alto nivel que actúa como orquestador. Su
+responsabilidad principal es consolidar datos de múltiples fuentes (billetera,
+historial de transacciones, cotizaciones de mercado) para construir una vista
+analítica y enriquecida del portafolio del usuario, lista para ser consumida
+por el frontend.
+
+El pipeline de datos es el siguiente:
+1.  **Carga de Datos**: Lee los archivos JSON de billetera, historial y cotizaciones.
+2.  **Procesamiento del Historial**: Calcula el costo base agregado para cada activo.
+3.  **Cálculo de Métricas**: Para cada activo, calcula su valor actual, P/L, etc.
+4.  **Formateo para Presentación**: Convierte todos los datos numéricos a cadenas
+    formateadas y añade información útil para la UI (ej. logos, porcentajes).
+"""
 
 from decimal import Decimal
+from typing import Any, Dict, List
 
 from backend.acceso_datos.datos_billetera import cargar_billetera
-from backend.acceso_datos.datos_historial import cargar_historial
-# Se elimina la importación de obtener_precio, ya que no se usará el caché global en los tests.
 from backend.acceso_datos.datos_cotizaciones import cargar_datos_cotizaciones
-from backend.utils.utilidades_numericas import (
-    a_decimal, formato_cantidad_usd, formato_cantidad_cripto, formato_porcentaje
-)
+from backend.acceso_datos.datos_historial import cargar_historial
 from backend.utils.formatters import format_datetime
-from config import (
-    UMBRAL_POLVO_USD, UMBRAL_CASI_CERO,
-    BILLETERA_PATH, HISTORIAL_PATH, COTIZACIONES_PATH
+from backend.utils.utilidades_numericas import (
+    a_decimal,
+    formato_cantidad_cripto,
+    formato_cantidad_usd,
+    formato_porcentaje,
 )
+import config
 
 def _division_segura(numerador: Decimal, denominador: Decimal) -> Decimal:
+    """Divide dos números Decimal de forma segura, evitando errores de división por cero."""
     return numerador / denominador if denominador > a_decimal(0) else a_decimal(0)
 
-def _preparar_datos_compra(historial: list[dict]) -> dict[str, dict]:
-    datos_compra_por_ticker = {}
+def _preparar_datos_compra(
+    historial: List[Dict[str, Any]]
+) -> Dict[str, Dict[str, Decimal]]:
+    """Procesa el historial para calcular el costo base agregado de cada criptomoneda.
+
+    Esta función es un paso clave en el pipeline. Itera sobre todas las
+    transacciones y acumula el total de USD invertido y la cantidad de cripto
+    adquirida por cada ticker. El resultado es fundamental para calcular el
+    precio promedio de compra y, consecuentemente, la ganancia o pérdida.
+
+    Args:
+        historial: La lista completa de transacciones.
+
+    Returns:
+        Un diccionario que mapea cada ticker a su `total_invertido` y
+        `cantidad_comprada` acumulados.
+    """
+    datos_compra_por_ticker: Dict[str, Dict[str, Decimal]] = {}
     for operacion in historial:
-        if operacion.get("tipo", "").endswith("compra"):
+        if config.ACCION_COMPRAR in operacion.get("tipo", "").lower():
             destino = operacion.get("destino", {})
             ticker = destino.get("ticker")
-            if not ticker or ticker == "USDT": continue
+            if not ticker or ticker == "USDT":
+                continue
             if ticker not in datos_compra_por_ticker:
-                datos_compra_por_ticker[ticker] = {"total_invertido": a_decimal(0), "cantidad_comprada": a_decimal(0)}
-            datos_compra_por_ticker[ticker]["total_invertido"] += a_decimal(operacion.get("valor_usd"))
-            datos_compra_por_ticker[ticker]["cantidad_comprada"] += a_decimal(destino.get("cantidad"))
+                datos_compra_por_ticker[ticker] = {
+                    "total_invertido": a_decimal(0),
+                    "cantidad_comprada": a_decimal(0),
+                }
+            datos_compra_por_ticker[ticker]["total_invertido"] += a_decimal(
+                operacion.get("valor_usd")
+            )
+            datos_compra_por_ticker[ticker]["cantidad_comprada"] += a_decimal(
+                destino.get("cantidad")
+            )
     return datos_compra_por_ticker
 
-def _calcular_metricas_activo(ticker: str, cantidad_total: Decimal, precio_actual: Decimal, datos_compra: dict) -> dict:
+def _calcular_metricas_activo(
+    ticker: str,
+    cantidad_total: Decimal,
+    precio_actual: Decimal,
+    datos_compra: Dict[str, Decimal],
+) -> Dict[str, Any]:
+    """Calcula un conjunto completo de métricas de rendimiento para un activo.
+
+    Esta función toma los datos brutos de un activo y los transforma en insights
+    financieros, como el valor actual, el costo base, la ganancia/pérdida y su
+    variación porcentual. Todos los cálculos se realizan con `Decimal` para
+    mantener la precisión.
+
+    Args:
+        ticker: El ticker del activo (ej. "BTC").
+        cantidad_total: La cantidad total del activo en la billetera.
+        precio_actual: El precio de mercado actual del activo.
+        datos_compra: Un diccionario con el `total_invertido` y `cantidad_comprada`.
+
+    Returns:
+        Un diccionario con todas las métricas calculadas, aún en formato `Decimal`.
+    """
     valor_actual_usd = cantidad_total * precio_actual
     total_invertido = datos_compra.get("total_invertido", a_decimal(0))
     cantidad_comprada = datos_compra.get("cantidad_comprada", a_decimal(0))
@@ -46,9 +106,30 @@ def _calcular_metricas_activo(ticker: str, cantidad_total: Decimal, precio_actua
         "porcentaje_ganancia": porcentaje_ganancia,
     }
 
-def _formatear_activo_para_presentacion(activo_calculado: dict, cripto_info: dict, saldos: dict, total_billetera_usd: Decimal) -> dict:
+def _formatear_activo_para_presentacion(
+    activo_calculado: Dict[str, Any],
+    cripto_info: Dict[str, Any],
+    saldos: Dict[str, Decimal],
+    total_billetera_usd: Decimal,
+) -> Dict[str, Any]:
+    """Toma un activo con métricas calculadas y lo prepara para su presentación en la UI.
+
+    Este es el paso final del pipeline para un activo individual. Convierte todos
+    los valores `Decimal` a cadenas de texto con formato (ej. "$1,234.56"),
+    añade metadatos útiles para la UI (nombre, logo, si es 'polvo'), y calcula
+    el porcentaje que el activo representa en el portafolio total.
+
+    Args:
+        activo_calculado: Diccionario con las métricas pre-calculadas.
+        cripto_info: Diccionario con información estática (nombre, logo).
+        saldos: Diccionario con los saldos 'disponible' y 'reservado'.
+        total_billetera_usd: Valor total del portafolio para calcular el %.
+
+    Returns:
+        Un diccionario final, listo para ser serializado a JSON.
+    """
     porcentaje_en_billetera = _division_segura(activo_calculado["valor_usdt"], total_billetera_usd) * Decimal("100")
-    es_polvo = activo_calculado["valor_usdt"] < UMBRAL_POLVO_USD
+    es_polvo = activo_calculado["valor_usdt"] < config.UMBRAL_POLVO_USD
 
     cantidad_total = activo_calculado["cantidad"]
     saldo_disponible = saldos.get("disponible", a_decimal(0))
@@ -77,10 +158,30 @@ def _formatear_activo_para_presentacion(activo_calculado: dict, cripto_info: dic
     }
 
 def estado_actual_completo(
-    ruta_billetera: str = BILLETERA_PATH,
-    ruta_historial: str = HISTORIAL_PATH,
-    ruta_cotizaciones: str = COTIZACIONES_PATH
-) -> list[dict]:
+    ruta_billetera: str = config.BILLETERA_PATH,
+    ruta_historial: str = config.HISTORIAL_PATH,
+    ruta_cotizaciones: str = config.COTIZACIONES_PATH,
+) -> List[Dict[str, Any]]:
+    """Orquesta la creación del estado completo y formateado de la billetera.
+
+    Este es el punto de entrada principal del servicio. Ejecuta el pipeline completo:
+    1.  **Carga de Datos**: Lee billetera, historial y cotizaciones desde archivos.
+    2.  **Pre-procesamiento**: Extrae precios y datos estáticos, y normaliza USDT.
+    3.  **Cálculo de Costo Base**: Llama a `_preparar_datos_compra`.
+    4.  **Iteración y Cálculo de Métricas**: Para cada activo en la billetera,
+        calcula su rendimiento con `_calcular_metricas_activo`.
+    5.  **Cálculo de Totales**: Suma los valores de todos los activos.
+    6.  **Formateo Final**: Para cada activo, llama a `_formatear_activo_para_presentacion`.
+    7.  **Filtrado y Ordenación**: Elimina activos 'polvo' y ordena el resultado.
+
+    Args:
+        ruta_billetera: Ruta al archivo de la billetera.
+        ruta_historial: Ruta al archivo de historial.
+        ruta_cotizaciones: Ruta al archivo de cotizaciones.
+
+    Returns:
+        Una lista de activos, formateada y lista para la UI.
+    """
     billetera = cargar_billetera(ruta_archivo=ruta_billetera)
     historial = cargar_historial(ruta_archivo=ruta_historial)
     cotizaciones_raw = cargar_datos_cotizaciones(ruta_archivo=ruta_cotizaciones)
@@ -88,9 +189,9 @@ def estado_actual_completo(
     info_criptos = {c['ticker']: c for c in cotizaciones_raw}
     precios_locales = {c['ticker']: a_decimal(c.get('precio_usd', '0')) for c in cotizaciones_raw}
     
-    # ### LA SOLUCIÓN ESTÁ AQUÍ ###
-    # Forzamos el nombre y logo canónicos para USDT, ignorando lo que venga de la API.
-    # Esto asegura consistencia y evita nombres como "Polygon Bridged USDT".
+    # Paso 3: Forzar datos canónicos para USDT.
+    # Esto asegura consistencia en la UI, evitando que variantes de USDT de
+    # diferentes redes (ej. "Polygon Bridged USDT") rompan la lógica o la visualización.
     info_criptos['USDT'] = {
         'nombre': 'Tether', 
         'logo': 'https://assets.coingecko.com/coins/images/325/large/Tether.png?1696501661',
@@ -100,14 +201,17 @@ def estado_actual_completo(
     datos_compra_por_ticker = _preparar_datos_compra(historial)
     activos_calculados = []
     
+    # Paso 5: Calcular métricas para cada activo en la billetera.
     for ticker, activo_data in billetera.items():
         saldos = activo_data.get("saldos", {})
-        cantidad_total = saldos.get("disponible", a_decimal(0)) + saldos.get("reservado", a_decimal(0))
+        cantidad_total = saldos.get("disponible", a_decimal(0)) + saldos.get(
+            "reservado", a_decimal(0)
+        )
 
-        if cantidad_total < UMBRAL_CASI_CERO:
+        if cantidad_total < config.UMBRAL_CASI_CERO:
             continue
             
-        # Obtenemos la información de la cripto de nuestro diccionario 'curado'.
+        # Usamos el diccionario 'curado' para obtener la info de la cripto.
         cripto_info_actual = info_criptos.get(ticker, {"nombre": ticker, "logo": ""})
 
         if ticker == "USDT":
@@ -125,16 +229,33 @@ def estado_actual_completo(
         metricas['saldos'] = saldos
         activos_calculados.append(metricas)
 
-    activos_calculados.sort(key=lambda x: x['valor_usdt'], reverse=True)
-    total_billetera_usd = sum(activo['valor_usdt'] for activo in activos_calculados)
+    # Paso 6: Ordenar activos por valor y calcular el total del portafolio.
+    activos_calculados.sort(key=lambda x: x["valor_usdt"], reverse=True)
+    total_billetera_usd = sum(activo["valor_usdt"] for activo in activos_calculados)
 
+    # Paso 7: Formatear cada activo para la presentación final.
     activos_para_presentacion = [
-        _formatear_activo_para_presentacion(activo, activo['cripto_info'], activo['saldos'], total_billetera_usd)
+        _formatear_activo_para_presentacion(
+            activo, activo["cripto_info"], activo["saldos"], total_billetera_usd
+        )
         for activo in activos_calculados
     ]
     return activos_para_presentacion
 
-def obtener_historial_formateado(ruta_historial: str = HISTORIAL_PATH) -> list[dict]:
+def obtener_historial_formateado(
+    ruta_historial: str = config.HISTORIAL_PATH,
+) -> List[Dict[str, Any]]:
+    """Carga y formatea el historial de transacciones para el frontend.
+
+    Transforma el historial crudo en una lista de registros listos para ser
+    mostrados en la tabla de historial de la UI.
+
+    Args:
+        ruta_historial: Ruta al archivo de historial.
+
+    Returns:
+        Una lista de diccionarios, donde cada uno es una transacción formateada.
+    """
     historial_crudo = cargar_historial(ruta_archivo=ruta_historial)
     historial_formateado = []
     for item in historial_crudo:

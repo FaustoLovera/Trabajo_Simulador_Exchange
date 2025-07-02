@@ -1,22 +1,22 @@
+"""Blueprint para las Rutas de la Sección de Billetera y Portafolio.
+
+Este módulo actúa como un **Controlador** que gestiona la petición HTTP
+para renderizar la página principal de la billetera del usuario.
+
+Responsabilidad:
+- **Renderizado de Página**: Sirve la página principal `billetera.html`.
+
+Los datos para la página se cargan de forma asíncrona a través de los
+endpoints definidos en `api_vista.py`.
 """
-Define las rutas relacionadas con la visualización de la billetera y el historial.
 
-Este módulo contiene los endpoints para renderizar la página de la billetera
-y para proporcionar datos financieros (estado actual y transacciones pasadas)
- a través de una API REST al frontend.
-"""
+from flask import Blueprint, render_template
 
-from flask import Blueprint, render_template, jsonify, request, flash, redirect, url_for
-from backend.servicios.estado_billetera import estado_actual_completo, obtener_historial_formateado
-from backend.acceso_datos.datos_comisiones import cargar_comisiones
-from backend.acceso_datos.datos_ordenes import cargar_ordenes_pendientes
-from backend.servicios.trading.gestor import cancelar_orden_pendiente
-from config import ESTADO_PENDIENTE
-
-bp = Blueprint("billetera", __name__)
+# Define el Blueprint con el prefijo de URL `/billetera`.
+bp = Blueprint("billetera", __name__, url_prefix="/billetera")
 
 
-@bp.route("/billetera")
+@bp.route("/") # Ruta -> /billetera/
 def mostrar_billetera():
     """
     Renderiza la página principal de la billetera.
@@ -29,64 +29,3 @@ def mostrar_billetera():
         Response: El contenido HTML renderizado de la página de la billetera.
     """
     return render_template("billetera.html")
-
-
-@bp.route("/api/billetera/estado-completo")
-def get_estado_billetera_completo():
-    """
-    Endpoint de API que devuelve el estado financiero completo de la billetera.
-
-    Proporciona un resumen detallado que incluye el balance de cada criptomoneda,
-    su valor en USD, el total general, y el rendimiento.
-
-    Returns:
-        Response: Un objeto JSON con el estado completo de la billetera.
-            Ejemplo: `{"total_usd": "10500.50", "rendimiento": "5.00", ...}`
-    """
-    datos = estado_actual_completo()
-    return jsonify(datos)
-
-
-@bp.route("/api/historial")
-def get_historial_transacciones():
-    """
-    Endpoint de API que devuelve el historial completo de transacciones.
-
-    Retorna una lista de todas las operaciones de compra y venta realizadas,
-    formateadas para su visualización en el frontend.
-
-    Returns:
-        Response: Un objeto JSON que contiene una lista de transacciones.
-            Ejemplo: `[{"id": 1, "fecha": "21/06/2025", "tipo": "compra", ...}]`
-    """
-    return jsonify(obtener_historial_formateado())
-
-@bp.route("/api/comisiones")
-def get_historial_comisiones():
-    """
-    Endpoint de API que devuelve el historial completo de comisiones cobradas.
-    """
-    return jsonify(cargar_comisiones())
-
-@bp.route("/api/ordenes-abiertas")
-def get_ordenes_abiertas():
-    """
-    Endpoint de API que devuelve la lista de órdenes que están pendientes de ejecución.
-    """
-    todas_las_ordenes = cargar_ordenes_pendientes()
-    # Filtramos para devolver solo las que están activas
-    ordenes_abiertas = [o for o in todas_las_ordenes if o.get("estado") == ESTADO_PENDIENTE]
-    return jsonify(ordenes_abiertas)
-
-@bp.route("/api/orden/cancelar/<string:id_orden>", methods=["POST"])
-def cancelar_orden_api(id_orden: str):
-    """
-    Endpoint de API para cancelar una orden pendiente.
-    Devuelve una respuesta JSON estandarizada.
-    """
-    resultado = cancelar_orden_pendiente(id_orden)
-    
-    if resultado["estado"] == "error":
-        return jsonify(resultado), 400
-    else:
-        return jsonify(resultado), 200

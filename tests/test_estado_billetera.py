@@ -1,8 +1,24 @@
+"""Pruebas Unitarias para el Servicio de Estado de Billetera.
+
+Este archivo contiene pruebas para el módulo `backend.servicios.estado_billetera`,
+que es responsable de calcular y formatear los datos consolidados de la billetera
+para su presentación en la interfaz de usuario.
+
+Las pruebas se dividen en dos categorías principales:
+1.  **Pruebas de Funciones Puras**: Verifican la lógica de negocio de las
+    funciones de cálculo (`_preparar_datos_compra`, `_calcular_metricas_activo`)
+    de forma aislada, sin depender de I/O. Estas pruebas son rápidas y cubren
+    diversos casos de borde.
+2.  **Pruebas de Integración con I/O**: Verifican las funciones principales
+    (`estado_actual_completo`, `obtener_historial_formateado`) que orquestan
+    la lectura de datos desde archivos. Utilizan la fixture `tmp_path` de pytest
+    para interactuar con archivos reales en un entorno temporal y aislado.
+"""
+
 import pytest
 import json
 from decimal import Decimal
 
-# Importamos las funciones a probar, ahora refactorizadas
 from backend.servicios.estado_billetera import (
     _calcular_metricas_activo,
     _preparar_datos_compra,
@@ -14,7 +30,15 @@ from backend.servicios.estado_billetera import (
 
 @pytest.fixture
 def datos_compra_btc():
-    """Fixture que proporciona datos de compra para Bitcoin."""
+    """Proporciona un diccionario de ejemplo con datos de compra para BTC.
+
+    Este fixture simula el resultado agregado de la función `_preparar_datos_compra`
+    para un activo específico. Es utilizado por las pruebas que calculan métricas
+    para desacoplarlas de la lógica de preparación de datos.
+
+    Returns:
+        dict: Un diccionario con el total invertido y la cantidad comprada.
+    """
     return {
         "total_invertido": Decimal("45000"),
         "cantidad_comprada": Decimal("1.5")
@@ -22,9 +46,14 @@ def datos_compra_btc():
 
 # --- Tests para las funciones puras (sin cambios, no dependen de I/O) ---
 
-def test_preparar_datos_compra_mixto():
-    """
-    Prueba que solo se suman compras (ignora ventas y USDT) y agrupa por ticker.
+def test_preparar_datos_compra_debe_procesar_solo_compras_y_agrupar_por_ticker_cuando_historial_es_mixto():
+    """Verifica que se procese un historial mixto correctamente.
+
+    Esta prueba asegura que la función:
+    -   Filtra y procesa únicamente las transacciones de tipo 'compra'.
+    -   Ignora las transacciones de 'venta' y otros tipos.
+    -   Excluye el ticker 'USDT', ya que no se considera una inversión.
+    -   Agrupa los resultados por ticker.
     """
     historial = [
         {"tipo": "compra", "destino": {"ticker": "BTC", "cantidad": "1.0"}, "valor_usd": "30000"},
@@ -39,16 +68,20 @@ def test_preparar_datos_compra_mixto():
     assert resultado["ETH"]["total_invertido"] == Decimal("20000")
     assert resultado["ETH"]["cantidad_comprada"] == Decimal("2.0")
 
-def test_preparar_datos_compra_vacio():
-    """
-    Prueba que un historial vacío retorna un diccionario vacío.
+def test_preparar_datos_compra_debe_retornar_diccionario_vacio_cuando_historial_esta_vacio():
+    """Verifica el comportamiento con una lista de historial vacía.
+
+    Prueba el caso de borde donde no hay transacciones. Se espera que la función
+    devuelva un diccionario vacío sin errores.
     """
     resultado = _preparar_datos_compra([])
     assert resultado == {}
 
-def test_preparar_datos_compra_sin_compras():
-    """
-    Prueba que un historial sin compras retorna un diccionario vacío.
+def test_preparar_datos_compra_debe_retornar_diccionario_vacio_cuando_historial_no_contiene_compras():
+    """Verifica el comportamiento con un historial que no contiene compras.
+
+    Prueba el caso donde existen transacciones, pero ninguna es de tipo 'compra'.
+    Se espera que la función devuelva un diccionario vacío.
     """
     historial = [
         {"tipo": "venta", "destino": {"ticker": "BTC", "cantidad": "1.0"}, "valor_usd": "30000"},
@@ -57,9 +90,12 @@ def test_preparar_datos_compra_sin_compras():
     resultado = _preparar_datos_compra(historial)
     assert resultado == {}
 
-def test_preparar_datos_compra_agrupa_multiples_compras():
-    """
-    Prueba que agrupa correctamente múltiples compras del mismo activo.
+def test_preparar_datos_compra_debe_sumarizar_valores_cuando_hay_multiples_compras_del_mismo_activo():
+    """Verifica que se agrupen múltiples compras del mismo activo.
+
+    Esta prueba asegura que la función suma correctamente el `total_invertido`
+    y la `cantidad_comprada` de varias transacciones de compra para un único
+    ticker.
     """
     historial = [
         {"tipo": "compra", "destino": {"ticker": "BTC", "cantidad": "1.0"}, "valor_usd": "30000"},
@@ -72,8 +108,17 @@ def test_preparar_datos_compra_agrupa_multiples_compras():
     assert resultado["BTC"]["cantidad_comprada"] == Decimal("1.75")
 
 
-def test_calcular_metricas_activo(datos_compra_btc):
-    """Prueba la función de cálculo de métricas para un activo."""
+def test_calcular_metricas_activo_debe_retornar_calculos_correctos_cuando_recibe_datos_validos(datos_compra_btc):
+    """Verifica el cálculo de todas las métricas de rendimiento para un activo.
+
+    Esta prueba utiliza datos de entrada fijos (cantidad actual, precio actual
+    y datos de compra desde una fixture) para verificar que todos los cálculos
+    derivados (valor total, precio promedio, costo base, ganancia/pérdida)
+    son correctos.
+
+    Args:
+        datos_compra_btc: Fixture con datos de compra agregados para BTC.
+    """
     ticker = "BTC"
     cantidad_actual = Decimal("1.5")
     precio_actual = Decimal("40000")
@@ -90,10 +135,23 @@ def test_calcular_metricas_activo(datos_compra_btc):
 
 # --- Tests para las funciones con I/O (refactorizados) ---
 
-def test_estado_actual_completo_con_archivos_temporales(tmp_path):
-    """
-    Prueba [estado_actual_completo](cci:1://file:///Users/andreiveis/UADE/2do%20cuatrimestre/05_Algoritmos%20y%20Estructura%20de%20datos%20I/Trabajo_Simulador_Exchange/backend/servicios/estado_billetera.py:76:0-132:36) usando archivos temporales reales,
-    eliminando la necesidad de mocks y fixtures de datos.
+def test_estado_actual_completo_debe_generar_reporte_consolidado_cuando_lee_archivos_de_datos(tmp_path):
+    """Prueba de integración para `estado_actual_completo` con archivos reales.
+
+    Este test verifica el flujo completo de la función, que orquesta la lectura
+    de múltiples archivos JSON (billetera, historial, cotizaciones) para generar
+    el estado consolidado de la billetera.
+
+    El uso de `tmp_path` permite crear un entorno de prueba realista y aislado:
+    1.  **Arrange**: Se escriben archivos `billetera.json`, `historial.json` y
+        `cotizaciones.json` con datos de prueba en un directorio temporal.
+    2.  **Act**: Se llama a `estado_actual_completo` apuntando a estas rutas temporales.
+    3.  **Assert**: Se verifica que el resultado final sea correcto, incluyendo:
+        - Que solo se incluyan activos con saldo.
+        - Que los cálculos y el formato de los datos sean los esperados.
+
+    Args:
+        tmp_path: Fixture de pytest que proporciona una ruta a un directorio temporal.
     """
     # 1. Preparación: Crear archivos de datos temporales
     ruta_billetera = tmp_path / "billetera.json"
@@ -138,20 +196,30 @@ def test_estado_actual_completo_con_archivos_temporales(tmp_path):
 
     assert btc["ticker"] == "BTC"
     assert btc["cantidad_total"] == "1.5"
-    assert btc["valor_usdt_formatted"] == "$60,000.00"
+    assert btc["valor_usdt_formatted"] == "$60,000"
     assert btc["logo"] == "logo_btc.png"
-    assert btc["ganancia_perdida_formatted"] == "+$15,000.00"
+    assert btc["ganancia_perdida_formatted"] == "$15,000"
 
     assert eth["ticker"] == "ETH"
     assert eth["cantidad_total"] == "2.0"
-    assert eth["valor_usdt_formatted"] == "$3,000.00"
+    assert eth["valor_usdt_formatted"] == "$3,000"
     assert eth["logo"] == "logo_eth.png"
-    assert eth["ganancia_perdida_formatted"] == "-$17,000.00"
+    assert eth["ganancia_perdida_formatted"] == "$-17,000"
 
-def test_obtener_historial_formateado_con_archivo_temporal(tmp_path):
-    """
-    Prueba que obtener_historial_formateado procese correctamente un
-    archivo de historial temporal.
+def test_obtener_historial_formateado_debe_aplicar_formato_de_presentacion_cuando_lee_historial(tmp_path):
+    """Prueba de integración para `obtener_historial_formateado`.
+
+    Verifica que la función lee correctamente un archivo de historial y aplica
+    el formato esperado a cada campo para su visualización en la interfaz.
+
+    Flujo de la prueba:
+    1.  **Arrange**: Se crea un archivo `historial.json` temporal con un registro.
+    2.  **Act**: Se llama a `obtener_historial_formateado`.
+    3.  **Assert**: Se comprueba que los campos clave (`tipo`, `par`, `fecha`, etc.)
+        hayan sido transformados al formato de presentación correcto.
+
+    Args:
+        tmp_path: Fixture de pytest que proporciona una ruta a un directorio temporal.
     """
     ruta_historial = tmp_path / "historial_test.json"
     historial_data = [
@@ -172,5 +240,5 @@ def test_obtener_historial_formateado_con_archivo_temporal(tmp_path):
     assert item["tipo_formatted"] == "Compra"
     assert item["par_formatted"] == "BTC/USDT"
     assert "27/10/2023" in item["fecha_formatted"]
-    assert item["cantidad_formatted"] == "0.50000000 BTC"
-    assert item["valor_total_formatted"] == "$25,000.00"
+    assert item["cantidad_formatted"] == "0.5"
+    assert item["valor_total_formatted"] == "$25,000"

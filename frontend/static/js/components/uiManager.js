@@ -1,4 +1,10 @@
-// frontend/static/js/components/uiManager.js
+/**
+ * @file Orquestador principal de la interfaz de usuario.
+ * @module UIManager
+ * @description Gestiona el estado de la UI, inicializa componentes, configura los listeners de eventos
+ * y coordina las actualizaciones entre los diferentes módulos de la interfaz.
+ * Actúa como el punto central de control para la interacción del usuario.
+ */
 
 import { DOMElements } from './domElements.js';
 import { UIState } from './uiState.js';
@@ -10,44 +16,61 @@ import { updateChartData } from './chartRenderer.js';
 import { fetchVelas } from '../services/apiService.js';
 import { saveTradingState } from '../services/statePersistence.js';
 
+/**
+ * @namespace UIManager
+ * @description Objeto que encapsula toda la lógica de gestión de la interfaz de usuario.
+ */
 export const UIManager = {
+    /** @type {string} El ticker de la criptomoneda actualmente seleccionada (ej. 'BTC'). */
     currentTicker: 'BTC',
+    /** @type {string} El intervalo de tiempo actual para el gráfico (ej. '1d', '4h'). */
     currentInterval: '1d',
+    /** @type {boolean} Flag para prevenir cargas múltiples y simultáneas del gráfico. */
     isChartLoading: false,
 
+    /**
+     * Inicializa la interfaz de usuario con el estado cargado.
+     * Configura componentes, establece listeners y realiza el renderizado inicial.
+     * La secuencia de inicialización es crítica para evitar condiciones de carrera en la UI.
+     * @param {object} initialState - El estado inicial de la aplicación, que incluye ticker, intervalo, historial, etc.
+     */
     initialize(initialState) {
         this.currentTicker = initialState.ticker;
         this.currentInterval = initialState.interval;
 
-        // Renderizar partes de la UI que no dependen del formulario
         UIUpdater.renderHistorial(initialState.historial);
         this.renderOrdenesAbiertas(initialState.ordenesAbiertas);
         
-        // Preparar plugins y listeners de eventos
         this.setupSelect2();
-        this.setupEventListeners(); // Mover aquí para que los listeners estén listos
+        this.setupEventListeners();
         
-        // --- SECUENCIA DE INICIALIZACIÓN CORREGIDA ---
-        // 1. Establecer el modo por defecto ("comprar"). Esto muestra y oculta los campos correctos.
-        this.setTradeMode('comprar'); 
-        
-        // 2. Ahora que los campos son visibles, poblamos y seleccionamos los valores.
+        // Secuencia de inicialización del formulario:
+        // 1. Establecer el modo (compra/venta) para asegurar la visibilidad correcta de los campos.
+        this.setTradeMode('compra'); 
+        // 2. Poblar los selectores y establecer valores ahora que los campos son visibles.
         this.actualizarFormularioCompleto();
-        
-        // 3. Ajustamos el resto de los elementos.
+        // 3. Ajustar campos dependientes del tipo de orden y el timeframe.
         this.handleTipoOrdenChange();
         $('#timeframe-selector .timeframe-btn').removeClass('active').filter(`[data-interval="${this.currentInterval}"]`).addClass('active');
     },
 
+    /**
+     * @private
+     * Configura el plugin Select2 para los menús desplegables, mejorando su apariencia y funcionalidad.
+     */
     setupSelect2() {
         [DOMElements.selectorPrincipal, DOMElements.selectorPagarCon, DOMElements.selectorRecibirEn].forEach((sel) => {
             sel.select2({ width: '100%', dropdownCssClass: 'text-dark', theme: 'bootstrap-5' });
         });
     },
 
+    /**
+     * @private
+     * Centraliza la configuración de todos los listeners de eventos de la aplicación.
+     */
     setupEventListeners() {
-        DOMElements.botonComprar.on('click', () => this.handleTradeModeChange('comprar'));
-        DOMElements.botonVender.on('click', () => this.handleTradeModeChange('vender'));
+        DOMElements.botonComprar.on('click', () => this.handleTradeModeChange('compra'));
+        DOMElements.botonVender.on('click', () => this.handleTradeModeChange('venta'));
         DOMElements.selectorPrincipal.on('change', () => this.handleSelectorPrincipalChange());
         
         DOMElements.selectorPagarCon.on('change', () => this.updateDynamicLabels());
@@ -63,8 +86,9 @@ export const UIManager = {
     },
 
     /**
-     * Función que se llama cuando el usuario hace clic en Comprar/Vender.
-     * @param {string} mode - 'comprar' o 'vender'.
+     * @private
+     * Maneja el cambio de modo de operación (compra/venta).
+     * @param {('compra'|'venta')} mode - El modo de operación a activar.
      */
     handleTradeModeChange(mode) {
         this.setTradeMode(mode);
@@ -72,9 +96,9 @@ export const UIManager = {
     },
 
     /**
-     * Establece el estado visual básico del modo de trading (colores y visibilidad de campos).
-     * Ya no llama a la actualización completa del formulario para evitar bucles.
-     * @param {string} mode - 'comprar' o 'vender'.
+     * @private
+     * Establece el estado visual del formulario para el modo de trading (colores, visibilidad de campos).
+     * @param {('compra'|'venta')} mode - El modo de operación.
      */
     setTradeMode(mode) {
         DOMElements.inputAccion.val(mode);
@@ -83,7 +107,8 @@ export const UIManager = {
     },
 
     /**
-     * Rellena y actualiza todos los selectores y etiquetas del formulario.
+     * @private
+     * Orquesta una actualización completa del formulario, repoblando selectores y actualizando etiquetas.
      */
     actualizarFormularioCompleto() {
         const esCompra = UIState.esModoCompra();
@@ -101,7 +126,8 @@ export const UIManager = {
     },
     
     /**
-     * Actualiza solo las etiquetas que cambian dinámicamente.
+     * @private
+     * Actualiza elementos de la UI que cambian frecuentemente, como saldos y etiquetas de campos.
      */
     updateDynamicLabels() {
         const tickerParaBalance = UIState.esModoCompra() ? UIState.getTickerPago() : UIState.getTickerPrincipal();
@@ -110,6 +136,10 @@ export const UIManager = {
         UIUpdater.actualizarLabelMonto();
     },
 
+    /**
+     * @private
+     * Maneja el cambio en el selector principal de criptomonedas.
+     */
     handleSelectorPrincipalChange() {
         const nuevoTicker = UIState.getTickerPrincipal();
         if (!nuevoTicker || nuevoTicker === this.currentTicker) return;
@@ -120,6 +150,10 @@ export const UIManager = {
         saveTradingState(this.currentTicker, this.currentInterval);
     },
 
+    /**
+     * @private
+     * Carga y actualiza los datos del gráfico de velas de forma asíncrona.
+     */
     async actualizarGrafico() {
         if (!this.currentTicker || this.isChartLoading) return;
         this.isChartLoading = true;
@@ -128,12 +162,17 @@ export const UIManager = {
             updateChartData(nuevosDatosVelas);
         } catch (error) {
             console.error(`Error al actualizar el gráfico para ${this.currentTicker}/${this.currentInterval}:`, error);
-            updateChartData([]);
+            updateChartData([]); // Limpia el gráfico en caso de error
         } finally {
             this.isChartLoading = false;
         }
     },
     
+    /**
+     * @private
+     * Maneja el cambio de intervalo de tiempo para el gráfico.
+     * @param {Event} event - El objeto de evento del clic.
+     */
     handleTimeframeChange(event) {
         this.currentInterval = $(event.currentTarget).data('interval');
         $(event.currentTarget).addClass('active').siblings().removeClass('active');
@@ -141,13 +180,22 @@ export const UIManager = {
         saveTradingState(this.currentTicker, this.currentInterval);
     },
 
+    /**
+     * @private
+     * Gestiona la visibilidad y obligatoriedad de los campos de precio según el tipo de orden.
+     */
     handleTipoOrdenChange() {
         const tipoOrden = $('input[name="tipo-orden"]:checked').val();
-        const [campoStop, inputStop, labelStop] = [$('#campo-precio-disparo'), $('#precio_disparo'), $('#label-precio-disparo')];
-        const [campoLimit, inputLimit] = [$('#campo-precio-limite'), $('#precio_limite')];
+        const campoStop = $('#campo-precio-disparo');
+        const inputStop = $('#precio_disparo');
+        const labelStop = $('#label-precio-disparo');
+        const campoLimit = $('#campo-precio-limite');
+        const inputLimit = $('#precio_limite');
 
-        [campoStop, campoLimit].forEach(f => f.hide());
-        [inputStop, inputLimit].forEach(i => i.prop('required', false));
+        campoStop.hide();
+        campoLimit.hide();
+        inputStop.prop('required', false);
+        inputLimit.prop('required', false);
     
         if (tipoOrden === 'limit') {
             labelStop.text('Precio Límite');
@@ -156,25 +204,32 @@ export const UIManager = {
         } else if (tipoOrden === 'stop-limit') {
             labelStop.text('Precio Stop');
             campoStop.show();
-            campoLimit.show();
             inputStop.prop('required', true);
+            
+            campoLimit.show();
             inputLimit.prop('required', true);
         }
         this.updateDynamicLabels();
     },
 
+    /**
+     * Renderiza la tabla de órdenes abiertas con los datos proporcionados.
+     * @param {Array<object>} ordenes - Un array de objetos, cada uno representando una orden abierta.
+     */
     renderOrdenesAbiertas(ordenes) {
-        const tablaBody = $('#tabla-ordenes-abiertas tbody');
+        const tablaBody = $('#tabla-ordenes-abiertas');
+        if (!tablaBody.length) return;
+
         if (!ordenes || ordenes.length === 0) {
             tablaBody.html('<tr><td colspan="7" class="text-center text-muted py-3">No hay órdenes abiertas.</td></tr>');
             return;
-        } 
+        }
         
         const createOrdenAbiertaRowHTML = (orden) => {
             const fechaCreacion = new Date(orden.timestamp_creacion).toLocaleString('es-AR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-            const tipoOrdenClase = orden.accion === 'comprar' ? 'text-success' : 'text-danger';
+            const tipoOrdenClase = orden.accion === 'compra' ? 'text-success' : 'text-danger';
             const cantidad = orden.cantidad_cripto_principal;
-            const tickerCantidad = orden.accion === 'vender' ? orden.moneda_origen : orden.moneda_destino;
+            const tickerCantidad = orden.accion === 'venta' ? orden.moneda_origen : orden.moneda_destino;
             const tipoOrdenFormatted = orden.tipo_orden.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
             
             return `
@@ -191,6 +246,11 @@ export const UIManager = {
         tablaBody.html(ordenes.map(createOrdenAbiertaRowHTML).join(''));
     },
     
+    /**
+     * @private
+     * Maneja el clic en el botón 'Cancelar' de una orden abierta.
+     * @param {Event} event - El objeto de evento del clic.
+     */
     async handleCancelClick(event) {
         const orderId = $(event.currentTarget).data('id-orden');
         const result = await Swal.fire({
@@ -205,15 +265,22 @@ export const UIManager = {
                 const respuesta = await AppDataManager.handleCancelOrder(orderId);
                 Toast.fire({ icon: 'success', html: respuesta.mensaje });
                 $(event.currentTarget).closest('tr').fadeOut(400, function() { $(this).remove(); });
-                this.updateDynamicLabels();
+                this.updateDynamicLabels(); // Actualizar saldo tras cancelación
             } catch (error) {
                 Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cancelar la orden.', background: '#212529', color: '#f8f9fa' });
             }
         }
     },
 
+    /**
+     * @private
+     * Valida y sanea en tiempo real los campos de entrada numéricos.
+     * @param {Event} event - El objeto de evento del input.
+     * @param {number} [maxDecimales=8] - El número máximo de decimales permitidos.
+     */
     validarInputNumerico(event, maxDecimales = 8) {
         const input = event.target;
+        // Permite solo números y un punto decimal.
         let value = input.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
         const parts = value.split('.');
         if (parts[1] && parts[1].length > maxDecimales) {

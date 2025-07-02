@@ -1,39 +1,59 @@
-"""
-Servicio para interactuar con APIs externas de criptomonedas.
+"""Adaptador de APIs Externas para la Ingesta de Datos de Mercado.
 
-Este módulo centraliza las llamadas a las APIs de CoinGecko (para cotizaciones
-generales del mercado) y Binance (para datos de velas/k-lines). Se encarga de
-realizar las peticiones, procesar los datos y guardarlos localmente.
+Este módulo actúa como una capa de abstracción (Facade/Adapter) que aísla al
+resto de la aplicación de las complejidades de las APIs de terceros (CoinGecko,
+Binance). Su responsabilidad sigue un patrón ETL (Extract, Transform, Load):
+
+-   **Extract**: Realiza peticiones HTTP a los endpoints de las APIs externas.
+-   **Transform**: Procesa las respuestas JSON, las limpia, y las mapea a un
+    esquema de datos interno y estandarizado para el simulador.
+-   **Load**: Persiste los datos transformados en un archivo local (JSON) que
+    funciona como una caché para minimizar las llamadas a la API y mejorar
+    el rendimiento.
 """
 
 from decimal import Decimal
 import requests
 import json
+from typing import Any, Dict, List
 
 from backend.acceso_datos.datos_cotizaciones import guardar_datos_cotizaciones
-from config import COINGECKO_URL, BINANCE_URL, CANTIDAD_CRIPTOMONEDAS, CANTIDAD_VELAS
+import config
 
-def obtener_datos_criptos_coingecko() -> list[dict]:
-    """
-    Obtiene y procesa datos de mercado desde la API de CoinGecko.
+def obtener_datos_criptos_coingecko() -> List[Dict[str, Any]]:
+    """Implementa el pipeline ETL para los datos de mercado de CoinGecko.
 
-    Realiza una petición para obtener una lista de las principales criptomonedas,
-    procesa la respuesta JSON y guarda los datos crudos en un archivo local.
-    El formateo para la UI se delega a otra capa de servicio.
+    1.  **Extract**: Realiza una petición GET a la API de CoinGecko para obtener
+        las principales criptomonedas por capitalización de mercado.
+    2.  **Transform**: Itera sobre la respuesta JSON. Cada objeto de criptomoneda
+        es mapeado a un diccionario con una estructura interna definida.
+        Los valores numéricos se convierten a `Decimal` para precisión y luego
+        a `str` para su almacenamiento serializado en JSON.
+    3.  **Load**: Llama a `guardar_datos_cotizaciones` para persistir la lista
+        transformada en un archivo local, que actúa como caché.
+
+    Returns:
+        Una lista de diccionarios con el formato interno estandarizado.
+        Retorna una lista vacía si ocurre cualquier error de red o de parseo.
+
+    Side Effects:
+        - Sobrescribe el archivo de cotizaciones (`cotizaciones.json`) con los
+          nuevos datos obtenidos.
     """
     params = {
         "vs_currency": "usd",
         "order": "market_cap_desc",
-        "per_page": CANTIDAD_CRIPTOMONEDAS,
+        "per_page": config.CANTIDAD_CRIPTOMONEDAS,
         "page": 1,
         "sparkline": "false",
         "price_change_percentage": "1h,24h,7d",
     }
 
     try:
-        respuesta = requests.get(COINGECKO_URL, params, timeout=10)
+        respuesta = requests.get(config.COINGECKO_URL, params, timeout=10)
         respuesta.raise_for_status()
     except requests.exceptions.RequestException as e:
+        # En un entorno de producción, esto debería ser manejado por un sistema de logging.
         print(f"❌ Error al obtener datos de CoinGecko: {str(e)}")
         return []
 
@@ -57,6 +77,7 @@ def obtener_datos_criptos_coingecko() -> list[dict]:
                 "circulating_supply": str(Decimal(str(dato.get("circulating_supply", 0)))),
             })
     except (KeyError, TypeError, ValueError, json.JSONDecodeError) as e:
+        # En un entorno de producción, esto debería ser manejado por un sistema de logging.
         print(f"❌ Error al procesar los datos de CoinGecko: {str(e)}")
         return []
 
@@ -65,19 +86,32 @@ def obtener_datos_criptos_coingecko() -> list[dict]:
     return resultado
 
 
-def obtener_velas_de_api(ticker: str, interval: str) -> list[dict]:
-    """
-    Obtiene datos históricos de velas (K-lines) desde la API de Binance.
+def obtener_velas_de_api(ticker: str, interval: str) -> List[Dict[str, Any]]:
+    """Obtiene y transforma datos de velas (K-lines) desde la API de Binance.
+
+    Realiza una petición a la API de Binance y transforma la respuesta, que es
+    una lista de listas, en un formato más legible y útil para el frontend:
+    una lista de diccionarios con claves explícitas (timestamp, open, high, etc.).
+
+    Args:
+        ticker: El ticker del par a consultar (ej. "BTC"). Se le añade "USDT"
+                automáticamente para formar el par de trading.
+        interval: El intervalo de tiempo para las velas (ej. "1h", "4h", "1d").
+
+    Returns:
+        Una lista de diccionarios, donde cada uno representa una vela. Devuelve
+        una lista vacía si ocurre un error de red o de formato de datos.
     """
     params = {
         "symbol": f"{ticker.upper()}USDT",
         "interval": interval,
-        "limit": CANTIDAD_VELAS,
+        "limit": config.CANTIDAD_VELAS,
     }
     try:
-        respuesta = requests.get(BINANCE_URL, params, timeout=10)
+        respuesta = requests.get(config.BINANCE_URL, params, timeout=10)
         respuesta.raise_for_status()
     except requests.exceptions.RequestException as e:
+        # En un entorno de producción, esto debería ser manejado por un sistema de logging.
         print(f"❌ Error al obtener datos de Binance para {ticker} ({interval}): {str(e)}")
         return []
 
@@ -89,11 +123,17 @@ def obtener_velas_de_api(ticker: str, interval: str) -> list[dict]:
             print(f"⚠️ Respuesta inesperada de Binance para {ticker} ({interval}): {datos}")
             return []
         
+        # La API de Binance devuelve una lista de listas.
+        # Cada sub-lista se mapea a un diccionario con claves descriptivas.
+        # El timestamp se convierte de milisegundos a segundos.
         resultado = [
             {
-                "time": int(vela[0] / 1000), "open": str(Decimal(vela[1])),
-                "high": str(Decimal(vela[2])), "low": str(Decimal(vela[3])),
-                "close": str(Decimal(vela[4])), "volume": str(Decimal(vela[5])),
+                "time": int(vela[0] / 1000),
+                "open": str(Decimal(vela[1])),
+                "high": str(Decimal(vela[2])),
+                "low": str(Decimal(vela[3])),
+                "close": str(Decimal(vela[4])),
+                "volume": str(Decimal(vela[5])),
             }
             for vela in datos
         ]

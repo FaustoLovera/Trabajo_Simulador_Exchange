@@ -1,90 +1,147 @@
-"""
-Módulo de acceso a datos de cotizaciones.
+"""Módulo de acceso a datos de cotizaciones de criptomonedas.
 
-Este módulo utiliza un diccionario a nivel de módulo como caché de precios para
-mayor simplicidad y claridad. El caché se carga bajo demanda.
-
-Expone públicamente:
-- obtener_precio(ticker): Obtiene el precio de una cripto, usando el caché.
-- recargar_cache_precios(): Fuerza la recarga del caché desde el archivo.
-- cargar_datos_cotizaciones(): Carga la lista de cotizaciones desde el archivo.
-- guardar_datos_cotizaciones(data): Guarda las cotizaciones y actualiza el caché.
+Este módulo gestiona la carga y guardado de datos de cotizaciones desde un
+archivo JSON. Para optimizar el acceso a los precios, utiliza un caché en
+memoria que se carga bajo demanda la primera vez que se solicita un precio.
 """
 
 import json
 import os
 from decimal import Decimal
-from typing import Any
+from typing import Any, Optional
 
-from config import COTIZACIONES_PATH
+import config
 
-# El caché es ahora un diccionario explícito a nivel de módulo.
-_cache_precios: dict[str, Decimal] = {}
+# Caché de precios en memoria para un acceso rápido y eficiente.
+# Se puebla bajo demanda y las claves (tickers) se guardan en mayúsculas.
+# Formato: {'TICKER': {'ticker': 'TICKER', 'precio_usd': '123.45', ...}}
+_cache_precios: dict[str, dict[str, Any]] = {}
 
-def recargar_cache_precios(ruta_archivo=COTIZACIONES_PATH):
-    """
-    Lee el archivo JSON y puebla el caché de precios.
-    Esta función ahora es pública y puede ser llamada desde los tests para
-    inyectar diferentes fuentes de datos.
+def limpiar_cache_precios():
+    """Limpia el caché de precios en memoria.
+
+    Esta función es esencial para el aislamiento de las pruebas, permitiendo
+    que cada test se ejecute en un estado limpio sin ser afectado por los
+    datos de pruebas anteriores.
+
+    Side Effects:
+        - Modifica la variable global `_cache_precios`, reiniciándola a un
+          diccionario vacío.
     """
     global _cache_precios
-    print(f"🔄 Recargando caché de precios desde '{ruta_archivo}'...")
+    _cache_precios = {}
+    print("🧹 Caché de precios limpiado.")
 
-    if not os.path.exists(ruta_archivo) or os.path.getsize(ruta_archivo) == 0:
+def recargar_cache_precios(ruta_archivo: Optional[str] = None):
+    """(Re)carga el caché de precios desde un archivo JSON.
+
+    Esta función lee el archivo de cotizaciones, lo procesa y actualiza la
+    variable global `_cache_precios`. Está diseñada para ser llamada
+    internamente o para fines de prueba.
+
+    Args:
+        ruta_archivo (Optional[str]): La ruta al archivo JSON de cotizaciones.
+                                     Si es None, usa la ruta de config.
+
+    Side Effects:
+        - Modifica la variable global `_cache_precios`.
+    """
+    ruta_a_usar = ruta_archivo if ruta_archivo is not None else config.COTIZACIONES_PATH
+    global _cache_precios
+    print(f"🔄 Recargando caché de precios desde '{ruta_a_usar}'...")
+
+    if not os.path.exists(ruta_a_usar) or os.path.getsize(ruta_a_usar) == 0:
         lista_criptos = []
     else:
         try:
-            with open(ruta_archivo, "r", encoding="utf-8") as f:
+            with open(ruta_a_usar, "r", encoding="utf-8") as f:
                 lista_criptos = json.load(f)
-        except (json.JSONDecodeError, FileNotFoundError):
-            print(f"⚠️ No se pudo leer el archivo de cotizaciones en '{ruta_archivo}'. Se usará una lista vacía.")
+        except Exception as e:
+            print(f"⚠️ No se pudo leer el archivo de cotizaciones en '{ruta_a_usar}'. Se usará una lista vacía. Error: {e}")
             lista_criptos = []
 
     _cache_precios = {
-        cripto.get("ticker", "").upper(): Decimal(str(cripto.get("precio_usd", "0")))
+        cripto.get("ticker", "").upper(): cripto
         for cripto in lista_criptos
-        if cripto.get("ticker")  # Asegurarse de que el ticker no sea None o vacío
+        if cripto.get("ticker")
     }
     print("✅ Caché de precios actualizado en memoria.")
 
-def obtener_precio(ticker: str) -> Decimal | None:
+def obtener_precio(ticker: str, ruta_archivo: Optional[str] = None) -> Optional[Decimal]:
+    """Obtiene el precio de un activo, con opción de recarga forzada desde una ruta.
+
+    Si se proporciona una `ruta_archivo`, fuerza la recarga del caché desde esa
+    ruta. Si no, utiliza el caché existente o lo carga perezosamente si está vacío.
+    Esto es crucial para que los tests puedan operar con datos aislados.
+
+    Args:
+        ticker (str): El ticker del activo (ej. 'BTC'), insensible a mayúsculas.
+        ruta_archivo (Optional[str], optional): Ruta al archivo JSON para forzar
+            la recarga. Por defecto None.
+
+    Returns:
+        Optional[Decimal]: El precio como un objeto Decimal si se encuentra,
+                           o None si el ticker no existe.
     """
-    Obtiene el precio desde el caché. Si está vacío, lo carga primero.
-    """
-    if not _cache_precios:
+    # Si se pasa una ruta, se fuerza la recarga. Si no, se usa lazy-loading.
+    if ruta_archivo:
+        recargar_cache_precios(ruta_archivo)
+    elif not _cache_precios:
         recargar_cache_precios()
+
+    info_cripto = _cache_precios.get(ticker.upper())
+    if info_cripto and "precio_usd" in info_cripto:
+        return Decimal(str(info_cripto["precio_usd"]))
     
-    return _cache_precios.get(ticker.upper())
+    return None
 
-def cargar_datos_cotizaciones(ruta_archivo=COTIZACIONES_PATH) -> list[dict]:
+def cargar_datos_cotizaciones(ruta_archivo: Optional[str] = None) -> list[dict]:
+    """Carga y devuelve la lista completa de cotizaciones desde el archivo JSON.
+
+    Esta función lee directamente del disco sin interactuar con el caché. Es ideal
+    para obtener la lista completa de activos para mostrar en la interfaz.
+
+    Args:
+        ruta_archivo (str): La ruta al archivo JSON de cotizaciones.
+
+    Returns:
+        list[dict]: Una lista de diccionarios con los datos de las cotizaciones.
+                    Devuelve una lista vacía en caso de error.
     """
-    Carga la lista completa de cotizaciones desde el archivo.
-    Esto es necesario para el módulo de presentación que formatea todos los datos.
-    """
-    if not os.path.exists(ruta_archivo) or os.path.getsize(ruta_archivo) == 0:
+    ruta_a_usar = ruta_archivo if ruta_archivo else config.COTIZACIONES_PATH
+    if not os.path.exists(ruta_a_usar) or os.path.getsize(ruta_a_usar) == 0:
         return []
     try:
-        with open(ruta_archivo, "r", encoding="utf-8") as f:
+        with open(ruta_a_usar, "r", encoding="utf-8") as f:
             return json.load(f)
-    except (json.JSONDecodeError, FileNotFoundError):
+    except Exception as e:
+        print(f"Advertencia: No se pudo leer o el archivo '{ruta_a_usar}' está corrupto. Error: {e}")
         return []
 
-def guardar_datos_cotizaciones(data: list[dict[str, Any]], ruta_archivo=COTIZACIONES_PATH):
+def guardar_datos_cotizaciones(data: list[dict[str, Any]], ruta_archivo: Optional[str] = None):
+    """Guarda los datos de cotizaciones y recarga el caché para mantener consistencia.
+
+    Escribe la lista de datos en el archivo JSON. Si el archivo modificado es el
+    que usa la aplicación principal, se fuerza una recarga del caché para que
+    los cambios se reflejen inmediatamente en el sistema.
+
+    Args:
+        data (list[dict[str, Any]]): La lista de cotizaciones a guardar.
+        ruta_archivo (str): La ruta del archivo donde se guardarán los datos.
+
+    Side Effects:
+        - Escribe o sobrescribe un archivo en disco.
+        - Puede disparar una recarga del caché de precios.
     """
-    Guarda los datos de cotizaciones en el archivo.
-    Después de guardar, fuerza automáticamente la recarga del caché en memoria si
-    la ruta de guardado es la misma que la de configuración principal.
-    """
-    os.makedirs(os.path.dirname(ruta_archivo), exist_ok=True)
-    print(f"💾 Guardando datos en '{ruta_archivo}'...")
+    ruta_a_usar = ruta_archivo if ruta_archivo else config.COTIZACIONES_PATH
+    print(f"💾 Guardando datos en '{ruta_a_usar}'...")
     try:
-        with open(ruta_archivo, "w", encoding="utf-8") as archivo:
-            json.dump(data, archivo, indent=4)
+        with open(ruta_a_usar, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
         print("✅ Datos de cotizaciones guardados en archivo.")
-        
-        # Si la ruta guardada es la misma que la de configuración, recargamos el caché global.
-        if ruta_archivo == COTIZACIONES_PATH:
-            recargar_cache_precios()
-            
-    except (IOError, TypeError) as e:
-        print(f"❌ Error al guardar el archivo de cotizaciones: {e}")
+
+        # Forzar recarga del caché desde la ruta usada para mantener consistencia.
+        recargar_cache_precios(ruta_a_usar)
+
+    except Exception as e:
+        print(f"❌ Error al guardar los datos de cotizaciones: {e}")
