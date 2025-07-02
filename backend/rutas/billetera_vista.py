@@ -11,6 +11,7 @@ from backend.servicios.estado_billetera import estado_actual_completo, obtener_h
 from backend.acceso_datos.datos_comisiones import cargar_comisiones
 from backend.acceso_datos.datos_ordenes import cargar_ordenes_pendientes
 from backend.servicios.trading.gestor import cancelar_orden_pendiente
+from config import ESTADO_PENDIENTE
 
 bp = Blueprint("billetera", __name__)
 
@@ -74,27 +75,18 @@ def get_ordenes_abiertas():
     """
     todas_las_ordenes = cargar_ordenes_pendientes()
     # Filtramos para devolver solo las que están activas
-    ordenes_abiertas = [o for o in todas_las_ordenes if o.get("estado") == "pendiente"]
+    ordenes_abiertas = [o for o in todas_las_ordenes if o.get("estado") == ESTADO_PENDIENTE]
     return jsonify(ordenes_abiertas)
 
 @bp.route("/api/orden/cancelar/<string:id_orden>", methods=["POST"])
 def cancelar_orden_api(id_orden: str):
     """
-    ### REFACTORIZADO ### - Endpoint de API para cancelar una orden pendiente.
+    Endpoint de API para cancelar una orden pendiente.
     Devuelve una respuesta JSON estandarizada.
     """
     resultado = cancelar_orden_pendiente(id_orden)
     
-    if "error" in resultado:
-        # Si el diccionario de resultado contiene un error, devolvemos un estado 400 (Bad Request).
-        return jsonify({
-            "estado": "error",
-            "mensaje": resultado["error"]
-        }), 400
+    if resultado["estado"] == "error":
+        return jsonify(resultado), 400
     else:
-        # Si no hay error, devolvemos un estado 200 (OK).
-        return jsonify({
-            "estado": "ok",
-            "mensaje": resultado["mensaje"],
-            "datos": resultado.get("datos", {})
-        }), 200
+        return jsonify(resultado), 200

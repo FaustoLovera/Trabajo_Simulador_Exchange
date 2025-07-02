@@ -9,56 +9,43 @@ cumplan ciertas condiciones de mercado.
 """
 import json
 import os
+from typing import Optional
 from config import ORDENES_PENDIENTES_PATH
 
-
-def cargar_ordenes_pendientes() -> list[dict]:
+def cargar_ordenes_pendientes(ruta_archivo: Optional[str] = None) -> list[dict]:
     """
     Carga la lista de órdenes pendientes desde el archivo JSON.
-
-    Si el archivo no existe o está vacío, devuelve una lista vacía.
-
-    Returns:
-        list[dict]: Una lista de diccionarios, donde cada uno es una orden pendiente.
+    Si no se provee una ruta, usa la ruta por defecto de la configuración.
     """
-    # Asegura que el directorio exista
-    os.makedirs(os.path.dirname(ORDENES_PENDIENTES_PATH), exist_ok=True)
+    ruta_efectiva = ruta_archivo if ruta_archivo is not None else ORDENES_PENDIENTES_PATH
+    os.makedirs(os.path.dirname(ruta_efectiva), exist_ok=True)
     
-    if not os.path.exists(ORDENES_PENDIENTES_PATH) or os.path.getsize(ORDENES_PENDIENTES_PATH) == 0:
+    if not os.path.exists(ruta_efectiva) or os.path.getsize(ruta_efectiva) == 0:
         return []
 
     try:
-        with open(ORDENES_PENDIENTES_PATH, "r", encoding="utf-8") as f:
+        with open(ruta_efectiva, "r", encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, FileNotFoundError):
-        print(f"Advertencia: No se pudo leer o el archivo '{ORDENES_PENDIENTES_PATH}' está corrupto.")
+        print(f"Advertencia: No se pudo leer o el archivo '{ruta_efectiva}' está corrupto.")
         return []
 
-
-def guardar_ordenes_pendientes(lista_ordenes: list[dict]):
+def guardar_ordenes_pendientes(lista_ordenes: list[dict], ruta_archivo: Optional[str] = None):
     """
     Guarda la lista completa de órdenes pendientes en el archivo JSON.
-
-    Esta función sobrescribe el archivo con la lista proporcionada. Se utiliza
-    para actualizar el estado de las órdenes (ej. de 'pendiente' a 'ejecutada').
-
-    Args:
-        lista_ordenes (list[dict]): La lista completa de órdenes a guardar.
+    Si no se provee una ruta, usa la ruta por defecto de la configuración.
     """
-    # Asegura que el directorio exista
-    os.makedirs(os.path.dirname(ORDENES_PENDIENTES_PATH), exist_ok=True)
+    ruta_efectiva = ruta_archivo if ruta_archivo is not None else ORDENES_PENDIENTES_PATH
+    os.makedirs(os.path.dirname(ruta_efectiva), exist_ok=True)
 
-    with open(ORDENES_PENDIENTES_PATH, "w", encoding="utf-8") as f:
+    with open(ruta_efectiva, "w", encoding="utf-8") as f:
         json.dump(lista_ordenes, f, indent=4)
 
-
-def agregar_orden_pendiente(nueva_orden: dict):
+def agregar_orden_pendiente(nueva_orden: dict, ruta_archivo: Optional[str] = None):
     """
     Añade una nueva orden a la lista de órdenes pendientes y la guarda.
-
-    Args:
-        nueva_orden (dict): El diccionario que representa la nueva orden a agregar.
+    Si no se provee una ruta, usa la ruta por defecto de la configuración.
     """
-    ordenes = cargar_ordenes_pendientes()
+    ordenes = cargar_ordenes_pendientes(ruta_archivo=ruta_archivo)
     ordenes.append(nueva_orden)
-    guardar_ordenes_pendientes(ordenes)
+    guardar_ordenes_pendientes(ordenes, ruta_archivo=ruta_archivo)

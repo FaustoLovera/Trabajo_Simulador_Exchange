@@ -1,15 +1,19 @@
 # backend/servicios/estado_billetera.py
 
 from decimal import Decimal
+
 from backend.acceso_datos.datos_billetera import cargar_billetera
 from backend.acceso_datos.datos_historial import cargar_historial
-# ### LÍNEA CORREGIDA ###
-from backend.acceso_datos.datos_cotizaciones import obtener_precio, cargar_datos_cotizaciones
+# Se elimina la importación de obtener_precio, ya que no se usará el caché global en los tests.
+from backend.acceso_datos.datos_cotizaciones import cargar_datos_cotizaciones
 from backend.utils.utilidades_numericas import (
     a_decimal, formato_cantidad_usd, formato_cantidad_cripto, formato_porcentaje
 )
 from backend.utils.formatters import format_datetime
-from config import UMBRAL_POLVO_USD, UMBRAL_CASI_CERO
+from config import (
+    UMBRAL_POLVO_USD, UMBRAL_CASI_CERO,
+    BILLETERA_PATH, HISTORIAL_PATH, COTIZACIONES_PATH
+)
 
 def _division_segura(numerador: Decimal, denominador: Decimal) -> Decimal:
     return numerador / denominador if denominador > a_decimal(0) else a_decimal(0)
@@ -72,11 +76,17 @@ def _formatear_activo_para_presentacion(activo_calculado: dict, cripto_info: dic
         "porcentaje_formatted": formato_porcentaje(porcentaje_en_billetera),
     }
 
-def estado_actual_completo() -> list[dict]:
-    billetera = cargar_billetera()
-    historial = cargar_historial()
+def estado_actual_completo(
+    ruta_billetera: str = BILLETERA_PATH,
+    ruta_historial: str = HISTORIAL_PATH,
+    ruta_cotizaciones: str = COTIZACIONES_PATH
+) -> list[dict]:
+    billetera = cargar_billetera(ruta_archivo=ruta_billetera)
+    historial = cargar_historial(ruta_archivo=ruta_historial)
+    cotizaciones_raw = cargar_datos_cotizaciones(ruta_archivo=ruta_cotizaciones)
     
-    info_criptos = {c['ticker']: c for c in cargar_datos_cotizaciones()}
+    info_criptos = {c['ticker']: c for c in cotizaciones_raw}
+    precios_locales = {c['ticker']: a_decimal(c.get('precio_usd', '0')) for c in cotizaciones_raw}
     
     # ### LA SOLUCIÓN ESTÁ AQUÍ ###
     # Forzamos el nombre y logo canónicos para USDT, ignorando lo que venga de la API.
@@ -107,7 +117,7 @@ def estado_actual_completo() -> list[dict]:
                 "porcentaje_ganancia": a_decimal(0),
             }
         else:
-            precio_actual = obtener_precio(ticker) or a_decimal(0)
+            precio_actual = precios_locales.get(ticker, a_decimal(0))
             datos_compra_activo = datos_compra_por_ticker.get(ticker, {})
             metricas = _calcular_metricas_activo(ticker, cantidad_total, precio_actual, datos_compra_activo)
         
@@ -124,8 +134,8 @@ def estado_actual_completo() -> list[dict]:
     ]
     return activos_para_presentacion
 
-def obtener_historial_formateado() -> list[dict]:
-    historial_crudo = cargar_historial()
+def obtener_historial_formateado(ruta_historial: str = HISTORIAL_PATH) -> list[dict]:
+    historial_crudo = cargar_historial(ruta_archivo=ruta_historial)
     historial_formateado = []
     for item in historial_crudo:
         tipo_op = item.get('tipo', '')

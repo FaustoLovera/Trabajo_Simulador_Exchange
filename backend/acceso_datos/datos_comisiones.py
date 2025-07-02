@@ -5,32 +5,35 @@ import json
 import os
 from datetime import datetime
 from decimal import Decimal
+from typing import Optional
 
-# Importamos las nuevas utilidades numéricas
 from backend.utils.utilidades_numericas import cuantizar_cripto, cuantizar_usd
 from config import COMISIONES_PATH
 
-def cargar_comisiones() -> list:
+def cargar_comisiones(ruta_archivo: Optional[str] = None) -> list:
     """Carga el historial de comisiones desde el archivo JSON."""
-    if not os.path.exists(COMISIONES_PATH) or os.path.getsize(COMISIONES_PATH) == 0:
+    ruta_efectiva = ruta_archivo if ruta_archivo is not None else COMISIONES_PATH
+    if not os.path.exists(ruta_efectiva) or os.path.getsize(ruta_efectiva) == 0:
         return []
     try:
-        with open(COMISIONES_PATH, "r", encoding="utf-8") as f:
+        with open(ruta_efectiva, "r", encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, FileNotFoundError):
-        print(f"Advertencia: No se pudo leer o el archivo '{COMISIONES_PATH}' está corrupto.")
+        print(f"Advertencia: No se pudo leer o el archivo '{ruta_efectiva}' está corrupto.")
         return []
 
 def registrar_comision(
     ticker_comision: str,
     cantidad_comision: Decimal,
-    valor_usd_comision: Decimal
+    valor_usd_comision: Decimal,
+    ruta_archivo: Optional[str] = None
 ):
     """
     Guarda un nuevo registro de comisión usando las utilidades de cuantización.
     """
-    os.makedirs(os.path.dirname(COMISIONES_PATH), exist_ok=True)
-    comisiones = cargar_comisiones()
+    ruta_efectiva = ruta_archivo if ruta_archivo is not None else COMISIONES_PATH
+    os.makedirs(os.path.dirname(ruta_efectiva), exist_ok=True)
+    comisiones = cargar_comisiones(ruta_archivo=ruta_efectiva)
 
     cantidad_comision_q = cuantizar_cripto(cantidad_comision)
     valor_usd_comision_q = cuantizar_usd(valor_usd_comision)
@@ -51,5 +54,5 @@ def registrar_comision(
 
     comisiones.insert(0, nueva_comision)
 
-    with open(COMISIONES_PATH, "w", encoding="utf-8") as f:
+    with open(ruta_efectiva, "w", encoding="utf-8") as f:
         json.dump(comisiones, f, indent=4)

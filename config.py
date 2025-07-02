@@ -1,7 +1,20 @@
-# config.py
-### MODIFICADO ###
-
 import os
+
+# --- CONSTANTES DE LA APLICACIÓN ---
+# Acciones de Trading
+ACCION_COMPRAR = "comprar"
+ACCION_VENDER = "vender"
+
+# Tipos de Órdenes
+TIPO_ORDEN_MERCADO = "market"
+TIPO_ORDEN_LIMITE = "limit"
+TIPO_ORDEN_STOP_LIMIT = "stop-limit"
+
+# Estados de Órdenes
+ESTADO_PENDIENTE = "pendiente"
+ESTADO_EJECUTADA = "ejecutada"
+ESTADO_CANCELADA = "cancelada"
+ESTADO_ERROR = "error"
 from decimal import getcontext, ROUND_HALF_DOWN, Decimal
 from dotenv import load_dotenv
 

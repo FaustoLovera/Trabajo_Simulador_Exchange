@@ -2,18 +2,27 @@
 === REPORTE DE CÓDIGO CONSOLIDADO ===
 Proyecto: Trabajo_Simulador_Exchange
 Ruta: /Users/andreiveis/UADE/2do cuatrimestre/05_Algoritmos y Estructura de datos I/Trabajo_Simulador_Exchange
-Generado el: Thu Jun 26 23:16:39 -03 2025
+Generado el: Tue Jul  1 21:20:10 -03 2025
 ==================================================
 
 --- INFORMACIÓN DEL REPOSITORIO GIT ---
 Rama actual: fix_codigo
-Último commit: b9bc3ad - Ordenes MARKET y LIMITE OK. Falta correcto diseño de stop-limit. Ahora trabajando en eso. (andreiveisuade, 6 hours ago)
+Último commit: 07e451f - Mejora en la visualizacion de los numeros con los decimales y las comas (andreiveisuade, 5 days ago)
 ---
 
 --- ESTRUCTURA DEL DIRECTORIO ---
 .
 ├── .env
 ├── .gitignore
+├── .pytest_cache
+│   ├── .gitignore
+│   ├── CACHEDIR.TAG
+│   ├── README.md
+│   └── v
+│       └── cache
+│           ├── lastfailed
+│           ├── nodeids
+│           └── stepwise
 ├── backend
 │   ├── __init__.py
 │   ├── acceso_datos
@@ -42,6 +51,7 @@ Rama actual: fix_codigo
 │   │       └── procesador.py
 │   └── utils
 │       ├── formatters.py
+│       ├── responses.py
 │       └── utilidades_numericas.py
 ├── config.py
 ├── documentacion.md
@@ -57,6 +67,7 @@ Rama actual: fix_codigo
 │   │       │   ├── domElements.js
 │   │       │   ├── formLogic.js
 │   │       │   ├── tablaCotizacionesUI.js
+│   │       │   ├── uiManager.js
 │   │       │   ├── uiState.js
 │   │       │   └── uiUpdater.js
 │   │       ├── pages
@@ -65,6 +76,7 @@ Rama actual: fix_codigo
 │   │       │   └── tradingPage.js
 │   │       ├── services
 │   │       │   ├── apiService.js
+│   │       │   ├── appDataManager.js
 │   │       │   ├── appState.js
 │   │       │   └── statePersistence.js
 │   │       └── utils
@@ -77,13 +89,19 @@ Rama actual: fix_codigo
 ├── pytest.ini
 ├── README.md
 ├── requirements.txt
+├── run.py
 └── tests
     ├── __init__.py
+    ├── conftest.py
+    ├── test_datos_cotizaciones.py
+    ├── test_ejecutar_orden.py
     ├── test_estado_billetera.py
-    ├── test_trading_logica.py
-    └── test_velas_logica.py
+    ├── test_trading_gestor.py
+    ├── test_trading_motor.py
+    ├── test_trading_procesador.py
+    └── test_utilidades_numericas.py
 
-18 directories, 53 files
+21 directories, 68 files
 ---
 
 ==================================================
@@ -99,11 +117,13 @@ FLASK_SECRET_KEY='f9ce7ff641c611e7e519d1551ccdfd699929967d87528324'
 ==================================================
 
 # ARCHIVOS PROPIOS NUESTROS
+/datos/
 /datos/datos_cotizaciones.json
 /datos/datos_velas.json
 /datos/billetera.json
 /datos/historial_operaciones.json
-
+/datos/ordenes_pendientes.json
+Trabajo_Simulador_Exchange_REPORT.txt
 
 # Python
 __pycache__/
@@ -215,6 +235,191 @@ diagrama.png
 
 
 ==================================================
+=== ARCHIVO: ./.pytest_cache/.gitignore ===
+==================================================
+
+# Created by pytest automatically.
+*
+
+
+==================================================
+=== ARCHIVO: ./.pytest_cache/CACHEDIR.TAG ===
+==================================================
+
+Signature: 8a477f597d28d172789f06886806bc55
+# This file is a cache directory tag created by pytest.
+# For information about cache directory tags, see:
+#	https://bford.info/cachedir/spec.html
+
+
+==================================================
+=== ARCHIVO: ./.pytest_cache/README.md ===
+==================================================
+
+# pytest cache directory #
+
+This directory contains data from the pytest's cache plugin,
+which provides the `--lf` and `--ff` options, as well as the `cache` fixture.
+
+**Do not** commit this to version control.
+
+See [the docs](https://docs.pytest.org/en/stable/how-to/cache.html) for more information.
+
+
+==================================================
+=== ARCHIVO: ./.pytest_cache/v/cache/lastfailed ===
+==================================================
+
+{
+  "tests/test_estado_billetera.py::test_estado_actual_completo": true,
+  "tests/test_trading_logica.py::test_compra_ingresando_monto_cripto": true,
+  "tests/test_trading_logica.py::test_compra_ingresando_total_fiat": true,
+  "tests/test_trading_logica.py::test_venta_ingresando_monto_cripto": true,
+  "tests/test_trading_logica.py::test_calculo_con_monto_cero": true,
+  "tests/test_trading_logica.py::test_calculo_con_precio_destino_cero": true,
+  "tests/test_trading_logica.py::test_falla_al_vender_en_modo_total": true,
+  "tests/test_trading_logica.py::test_ejecutar_orden_mercado_compra_exitosa": true,
+  "tests/test_trading_logica.py::test_ejecutar_orden_mercado_falla_ejecucion": true,
+  "tests/test_trading_logica.py::test_crear_orden_compra_limite_modo_total_exitosa": true,
+  "tests/test_trading_logica.py::test_crear_orden_venta_limite_exitosa": true,
+  "tests/test_trading_motor.py::test_ejecutar_orden_limite_simple": true,
+  "tests/test_trading_procesador.py::test_calcular_detalles_intercambio_exitoso[kwargs0-expected0]": true,
+  "tests/test_trading_procesador.py::test_calcular_detalles_intercambio_exitoso[kwargs1-expected1]": true,
+  "tests/test_trading_procesador.py::test_calcular_detalles_intercambio_exitoso[kwargs2-expected2]": true,
+  "tests/test_trading_procesador.py::test_ejecutar_orden_mercado_llama_a_transaccion_con_datos_correctos": true,
+  "tests/test_trading_procesador.py::test_crear_orden_limite_reserva_fondos_correctamente": true,
+  "tests/test_trading_procesador.py::test_crear_orden_venta_limite_modo_monto": true,
+  "tests/test_trading_procesador.py::test_crear_orden_compra_limite_modo_monto": true,
+  "tests/test_trading_procesador.py::test_crear_orden_compra_stop_limit": true,
+  "tests/test_trading_procesador.py::test_crear_orden_venta_stop_limit": true,
+  "tests/test_trading_procesador.py::test_crear_orden_venta_falla_en_modo_total": true,
+  "tests/test_trading_motor.py::test_motor_ejecuta_orden_favorable": true,
+  "tests/test_trading_motor.py::test_motor_maneja_lista_mixta_de_ordenes": true,
+  "tests/test_trading_procesador.py::test_crear_orden_venta_limite_modo_total": true,
+  "tests/test_datos_cotizaciones.py::test_guardar_y_cargar_datos_cotizaciones_con_ruta_temporal": true,
+  "tests/test_datos_cotizaciones.py::test_cargar_datos_cotizaciones_archivo_no_existente": true,
+  "tests/test_datos_cotizaciones.py::test_guardar_en_ruta_temporal_no_afecta_cache_global": true,
+  "tests/test_ejecutar_orden.py::test_ejecucion_exitosa_orden_mercado": true,
+  "tests/test_trading_gestor.py::test_cancelacion_exitosa_con_archivos": true,
+  "tests/test_trading_motor.py::test_verificar_condicion_orden[compra-limit-40000-39000-True]": true,
+  "tests/test_trading_motor.py::test_verificar_condicion_orden[venta-limit-60000-61000-True]": true,
+  "tests/test_trading_motor.py::test_verificar_condicion_orden[compra-stop-limit-55000-56000-True]": true,
+  "tests/test_trading_motor.py::test_verificar_condicion_orden[venta-stop-limit-45000-44000-True]": true,
+  "tests/test_trading_motor.py::test_motor_ejecuta_orden_favorable_con_archivos": true,
+  "tests/test_estado_billetera.py::test_estado_actual_completo_con_archivos_temporales": true,
+  "tests/test_estado_billetera.py::test_obtener_historial_formateado_con_archivo_temporal": true,
+  "tests/test_trading_gestor.py::test_cancelar_orden_inexistente": true
+}
+
+==================================================
+=== ARCHIVO: ./.pytest_cache/v/cache/nodeids ===
+==================================================
+
+[
+  "tests/test_datos_cotizaciones.py::test_cargar_datos_cotizaciones_archivo_no_existente",
+  "tests/test_datos_cotizaciones.py::test_guardar_datos_actualiza_cache_correctamente",
+  "tests/test_datos_cotizaciones.py::test_guardar_en_ruta_temporal_no_afecta_cache_global",
+  "tests/test_datos_cotizaciones.py::test_guardar_y_cargar_datos_cotizaciones_con_ruta_temporal",
+  "tests/test_ejecutar_orden.py::test_crear_activo_si_no_existe",
+  "tests/test_ejecutar_orden.py::test_ejecucion_exitosa_orden_mercado",
+  "tests/test_ejecutar_orden.py::test_ejecucion_exitosa_orden_pendiente",
+  "tests/test_estado_billetera.py::test_calcular_metricas_activo",
+  "tests/test_estado_billetera.py::test_estado_actual_completo",
+  "tests/test_estado_billetera.py::test_estado_actual_completo_con_archivos_temporales",
+  "tests/test_estado_billetera.py::test_obtener_historial_formateado_con_archivo_temporal",
+  "tests/test_estado_billetera.py::test_preparar_datos_compra_agrupa_multiples_compras",
+  "tests/test_estado_billetera.py::test_preparar_datos_compra_mixto",
+  "tests/test_estado_billetera.py::test_preparar_datos_compra_sin_compras",
+  "tests/test_estado_billetera.py::test_preparar_datos_compra_vacio",
+  "tests/test_trading_gestor.py::test_cancelacion_exitosa",
+  "tests/test_trading_gestor.py::test_cancelacion_exitosa_con_archivos",
+  "tests/test_trading_gestor.py::test_cancelar_con_error_consistencia",
+  "tests/test_trading_gestor.py::test_cancelar_orden_inexistente",
+  "tests/test_trading_gestor.py::test_cancelar_orden_no_pendiente",
+  "tests/test_trading_logica.py::test_calculo_con_monto_cero",
+  "tests/test_trading_logica.py::test_calculo_con_precio_destino_cero",
+  "tests/test_trading_logica.py::test_compra_ingresando_monto_cripto",
+  "tests/test_trading_logica.py::test_compra_ingresando_total_fiat",
+  "tests/test_trading_logica.py::test_crear_orden_compra_limite_modo_total_exitosa",
+  "tests/test_trading_logica.py::test_crear_orden_falla_por_saldo_insuficiente",
+  "tests/test_trading_logica.py::test_crear_orden_venta_limite_exitosa",
+  "tests/test_trading_logica.py::test_ejecutar_orden_mercado_compra_exitosa",
+  "tests/test_trading_logica.py::test_ejecutar_orden_mercado_falla_ejecucion",
+  "tests/test_trading_logica.py::test_ejecutar_orden_mercado_falla_validacion_saldo",
+  "tests/test_trading_logica.py::test_falla_al_vender_en_modo_total",
+  "tests/test_trading_logica.py::test_falla_con_accion_desconocida",
+  "tests/test_trading_logica.py::test_validar_saldo_insuficiente",
+  "tests/test_trading_logica.py::test_validar_saldo_moneda_inexistente",
+  "tests/test_trading_logica.py::test_validar_saldo_suficiente",
+  "tests/test_trading_logica.py::test_venta_ingresando_monto_cripto",
+  "tests/test_trading_motor.py::test_ejecutar_orden_con_datos_erroneos",
+  "tests/test_trading_motor.py::test_ejecutar_orden_limite_simple",
+  "tests/test_trading_motor.py::test_ejecutar_stop_limit_con_precio_favorable",
+  "tests/test_trading_motor.py::test_motor_ejecuta_orden_favorable",
+  "tests/test_trading_motor.py::test_motor_ejecuta_orden_favorable_con_archivos",
+  "tests/test_trading_motor.py::test_motor_maneja_error_de_precio",
+  "tests/test_trading_motor.py::test_motor_maneja_lista_mixta_de_ordenes",
+  "tests/test_trading_motor.py::test_motor_no_ejecuta_orden_desfavorable",
+  "tests/test_trading_motor.py::test_motor_no_hace_nada_sin_ordenes_pendientes",
+  "tests/test_trading_motor.py::test_no_ejecutar_stop_limit_con_precio_desfavorable",
+  "tests/test_trading_motor.py::test_verificar_compra_limite[precio_mercado0-True]",
+  "tests/test_trading_motor.py::test_verificar_compra_limite[precio_mercado1-True]",
+  "tests/test_trading_motor.py::test_verificar_compra_limite[precio_mercado2-False]",
+  "tests/test_trading_motor.py::test_verificar_compra_stop_limit[precio_mercado0-True]",
+  "tests/test_trading_motor.py::test_verificar_compra_stop_limit[precio_mercado1-True]",
+  "tests/test_trading_motor.py::test_verificar_compra_stop_limit[precio_mercado2-False]",
+  "tests/test_trading_motor.py::test_verificar_condicion_orden[compra-limit-40000-39000-True]",
+  "tests/test_trading_motor.py::test_verificar_condicion_orden[compra-limit-40000-40001-False]",
+  "tests/test_trading_motor.py::test_verificar_condicion_orden[compra-stop-limit-55000-54999-False]",
+  "tests/test_trading_motor.py::test_verificar_condicion_orden[compra-stop-limit-55000-56000-True]",
+  "tests/test_trading_motor.py::test_verificar_condicion_orden[venta-limit-60000-59999-False]",
+  "tests/test_trading_motor.py::test_verificar_condicion_orden[venta-limit-60000-61000-True]",
+  "tests/test_trading_motor.py::test_verificar_condicion_orden[venta-stop-limit-45000-44000-True]",
+  "tests/test_trading_motor.py::test_verificar_condicion_orden[venta-stop-limit-45000-45001-False]",
+  "tests/test_trading_motor.py::test_verificar_venta_limite[precio_mercado0-True]",
+  "tests/test_trading_motor.py::test_verificar_venta_limite[precio_mercado1-True]",
+  "tests/test_trading_motor.py::test_verificar_venta_limite[precio_mercado2-False]",
+  "tests/test_trading_motor.py::test_verificar_venta_stop_limit[precio_mercado0-True]",
+  "tests/test_trading_motor.py::test_verificar_venta_stop_limit[precio_mercado1-True]",
+  "tests/test_trading_motor.py::test_verificar_venta_stop_limit[precio_mercado2-False]",
+  "tests/test_trading_procesador.py::test_calcular_detalles_intercambio_exitoso[kwargs0-expected0]",
+  "tests/test_trading_procesador.py::test_calcular_detalles_intercambio_exitoso[kwargs1-expected1]",
+  "tests/test_trading_procesador.py::test_calcular_detalles_intercambio_exitoso[kwargs2-expected2]",
+  "tests/test_trading_procesador.py::test_crear_orden_compra_limite_modo_monto",
+  "tests/test_trading_procesador.py::test_crear_orden_compra_stop_limit",
+  "tests/test_trading_procesador.py::test_crear_orden_falla_por_saldo_insuficiente",
+  "tests/test_trading_procesador.py::test_crear_orden_limite_reserva_fondos_correctamente",
+  "tests/test_trading_procesador.py::test_crear_orden_venta_falla_en_modo_total",
+  "tests/test_trading_procesador.py::test_crear_orden_venta_limite_modo_monto",
+  "tests/test_trading_procesador.py::test_crear_orden_venta_stop_limit",
+  "tests/test_trading_procesador.py::test_ejecutar_orden_mercado_falla_si_no_hay_precio",
+  "tests/test_trading_procesador.py::test_ejecutar_orden_mercado_llama_a_transaccion_con_datos_correctos",
+  "tests/test_trading_procesador.py::test_validar_saldo_insuficiente",
+  "tests/test_trading_procesador.py::test_validar_saldo_suficiente",
+  "tests/test_utilidades_numericas.py::test_a_decimal_float",
+  "tests/test_utilidades_numericas.py::test_a_decimal_int",
+  "tests/test_utilidades_numericas.py::test_a_decimal_invalid_str",
+  "tests/test_utilidades_numericas.py::test_a_decimal_none",
+  "tests/test_utilidades_numericas.py::test_a_decimal_str",
+  "tests/test_utilidades_numericas.py::test_cuantizar_cripto_redondeo",
+  "tests/test_utilidades_numericas.py::test_cuantizar_usd_redondeo",
+  "tests/test_utilidades_numericas.py::test_formato_cantidad_cripto_decimales",
+  "tests/test_utilidades_numericas.py::test_formato_cantidad_cripto_elimina_ceros",
+  "tests/test_utilidades_numericas.py::test_formato_cantidad_cripto_entero",
+  "tests/test_utilidades_numericas.py::test_formato_cantidad_usd_basico",
+  "tests/test_utilidades_numericas.py::test_formato_cantidad_usd_elimina_ceros",
+  "tests/test_utilidades_numericas.py::test_formato_numero_grande_billones",
+  "tests/test_utilidades_numericas.py::test_formato_numero_grande_menor_millon",
+  "tests/test_utilidades_numericas.py::test_formato_numero_grande_millon"
+]
+
+==================================================
+=== ARCHIVO: ./.pytest_cache/v/cache/stepwise ===
+==================================================
+
+[]
+
+==================================================
 === ARCHIVO: ./backend/__init__.py ===
 ==================================================
 
@@ -267,6 +472,7 @@ def crear_app() -> Flask:
 import json
 import os
 from decimal import Decimal
+from typing import Optional
 
 from backend.utils.utilidades_numericas import a_decimal, cuantizar_cripto
 from config import BILLETERA_PATH, BALANCE_INICIAL_USDT
@@ -283,28 +489,28 @@ def _crear_billetera_inicial() -> dict:
         }
     }
 
-def cargar_billetera() -> dict[str, dict]:
+def cargar_billetera(ruta_archivo: Optional[str] = None) -> dict[str, dict]:
     """
     Carga la billetera de criptomonedas desde un archivo JSON.
-    Asume que el archivo ya está en el nuevo formato.
+    Si no se provee una ruta, usa la ruta por defecto de la configuración.
     """
-    os.makedirs(os.path.dirname(BILLETERA_PATH), exist_ok=True)
+    ruta_efectiva = ruta_archivo if ruta_archivo is not None else BILLETERA_PATH
+    os.makedirs(os.path.dirname(ruta_efectiva), exist_ok=True)
 
-    if not os.path.exists(BILLETERA_PATH) or os.path.getsize(BILLETERA_PATH) == 0:
+    if not os.path.exists(ruta_efectiva) or os.path.getsize(ruta_efectiva) == 0:
         billetera_inicial = _crear_billetera_inicial()
-        guardar_billetera(billetera_inicial)
+        guardar_billetera(billetera_inicial, ruta_archivo=ruta_efectiva)
         return billetera_inicial
 
     try:
-        with open(BILLETERA_PATH, "r", encoding="utf-8") as f:
+        with open(ruta_efectiva, "r", encoding="utf-8") as f:
             datos_cargados = json.load(f)
     except (json.JSONDecodeError, FileNotFoundError):
-        print(f"Advertencia: Archivo '{BILLETERA_PATH}' corrupto. Se reiniciará la billetera.")
+        print(f"Advertencia: Archivo '{ruta_efectiva}' corrupto. Se reiniciará la billetera.")
         billetera_inicial = _crear_billetera_inicial()
-        guardar_billetera(billetera_inicial)
+        guardar_billetera(billetera_inicial, ruta_archivo=ruta_efectiva)
         return billetera_inicial
 
-    # Carga directa asumiendo el nuevo formato
     billetera_final = {}
     for ticker, activo in datos_cargados.items():
         billetera_final[ticker] = {
@@ -316,14 +522,14 @@ def cargar_billetera() -> dict[str, dict]:
         }
     return billetera_final
 
-def guardar_billetera(billetera: dict[str, dict]):
+def guardar_billetera(billetera: dict[str, dict], ruta_archivo: Optional[str] = None):
     """
     Guarda el estado actual de la billetera en un archivo JSON.
-    Usa la nueva estructura y formatea los ceros para mejorar la legibilidad.
+    Si no se provee una ruta, usa la ruta por defecto de la configuración.
     """
-    os.makedirs(os.path.dirname(BILLETERA_PATH), exist_ok=True)
+    ruta_efectiva = ruta_archivo if ruta_archivo is not None else BILLETERA_PATH
+    os.makedirs(os.path.dirname(ruta_efectiva), exist_ok=True)
 
-    # Renombramos 'billetera_serializable' a 'datos_para_json' para más claridad
     datos_para_json = {}
     for ticker, activo in billetera.items():
         saldos = activo.get("saldos", {})
@@ -334,7 +540,6 @@ def guardar_billetera(billetera: dict[str, dict]):
         saldo_disponible_q = cuantizar_cripto(saldo_disponible)
         saldo_reservado_q = cuantizar_cripto(saldo_reservado)
         
-        # Formateo de ceros para legibilidad
         str_disponible = "0.00000000" if saldo_disponible_q.is_zero() else str(saldo_disponible_q)
         str_reservado = "0.00000000" if saldo_reservado_q.is_zero() else str(saldo_reservado_q)
         
@@ -346,7 +551,7 @@ def guardar_billetera(billetera: dict[str, dict]):
             }
         }
 
-    with open(BILLETERA_PATH, "w", encoding="utf-8") as f:
+    with open(ruta_efectiva, "w", encoding="utf-8") as f:
         json.dump(datos_para_json, f, indent=4)
 
 ==================================================
@@ -360,32 +565,35 @@ import json
 import os
 from datetime import datetime
 from decimal import Decimal
+from typing import Optional
 
-# Importamos las nuevas utilidades numéricas
 from backend.utils.utilidades_numericas import cuantizar_cripto, cuantizar_usd
 from config import COMISIONES_PATH
 
-def cargar_comisiones() -> list:
+def cargar_comisiones(ruta_archivo: Optional[str] = None) -> list:
     """Carga el historial de comisiones desde el archivo JSON."""
-    if not os.path.exists(COMISIONES_PATH) or os.path.getsize(COMISIONES_PATH) == 0:
+    ruta_efectiva = ruta_archivo if ruta_archivo is not None else COMISIONES_PATH
+    if not os.path.exists(ruta_efectiva) or os.path.getsize(ruta_efectiva) == 0:
         return []
     try:
-        with open(COMISIONES_PATH, "r", encoding="utf-8") as f:
+        with open(ruta_efectiva, "r", encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, FileNotFoundError):
-        print(f"Advertencia: No se pudo leer o el archivo '{COMISIONES_PATH}' está corrupto.")
+        print(f"Advertencia: No se pudo leer o el archivo '{ruta_efectiva}' está corrupto.")
         return []
 
 def registrar_comision(
     ticker_comision: str,
     cantidad_comision: Decimal,
-    valor_usd_comision: Decimal
+    valor_usd_comision: Decimal,
+    ruta_archivo: Optional[str] = None
 ):
     """
     Guarda un nuevo registro de comisión usando las utilidades de cuantización.
     """
-    os.makedirs(os.path.dirname(COMISIONES_PATH), exist_ok=True)
-    comisiones = cargar_comisiones()
+    ruta_efectiva = ruta_archivo if ruta_archivo is not None else COMISIONES_PATH
+    os.makedirs(os.path.dirname(ruta_efectiva), exist_ok=True)
+    comisiones = cargar_comisiones(ruta_archivo=ruta_efectiva)
 
     cantidad_comision_q = cuantizar_cripto(cantidad_comision)
     valor_usd_comision_q = cuantizar_usd(valor_usd_comision)
@@ -406,7 +614,7 @@ def registrar_comision(
 
     comisiones.insert(0, nueva_comision)
 
-    with open(COMISIONES_PATH, "w", encoding="utf-8") as f:
+    with open(ruta_efectiva, "w", encoding="utf-8") as f:
         json.dump(comisiones, f, indent=4)
 
 ==================================================
@@ -416,125 +624,91 @@ def registrar_comision(
 """
 Módulo de acceso a datos de cotizaciones.
 
-Este módulo utiliza un patrón de fábrica (closure) para gestionar un caché de precios
-en memoria de forma segura, evitando el uso de variables globales explícitas.
+Este módulo utiliza un diccionario a nivel de módulo como caché de precios para
+mayor simplicidad y claridad. El caché se carga bajo demanda.
 
 Expone públicamente:
 - obtener_precio(ticker): Obtiene el precio de una cripto, usando el caché.
+- recargar_cache_precios(): Fuerza la recarga del caché desde el archivo.
 - cargar_datos_cotizaciones(): Carga la lista de cotizaciones desde el archivo.
-- guardar_datos_cotizaciones(data): Guarda las cotizaciones en el archivo y
-  automáticamente actualiza el caché.
+- guardar_datos_cotizaciones(data): Guarda las cotizaciones y actualiza el caché.
 """
 
 import json
 import os
 from decimal import Decimal
-from typing import Callable, Tuple, Any
+from typing import Any
 
 from config import COTIZACIONES_PATH
 
+# El caché es ahora un diccionario explícito a nivel de módulo.
+_cache_precios: dict[str, Decimal] = {}
 
-# Función fábrica
-def _crear_gestor_cache_precios() -> Tuple[Callable[[str], Decimal | None], Callable[[], None]]:
+def recargar_cache_precios(ruta_archivo=COTIZACIONES_PATH):
     """
-    Función de fábrica interna que crea un gestor de caché de precios.
-
-    Usa un closure para encapsular el diccionario del caché (_cache), protegiéndolo
-    del acceso externo y eliminando la necesidad de variables globales o de módulo.
-
-    Returns:
-        Una tupla con dos funciones que operan sobre el mismo caché encapsulado:
-        - La función para obtener un precio.
-        - La función para forzar una recarga del caché.
+    Lee el archivo JSON y puebla el caché de precios.
+    Esta función ahora es pública y puede ser llamada desde los tests para
+    inyectar diferentes fuentes de datos.
     """
-    _cache = {}  # Este diccionario es privado y solo vive en este módulo.
+    global _cache_precios
+    print(f"🔄 Recargando caché de precios desde '{ruta_archivo}'...")
 
-    def _recargar_desde_archivo():
-        """
-        Función interna y privada que lee el archivo JSON y puebla el caché.
-        Modifica la variable `_cache` de su closure.
-        """
-        nonlocal _cache
-        print("🔄 Recargando caché de precios desde el archivo...")
-        
-        if not os.path.exists(COTIZACIONES_PATH) or os.path.getsize(COTIZACIONES_PATH) == 0:
+    if not os.path.exists(ruta_archivo) or os.path.getsize(ruta_archivo) == 0:
+        lista_criptos = []
+    else:
+        try:
+            with open(ruta_archivo, "r", encoding="utf-8") as f:
+                lista_criptos = json.load(f)
+        except (json.JSONDecodeError, FileNotFoundError):
+            print(f"⚠️ No se pudo leer el archivo de cotizaciones en '{ruta_archivo}'. Se usará una lista vacía.")
             lista_criptos = []
-        else:
-            try:
-                with open(COTIZACIONES_PATH, "r", encoding="utf-8") as f:
-                    lista_criptos = json.load(f)
-            except (json.JSONDecodeError, FileNotFoundError):
-                lista_criptos = []
-        
-        _cache = {
-            cripto.get("ticker", "").upper(): Decimal(str(cripto.get("precio_usd", "0")))
-            for cripto in lista_criptos
-        }
-        print("✅ Caché de precios actualizado en memoria.")
 
-    def obtener_precio_desde_cache(ticker: str) -> Decimal | None:
-        """
-        Obtiene el precio de un ticker desde el caché.
-        Si el caché está vacío, dispara la recarga la primera vez.
-        """
-        if not _cache:
-            _recargar_desde_archivo()
-        
-        return _cache.get(ticker.upper())
-
-    def forzar_recarga_cache():
-        """Función pública para forzar la recarga del caché."""
-        _recargar_desde_archivo()
-
-    # La fábrica devuelve las dos funciones que el resto de la app usará.
-    return obtener_precio_desde_cache, forzar_recarga_cache
-
-# --- Punto de Entrada del Módulo ---
-
-# 1. Llamamos a la fábrica UNA SOLA VEZ cuando se importa este módulo.
-# 2. Se crea un caché privado y dos funciones ('_obtener', '_recargar') que lo gestionan.
-# 3. Asignamos esas funciones a nombres a nivel de módulo que serán exportados.
-_obtener, _recargar = _crear_gestor_cache_precios()
-
-
-# --- API Pública del Módulo ---
+    _cache_precios = {
+        cripto.get("ticker", "").upper(): Decimal(str(cripto.get("precio_usd", "0")))
+        for cripto in lista_criptos
+        if cripto.get("ticker")  # Asegurarse de que el ticker no sea None o vacío
+    }
+    print("✅ Caché de precios actualizado en memoria.")
 
 def obtener_precio(ticker: str) -> Decimal | None:
     """
-    Interfaz pública para obtener el precio de una criptomoneda desde el caché.
+    Obtiene el precio desde el caché. Si está vacío, lo carga primero.
     """
-    return _obtener(ticker)
+    if not _cache_precios:
+        recargar_cache_precios()
+    
+    return _cache_precios.get(ticker.upper())
 
-
-def cargar_datos_cotizaciones() -> list[dict]:
+def cargar_datos_cotizaciones(ruta_archivo=COTIZACIONES_PATH) -> list[dict]:
     """
-    Interfaz pública para cargar la lista completa de cotizaciones desde el archivo.
+    Carga la lista completa de cotizaciones desde el archivo.
     Esto es necesario para el módulo de presentación que formatea todos los datos.
     """
-    if not os.path.exists(COTIZACIONES_PATH) or os.path.getsize(COTIZACIONES_PATH) == 0:
+    if not os.path.exists(ruta_archivo) or os.path.getsize(ruta_archivo) == 0:
         return []
     try:
-        with open(COTIZACIONES_PATH, "r", encoding="utf-8") as f:
+        with open(ruta_archivo, "r", encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, FileNotFoundError):
         return []
 
-
-def guardar_datos_cotizaciones(data: list[dict[str, Any]]):
+def guardar_datos_cotizaciones(data: list[dict[str, Any]], ruta_archivo=COTIZACIONES_PATH):
     """
-    Interfaz pública para guardar los datos de cotizaciones en el archivo.
-    Después de guardar, fuerza automáticamente la recarga del caché en memoria.
+    Guarda los datos de cotizaciones en el archivo.
+    Después de guardar, fuerza automáticamente la recarga del caché en memoria si
+    la ruta de guardado es la misma que la de configuración principal.
     """
-    os.makedirs(os.path.dirname(COTIZACIONES_PATH), exist_ok=True)
-    print("💾 Guardando datos en datos_cotizaciones.json...")
+    os.makedirs(os.path.dirname(ruta_archivo), exist_ok=True)
+    print(f"💾 Guardando datos en '{ruta_archivo}'...")
     try:
-        with open(COTIZACIONES_PATH, "w") as archivo:
-            # Usar un default handler para convertir Decimal a float en la serialización.
-            # Esto es solo si los datos de entrada contienen Decimals, lo cual no debería ser el caso.
+        with open(ruta_archivo, "w", encoding="utf-8") as archivo:
             json.dump(data, archivo, indent=4)
         print("✅ Datos de cotizaciones guardados en archivo.")
-        # Llama a la función de recarga para mantener el caché sincronizado.
-        _recargar()
+        
+        # Si la ruta guardada es la misma que la de configuración, recargamos el caché global.
+        if ruta_archivo == COTIZACIONES_PATH:
+            recargar_cache_precios()
+            
     except (IOError, TypeError) as e:
         print(f"❌ Error al guardar el archivo de cotizaciones: {e}")
 
@@ -549,29 +723,28 @@ import json
 import os
 from datetime import datetime
 from decimal import Decimal
+from typing import Optional
 
-# Importamos las nuevas utilidades numéricas
 from backend.utils.utilidades_numericas import cuantizar_cripto, cuantizar_usd
 from config import HISTORIAL_PATH
 
-
-def cargar_historial():
+def cargar_historial(ruta_archivo: Optional[str] = None) -> list:
     """
     Carga el historial de transacciones desde el archivo JSON.
-    (Sin cambios en la carga, la conversión a Decimal se hace en la capa de servicios).
+    Si no se provee una ruta, usa la ruta por defecto de la configuración.
     """
-    if not os.path.exists(HISTORIAL_PATH) or os.path.getsize(HISTORIAL_PATH) == 0:
+    ruta_efectiva = ruta_archivo if ruta_archivo is not None else HISTORIAL_PATH
+    if not os.path.exists(ruta_efectiva) or os.path.getsize(ruta_efectiva) == 0:
         return []
 
     try:
-        with open(HISTORIAL_PATH, "r", encoding="utf-8") as f:
+        with open(ruta_efectiva, "r", encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, FileNotFoundError):
         print(
-            f"Advertencia: No se pudo leer o el archivo '{HISTORIAL_PATH}' está corrupto."
+            f"Advertencia: No se pudo leer o el archivo '{ruta_efectiva}' está corrupto."
         )
         return []
-
 
 def guardar_en_historial(
     tipo_operacion: str,
@@ -580,18 +753,16 @@ def guardar_en_historial(
     moneda_destino: str,
     cantidad_destino: Decimal,
     valor_usd: Decimal,
+    ruta_archivo: Optional[str] = None,
 ):
     """
     Guarda una nueva operación en el historial de transacciones.
-
-    Usa las utilidades de cuantización para asegurar la precisión correcta
-    antes de guardar los datos en el archivo JSON.
+    Si no se provee una ruta, usa la ruta por defecto de la configuración.
     """
-    os.makedirs(os.path.dirname(HISTORIAL_PATH), exist_ok=True)
-    historial = cargar_historial()
+    ruta_efectiva = ruta_archivo if ruta_archivo is not None else HISTORIAL_PATH
+    os.makedirs(os.path.dirname(ruta_efectiva), exist_ok=True)
+    historial = cargar_historial(ruta_archivo=ruta_efectiva)
 
-    # ### ANTES: usaba .quantize() con valores mágicos.
-    # ### DESPUÉS: usamos las utilidades centralizadas.
     cantidad_origen_q = cuantizar_cripto(cantidad_origen)
     cantidad_destino_q = cuantizar_cripto(cantidad_destino)
     valor_usd_q = cuantizar_usd(valor_usd)
@@ -607,7 +778,7 @@ def guardar_en_historial(
 
     historial.insert(0, operacion)
 
-    with open(HISTORIAL_PATH, "w", encoding="utf-8") as f:
+    with open(ruta_efectiva, "w", encoding="utf-8") as f:
         json.dump(historial, f, indent=4)
 
 ==================================================
@@ -625,74 +796,61 @@ cumplan ciertas condiciones de mercado.
 """
 import json
 import os
+from typing import Optional
 from config import ORDENES_PENDIENTES_PATH
 
-
-def cargar_ordenes_pendientes() -> list[dict]:
+def cargar_ordenes_pendientes(ruta_archivo: Optional[str] = None) -> list[dict]:
     """
     Carga la lista de órdenes pendientes desde el archivo JSON.
-
-    Si el archivo no existe o está vacío, devuelve una lista vacía.
-
-    Returns:
-        list[dict]: Una lista de diccionarios, donde cada uno es una orden pendiente.
+    Si no se provee una ruta, usa la ruta por defecto de la configuración.
     """
-    # Asegura que el directorio exista
-    os.makedirs(os.path.dirname(ORDENES_PENDIENTES_PATH), exist_ok=True)
+    ruta_efectiva = ruta_archivo if ruta_archivo is not None else ORDENES_PENDIENTES_PATH
+    os.makedirs(os.path.dirname(ruta_efectiva), exist_ok=True)
     
-    if not os.path.exists(ORDENES_PENDIENTES_PATH) or os.path.getsize(ORDENES_PENDIENTES_PATH) == 0:
+    if not os.path.exists(ruta_efectiva) or os.path.getsize(ruta_efectiva) == 0:
         return []
 
     try:
-        with open(ORDENES_PENDIENTES_PATH, "r", encoding="utf-8") as f:
+        with open(ruta_efectiva, "r", encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, FileNotFoundError):
-        print(f"Advertencia: No se pudo leer o el archivo '{ORDENES_PENDIENTES_PATH}' está corrupto.")
+        print(f"Advertencia: No se pudo leer o el archivo '{ruta_efectiva}' está corrupto.")
         return []
 
-
-def guardar_ordenes_pendientes(lista_ordenes: list[dict]):
+def guardar_ordenes_pendientes(lista_ordenes: list[dict], ruta_archivo: Optional[str] = None):
     """
     Guarda la lista completa de órdenes pendientes en el archivo JSON.
-
-    Esta función sobrescribe el archivo con la lista proporcionada. Se utiliza
-    para actualizar el estado de las órdenes (ej. de 'pendiente' a 'ejecutada').
-
-    Args:
-        lista_ordenes (list[dict]): La lista completa de órdenes a guardar.
+    Si no se provee una ruta, usa la ruta por defecto de la configuración.
     """
-    # Asegura que el directorio exista
-    os.makedirs(os.path.dirname(ORDENES_PENDIENTES_PATH), exist_ok=True)
+    ruta_efectiva = ruta_archivo if ruta_archivo is not None else ORDENES_PENDIENTES_PATH
+    os.makedirs(os.path.dirname(ruta_efectiva), exist_ok=True)
 
-    with open(ORDENES_PENDIENTES_PATH, "w", encoding="utf-8") as f:
+    with open(ruta_efectiva, "w", encoding="utf-8") as f:
         json.dump(lista_ordenes, f, indent=4)
 
-
-def agregar_orden_pendiente(nueva_orden: dict):
+def agregar_orden_pendiente(nueva_orden: dict, ruta_archivo: Optional[str] = None):
     """
     Añade una nueva orden a la lista de órdenes pendientes y la guarda.
-
-    Args:
-        nueva_orden (dict): El diccionario que representa la nueva orden a agregar.
+    Si no se provee una ruta, usa la ruta por defecto de la configuración.
     """
-    ordenes = cargar_ordenes_pendientes()
+    ordenes = cargar_ordenes_pendientes(ruta_archivo=ruta_archivo)
     ordenes.append(nueva_orden)
-    guardar_ordenes_pendientes(ordenes)
+    guardar_ordenes_pendientes(ordenes, ruta_archivo=ruta_archivo)
 
 ==================================================
 === ARCHIVO: ./backend/app.py ===
 ==================================================
 
 """
-Punto de entrada para ejecutar la aplicación Flask en modo de desarrollo.
+Este módulo crea una instancia global de la aplicación Flask utilizando la
+'Application Factory' (`crear_app`).
 
-Este script importa la 'Application Factory' (`crear_app`), la utiliza para
-crear una instancia de la aplicación y, si se ejecuta directamente, inicia
-el servidor de desarrollo de Flask.
+Esta instancia 'app' puede ser utilizada por otras herramientas, como un servidor
+WSGI (por ejemplo, Gunicorn o uWSGI), que esperan encontrar una variable de
+aplicación global.
 
-Para iniciar la aplicación, ejecuta el siguiente comando desde el directorio raíz
-del proyecto:
-    python -m backend.app
+El punto de entrada principal para iniciar el servidor de desarrollo es ahora
+el script `run.py` en el directorio raíz del proyecto.
 """
 
 from flask import Flask
@@ -700,14 +858,6 @@ from . import crear_app
 
 # Se crea la instancia global de la aplicación llamando a la factory.
 app: Flask = crear_app()
-
-# El siguiente bloque se ejecuta solo si el script es llamado directamente
-# por el intérprete de Python (por ejemplo, `python -m backend.app`).
-if __name__ == "__main__":
-    # Inicia el servidor de desarrollo de Flask.
-    # `debug=True` activa el modo de depuración, que proporciona un depurador
-    # interactivo y recarga automáticamente el servidor al detectar cambios.
-    app.run(debug=True)
 
 ==================================================
 === ARCHIVO: ./backend/rutas/__init__.py ===
@@ -846,6 +996,7 @@ from backend.servicios.estado_billetera import estado_actual_completo, obtener_h
 from backend.acceso_datos.datos_comisiones import cargar_comisiones
 from backend.acceso_datos.datos_ordenes import cargar_ordenes_pendientes
 from backend.servicios.trading.gestor import cancelar_orden_pendiente
+from config import ESTADO_PENDIENTE
 
 bp = Blueprint("billetera", __name__)
 
@@ -909,30 +1060,21 @@ def get_ordenes_abiertas():
     """
     todas_las_ordenes = cargar_ordenes_pendientes()
     # Filtramos para devolver solo las que están activas
-    ordenes_abiertas = [o for o in todas_las_ordenes if o.get("estado") == "pendiente"]
+    ordenes_abiertas = [o for o in todas_las_ordenes if o.get("estado") == ESTADO_PENDIENTE]
     return jsonify(ordenes_abiertas)
 
 @bp.route("/api/orden/cancelar/<string:id_orden>", methods=["POST"])
 def cancelar_orden_api(id_orden: str):
     """
-    ### REFACTORIZADO ### - Endpoint de API para cancelar una orden pendiente.
+    Endpoint de API para cancelar una orden pendiente.
     Devuelve una respuesta JSON estandarizada.
     """
     resultado = cancelar_orden_pendiente(id_orden)
     
-    if "error" in resultado:
-        # Si el diccionario de resultado contiene un error, devolvemos un estado 400 (Bad Request).
-        return jsonify({
-            "estado": "error",
-            "mensaje": resultado["error"]
-        }), 400
+    if resultado["estado"] == "error":
+        return jsonify(resultado), 400
     else:
-        # Si no hay error, devolvemos un estado 200 (OK).
-        return jsonify({
-            "estado": "ok",
-            "mensaje": resultado["mensaje"],
-            "datos": resultado.get("datos", {})
-        }), 200
+        return jsonify(resultado), 200
 
 ==================================================
 === ARCHIVO: ./backend/rutas/home.py ===
@@ -987,21 +1129,22 @@ def procesar_trading_form():
     """
     ### REFACTORIZADO ###
     Procesa el formulario y pasa un JSON al sistema de flash en caso de éxito.
+    Maneja la nueva respuesta estandarizada en formato de diccionario.
     """
     print(">>> DATOS RECIBIDOS DEL FORMULARIO:", request.form)
 
     ticker_operado = request.form.get("ticker", "BTC").upper()
     
-    # Ahora 'mensaje' puede ser un diccionario o un string de error
-    exito, mensaje = procesar_operacion_trading(request.form)
+    # La función de servicio ahora devuelve un único diccionario de respuesta.
+    respuesta = procesar_operacion_trading(request.form)
 
-    if exito:
-        # Si la operación fue exitosa, 'mensaje' es un diccionario.
+    if respuesta["estado"] == "exito":
+        # Si la operación fue exitosa, los datos están en la clave 'datos'.
         # Lo convertimos a un string JSON para guardarlo en la sesión flash.
-        flash(json.dumps(mensaje), "success")
+        flash(json.dumps(respuesta["datos"]), "success")
     else:
-        # Si falló, 'mensaje' ya es un string de error.
-        flash(mensaje, "danger")
+        # Si falló, el mensaje de error está en la clave 'mensaje'.
+        flash(respuesta["mensaje"], "danger")
     
     # La lógica de redirección no cambia.
     redirect_url = url_for("trading.mostrar_trading_page", ticker=ticker_operado)
@@ -1134,15 +1277,19 @@ def obtener_velas_de_api(ticker: str, interval: str) -> list[dict]:
 # backend/servicios/estado_billetera.py
 
 from decimal import Decimal
+
 from backend.acceso_datos.datos_billetera import cargar_billetera
 from backend.acceso_datos.datos_historial import cargar_historial
-# ### LÍNEA CORREGIDA ###
-from backend.acceso_datos.datos_cotizaciones import obtener_precio, cargar_datos_cotizaciones
+# Se elimina la importación de obtener_precio, ya que no se usará el caché global en los tests.
+from backend.acceso_datos.datos_cotizaciones import cargar_datos_cotizaciones
 from backend.utils.utilidades_numericas import (
     a_decimal, formato_cantidad_usd, formato_cantidad_cripto, formato_porcentaje
 )
 from backend.utils.formatters import format_datetime
-from config import UMBRAL_POLVO_USD, UMBRAL_CASI_CERO
+from config import (
+    UMBRAL_POLVO_USD, UMBRAL_CASI_CERO,
+    BILLETERA_PATH, HISTORIAL_PATH, COTIZACIONES_PATH
+)
 
 def _division_segura(numerador: Decimal, denominador: Decimal) -> Decimal:
     return numerador / denominador if denominador > a_decimal(0) else a_decimal(0)
@@ -1205,11 +1352,17 @@ def _formatear_activo_para_presentacion(activo_calculado: dict, cripto_info: dic
         "porcentaje_formatted": formato_porcentaje(porcentaje_en_billetera),
     }
 
-def estado_actual_completo() -> list[dict]:
-    billetera = cargar_billetera()
-    historial = cargar_historial()
+def estado_actual_completo(
+    ruta_billetera: str = BILLETERA_PATH,
+    ruta_historial: str = HISTORIAL_PATH,
+    ruta_cotizaciones: str = COTIZACIONES_PATH
+) -> list[dict]:
+    billetera = cargar_billetera(ruta_archivo=ruta_billetera)
+    historial = cargar_historial(ruta_archivo=ruta_historial)
+    cotizaciones_raw = cargar_datos_cotizaciones(ruta_archivo=ruta_cotizaciones)
     
-    info_criptos = {c['ticker']: c for c in cargar_datos_cotizaciones()}
+    info_criptos = {c['ticker']: c for c in cotizaciones_raw}
+    precios_locales = {c['ticker']: a_decimal(c.get('precio_usd', '0')) for c in cotizaciones_raw}
     
     # ### LA SOLUCIÓN ESTÁ AQUÍ ###
     # Forzamos el nombre y logo canónicos para USDT, ignorando lo que venga de la API.
@@ -1240,7 +1393,7 @@ def estado_actual_completo() -> list[dict]:
                 "porcentaje_ganancia": a_decimal(0),
             }
         else:
-            precio_actual = obtener_precio(ticker) or a_decimal(0)
+            precio_actual = precios_locales.get(ticker, a_decimal(0))
             datos_compra_activo = datos_compra_por_ticker.get(ticker, {})
             metricas = _calcular_metricas_activo(ticker, cantidad_total, precio_actual, datos_compra_activo)
         
@@ -1257,8 +1410,8 @@ def estado_actual_completo() -> list[dict]:
     ]
     return activos_para_presentacion
 
-def obtener_historial_formateado() -> list[dict]:
-    historial_crudo = cargar_historial()
+def obtener_historial_formateado(ruta_historial: str = HISTORIAL_PATH) -> list[dict]:
+    historial_crudo = cargar_historial(ruta_archivo=ruta_historial)
     historial_formateado = []
     for item in historial_crudo:
         tipo_op = item.get('tipo', '')
@@ -1442,193 +1595,305 @@ def ejecutar_transaccion(
 === ARCHIVO: ./backend/servicios/trading/gestor.py ===
 ==================================================
 
-
-
+# backend/servicios/trading/gestor.py
+from typing import Dict, Any
+from decimal import Decimal
 from datetime import datetime
-from typing import Dict
 
 from backend.acceso_datos.datos_billetera import cargar_billetera, guardar_billetera
 from backend.acceso_datos.datos_ordenes import cargar_ordenes_pendientes, guardar_ordenes_pendientes
-from backend.utils.utilidades_numericas import a_decimal
+from backend.utils.responses import crear_respuesta_error, crear_respuesta_exitosa
+from backend.utils.utilidades_numericas import a_decimal, formato_cantidad_cripto
+from backend.servicios.estado_billetera import estado_actual_completo
+from config import (
+    ESTADO_ERROR, ESTADO_PENDIENTE, ESTADO_CANCELADA, ESTADO_EJECUTADA,
+    TIPO_ORDEN_MERCADO
+)
 
+def crear_orden(
+    par: str,
+    tipo_orden: str,
+    accion: str,
+    cantidad: Decimal,
+    precio_limite: Decimal = None,
+    precio_disparo: Decimal = None
+) -> Dict[str, Any]:
+    """
+    Crea una nueva orden, reserva los fondos necesarios y la guarda en el sistema.
+    Si la orden es de tipo 'market', se intenta ejecutar inmediatamente.
+    """
+    # Importación local para evitar dependencia circular
+    from backend.servicios.trading.motor import _crear_nueva_orden, _ejecutar_orden_pendiente
 
-def cancelar_orden_pendiente(id_orden_a_cancelar: str) -> Dict:
-    """
-    ### REFACTORIZADO ### - Devuelve un único diccionario de resultados.
-    La presencia de la clave 'error' determina el fallo.
-    """
-    todas_las_ordenes = cargar_ordenes_pendientes()
-    orden_encontrada = next((o for o in todas_las_ordenes if o.get("id_orden") == id_orden_a_cancelar), None)
-            
-    if not orden_encontrada:
-        return {"error": f"No se encontró una orden con el ID {id_orden_a_cancelar}."}
-    
-    if orden_encontrada.get("estado") != "pendiente":
-        return {"error": f"La orden {id_orden_a_cancelar} ya no está pendiente y no puede ser cancelada."}
+    nueva_orden = _crear_nueva_orden(par, tipo_orden, accion, cantidad, precio_limite, precio_disparo)
+
+    if ESTADO_ERROR in nueva_orden:
+        return nueva_orden
 
     billetera = cargar_billetera()
-    
-    moneda_reservada = orden_encontrada["moneda_reservada"]
-    cantidad_reservada = a_decimal(orden_encontrada["cantidad_reservada"])
-    
-    activo_a_liberar = billetera.get(moneda_reservada)
+    moneda_a_reservar = nueva_orden["moneda_reservada"]
+    cantidad_a_reservar = a_decimal(nueva_orden["cantidad_reservada"])
 
-    if not activo_a_liberar or a_decimal(activo_a_liberar["saldos"].get("reservado")) < cantidad_reservada:
-        orden_encontrada["estado"] = "error_cancelacion"
-        orden_encontrada["mensaje_error"] = "Error de consistencia: los fondos a liberar no se encontraron en la billetera."
-        guardar_ordenes_pendientes(todas_las_ordenes)
-        return {"error": "Error de consistencia en la billetera. No se pudieron liberar los fondos."}
+    # Verificación robusta de fondos disponibles
+    if billetera.get(moneda_a_reservar, {}).get('saldos', {}).get('disponible', Decimal('0')) < cantidad_a_reservar:
+        return {ESTADO_ERROR: f"Fondos insuficientes de {moneda_a_reservar}."}
 
-    activo_a_liberar["saldos"]["reservado"] -= cantidad_reservada
-    activo_a_liberar["saldos"]["disponible"] += cantidad_reservada
+    # Reservar fondos
+    billetera[moneda_a_reservar]['saldos']['disponible'] -= cantidad_a_reservar
+    billetera[moneda_a_reservar]['saldos']['reservado'] += cantidad_a_reservar
+
+    # Las órdenes de mercado se ejecutan inmediatamente
+    if nueva_orden["tipo_orden"] == TIPO_ORDEN_MERCADO:
+        print(f"📈 Orden de mercado detectada ({nueva_orden['id_orden']}). Ejecutando inmediatamente...")
+        billetera = _ejecutar_orden_pendiente(nueva_orden, billetera)
+
+    # Guardar estado
+    todas_las_ordenes = cargar_ordenes_pendientes()
     
-    orden_encontrada.update({
-        "estado": "cancelada",
-        "timestamp_cancelacion": datetime.now().isoformat()
-    })
+    # Reemplazar la orden si ya existe (caso de orden de mercado que se actualizó) o añadirla si es nueva
+    orden_existente_idx = next((i for i, o in enumerate(todas_las_ordenes) if o.get("id_orden") == nueva_orden['id_orden']), -1)
+    if orden_existente_idx != -1:
+        todas_las_ordenes[orden_existente_idx] = nueva_orden
+    else:
+        todas_las_ordenes.append(nueva_orden)
     
-    guardar_billetera(billetera)
     guardar_ordenes_pendientes(todas_las_ordenes)
-    
-    mensaje_exito = f"Orden {orden_encontrada['par']} cancelada. Se liberaron {formato_cantidad_cripto(cantidad_reservada)} {moneda_reservada}."
-    
-    return {"mensaje": mensaje_exito, "datos": orden_encontrada}
+    guardar_billetera(billetera)
 
+    print(f"✅ Orden {nueva_orden['id_orden']} creada exitosamente.")
+    return nueva_orden
+
+
+def cancelar_orden_pendiente(id_orden: str) -> Dict:
+    """
+    Busca una orden pendiente por su ID, la cancela y libera los fondos reservados.
+    """
+    todas_las_ordenes = cargar_ordenes_pendientes()
+    orden_a_cancelar = next((o for o in todas_las_ordenes if o.get("id_orden") == id_orden), None)
+
+    if not orden_a_cancelar:
+        return crear_respuesta_error(f"No se encontró una orden con el ID {id_orden}.")
+
+    if orden_a_cancelar.get("estado") != ESTADO_PENDIENTE:
+        return crear_respuesta_error(f"La orden {id_orden} no está pendiente y no puede ser cancelada.")
+
+    billetera = cargar_billetera()
+    moneda_reservada = orden_a_cancelar["moneda_reservada"]
+    cantidad_reservada = a_decimal(orden_a_cancelar["cantidad_reservada"])
+
+    activo_en_billetera = billetera.get(moneda_reservada)
+
+    # Verificación de consistencia de fondos
+    if not activo_en_billetera or a_decimal(activo_en_billetera.get("saldos", {}).get("reservado", Decimal('0'))) < cantidad_reservada:
+        orden_a_cancelar["estado"] = ESTADO_ERROR
+        orden_a_cancelar["mensaje_error"] = "Error de consistencia: los fondos a liberar no coinciden con la billetera."
+        guardar_ordenes_pendientes(todas_las_ordenes)
+        return crear_respuesta_error(orden_a_cancelar["mensaje_error"])
+
+    # Liberar fondos
+    activo_en_billetera["saldos"]["reservado"] -= cantidad_reservada
+    activo_en_billetera["saldos"]["disponible"] += cantidad_reservada
+
+    # Actualizar estado de la orden
+    orden_a_cancelar["estado"] = ESTADO_CANCELADA
+    orden_a_cancelar["timestamp_cancelacion"] = datetime.now().isoformat()
+
+    guardar_ordenes_pendientes(todas_las_ordenes)
+    guardar_billetera(billetera)
+
+    # Devolver una respuesta clara y útil para el frontend
+    mensaje_exito = f"Orden {orden_a_cancelar['par']} cancelada. Se liberaron {formato_cantidad_cripto(cantidad_reservada)} {moneda_reservada}."
+    
+    billetera_actualizada_completa = estado_actual_completo()
+    activo_modificado = next((a for a in billetera_actualizada_completa if a['ticker'] == moneda_reservada), None)
+
+    datos_exito = {
+        "orden_cancelada": orden_a_cancelar,
+        "activo_actualizado": activo_modificado
+    }
+    return crear_respuesta_exitosa(datos_exito, mensaje_exito)
 
 ==================================================
 === ARCHIVO: ./backend/servicios/trading/motor.py ===
 ==================================================
 
 # backend/servicios/trading/motor.py
-
 from datetime import datetime
 from decimal import Decimal
 
 from backend.acceso_datos.datos_billetera import cargar_billetera, guardar_billetera
 from backend.acceso_datos.datos_cotizaciones import obtener_precio
 from backend.acceso_datos.datos_ordenes import cargar_ordenes_pendientes, guardar_ordenes_pendientes
+from config import (
+    ACCION_COMPRAR,
+    ACCION_VENDER,
+    ESTADO_EJECUTADA,
+    ESTADO_PENDIENTE,
+    ESTADO_ERROR,
+    TIPO_ORDEN_LIMITE,
+    TIPO_ORDEN_MERCADO,
+    TIPO_ORDEN_STOP_LIMIT
+)
 from backend.servicios.trading.ejecutar_orden import ejecutar_transaccion
 from backend.utils.utilidades_numericas import a_decimal, cuantizar_cripto
 
+
 def _verificar_condicion_orden(orden: dict, precio_actual: Decimal) -> bool:
-    """Verifica si el precio actual cumple la condición de DISPARO (Stop) de la orden."""
+    """Verifica si el precio actual cumple la condición de DISPARO de la orden."""
     precio_disparo = a_decimal(orden["precio_disparo"])
-    tipo_orden = orden.get("tipo_orden", "limit") # Por defecto, 'limit' si no está definido
-    
-    # Para órdenes Límite
-    if tipo_orden == "limit":
-        if orden["accion"] == "compra":
+    tipo_orden = orden.get("tipo_orden", TIPO_ORDEN_LIMITE)
+
+    if tipo_orden == TIPO_ORDEN_LIMITE:
+        if orden["accion"] == ACCION_COMPRAR:
             return precio_actual <= precio_disparo
-        elif orden["accion"] == "venta":
+        elif orden["accion"] == ACCION_VENDER:
             return precio_actual >= precio_disparo
             
-    # Para órdenes Stop-Limit (antes 'stop-loss')
-    elif tipo_orden == "stop-limit":
-        # Para una compra stop, queremos comprar cuando el precio SUBE a un nivel.
-        if orden["accion"] == "compra":
+    elif tipo_orden == TIPO_ORDEN_STOP_LIMIT:
+        if orden["accion"] == ACCION_COMPRAR:
             return precio_actual >= precio_disparo
-        # Para una venta stop, queremos vender cuando el precio CAE a un nivel.
-        elif orden["accion"] == "venta":
+        elif orden["accion"] == ACCION_VENDER:
             return precio_actual <= precio_disparo
 
     return False
 
+
 def _ejecutar_orden_pendiente(orden: dict, billetera: dict) -> dict:
     """
-    Ejecuta una orden pendiente que ya ha sido disparada,
+    Intenta ejecutar una orden que ya ha sido disparada (condición cumplida),
     con lógica especial para la verificación del precio límite en órdenes Stop-Limit.
     """
-    # ### NUEVO: VERIFICACIÓN DEL PRECIO LÍMITE PARA ÓRDENES STOP-LIMIT ###
-    if orden.get("tipo_orden") == "stop-limit":
+    if orden.get("tipo_orden") == TIPO_ORDEN_STOP_LIMIT:
         precio_limite = a_decimal(orden.get("precio_limite"))
         
-        # Si no hay precio límite en la orden, es un error de datos.
         if not precio_limite or precio_limite.is_zero():
              print(f"❌ ERROR DE DATOS: Orden Stop-Limit {orden['id_orden']} no tiene precio límite válido.")
-             orden["estado"] = "error_datos"
+             orden["estado"] = ESTADO_ERROR
              return billetera
-             
-        # Obtenemos el precio de mercado actual para la comprobación del límite.
-        ticker_base = orden["par"].split('/')[0]
-        precio_actual_mercado = obtener_precio(ticker_base)
-
+              
+        precio_actual_mercado = obtener_precio(orden["par"])
         if not precio_actual_mercado:
-             print(f"⚠️ No se pudo obtener precio para la verificación límite de la orden {orden['id_orden']}. Se reintentará.")
-             return billetera # No hacemos nada, esperamos al siguiente ciclo
+             print(f"⚠️  No se pudo obtener el precio de mercado para {orden['par']} para validar el límite de la orden {orden['id_orden']}.")
+             return billetera
 
-        # Condición de ejecución para COMPRA LÍMITE (después del stop)
-        if orden["accion"] == "compra" and precio_actual_mercado > precio_limite:
+        if orden["accion"] == ACCION_COMPRAR and precio_actual_mercado > precio_limite:
             print(f"🚦 ORDEN STOP-LIMIT {orden['id_orden']} DISPARADA, PERO NO EJECUTADA: Precio actual ({precio_actual_mercado}) > Precio Límite ({precio_limite}).")
-            return billetera # Se mantiene pendiente hasta que el precio sea favorable
+            return billetera
         
-        # Condición de ejecución para VENTA LÍMITE (después del stop)
-        elif orden["accion"] == "venta" and precio_actual_mercado < precio_limite:
+        elif orden["accion"] == ACCION_VENDER and precio_actual_mercado < precio_limite:
             print(f"🚦 ORDEN STOP-LIMIT {orden['id_orden']} DISPARADA, PERO NO EJECUTADA: Precio actual ({precio_actual_mercado}) < Precio Límite ({precio_limite}).")
-            return billetera # Se mantiene pendiente hasta que el precio sea favorable
+            return billetera
 
-    # --- Lógica de ejecución de la transacción (común a Limit y Stop-Limit que pasaron el filtro) ---
     moneda_origen = orden["moneda_reservada"]
     cantidad_origen_bruta = a_decimal(orden["cantidad_reservada"])
-    # Para una compra, el destino es la cripto principal. Para una venta, el origen es la cripto principal.
-    moneda_destino = orden["moneda_destino"] if orden["accion"] == "compra" else orden["moneda_origen"]
-
-    # Aquí es importante determinar correctamente el destino final de la transacción
-    # Si es una compra, la moneda destino es la moneda principal del par.
-    # Si es una venta, la moneda destino es la moneda cotizada (quote).
-    moneda_destino_final = orden["moneda_destino"]
-
-    tipo_op_historial = f"{orden['tipo_orden'].replace('-', ' ').title()} {orden['accion'].title()}"
+    # Corregido: La moneda de destino se saca del par, no de la propia orden directamente.
+    moneda_destino = orden["par"].split('/')[0] if orden["accion"] == ACCION_COMPRAR else orden["par"].split('/')[1]
     
+    # El tipo de operación para el historial debe ser más descriptivo
+    tipo_op_historial = f"{orden['tipo_orden']}-{orden['accion']}"
+
+    # --- LLAMADA CORREGIDA ---
     exito_ejecucion, detalles_ejecucion = ejecutar_transaccion(
         billetera=billetera,
         moneda_origen=moneda_origen,
         cantidad_origen_bruta=cantidad_origen_bruta,
-        moneda_destino=moneda_destino_final,
+        moneda_destino=moneda_destino,
         tipo_operacion_historial=tipo_op_historial,
-        es_orden_pendiente=True
+        es_orden_pendiente=True # ¡Importante! Para que use el saldo 'reservado'
     )
     
     if not exito_ejecucion:
         print(f"❌ ERROR al ejecutar orden pendiente {orden['id_orden']}: {detalles_ejecucion.get('error')}")
-        orden.update({"estado": "error_ejecucion", "mensaje_error": detalles_ejecucion.get("error")})
+        orden.update({"estado": ESTADO_ERROR, "mensaje_error": detalles_ejecucion.get("error")})
         return billetera
 
     print(f"✅ ORDEN EJECUTADA: {orden['id_orden']} ({orden['par']})")
     orden.update({
-        "estado": "ejecutada",
+        "estado": ESTADO_EJECUTADA,
         "timestamp_ejecucion": datetime.now().isoformat(),
         "cantidad_destino_final": str(cuantizar_cripto(detalles_ejecucion["cantidad_destino_final"]))
     })
-    
     return billetera
+
 
 def verificar_y_ejecutar_ordenes_pendientes():
     """Motor principal que itera sobre órdenes pendientes y las ejecuta si cumplen la condición."""
     todas_las_ordenes = cargar_ordenes_pendientes()
-    ordenes_activas = [o for o in todas_las_ordenes if o.get("estado") == "pendiente"]
-    if not ordenes_activas: 
+    ordenes_pendientes = [o for o in todas_las_ordenes if o.get("estado") == ESTADO_PENDIENTE]
+    if not ordenes_pendientes: 
         return
 
     billetera = cargar_billetera()
-    precios_cacheados = {}
-    alguna_orden_ejecutada = False
+    ordenes_modificadas = []
+    
+    for orden in ordenes_pendientes:
+        precio_actual = obtener_precio(orden["par"])
+        if not precio_actual:
+            print(f"⚠️  No se pudo obtener precio para el par {orden['par']}. Saltando orden {orden['id_orden']}.")
+            continue
 
-    for orden in ordenes_activas:
-        ticker_principal = orden["par"].split('/')[0]
-        if ticker_principal not in precios_cacheados:
-            precios_cacheados[ticker_principal] = obtener_precio(ticker_principal)
-        
-        precio_actual = precios_cacheados[ticker_principal]
-        if precio_actual and _verificar_condicion_orden(orden, precio_actual):
+        if _verificar_condicion_orden(orden, precio_actual):
+            print(f"🔔 CONDICIÓN CUMPLIDA para orden {orden['id_orden']}. Intentando ejecutar...")
             billetera = _ejecutar_orden_pendiente(orden, billetera)
-            # Verificamos si la orden cambió de estado
-            if orden.get("estado") != "pendiente":
-                alguna_orden_ejecutada = True
+        
+        ordenes_modificadas.append(orden)
 
-    if alguna_orden_ejecutada:
-        print("💾 Guardando cambios en billetera y lista de órdenes...")
-        guardar_billetera(billetera)
-        guardar_ordenes_pendientes(todas_las_ordenes)
+    ordenes_no_modificadas = [o for o in todas_las_ordenes if o.get("estado") != ESTADO_PENDIENTE]
+    
+    guardar_ordenes_pendientes(ordenes_no_modificadas + ordenes_modificadas)
+    guardar_billetera(billetera)
+    print("--- Ciclo de motor de trading finalizado ---")
+
+
+def _crear_nueva_orden(par, tipo_orden, accion, cantidad, precio_limite=None, precio_disparo=None):
+    """
+    Valida los datos de una nueva orden y la estructura para ser guardada.
+    No guarda la orden, solo la prepara y valida.
+    """
+    if tipo_orden not in [TIPO_ORDEN_MERCADO, TIPO_ORDEN_LIMITE, TIPO_ORDEN_STOP_LIMIT]:
+        return {ESTADO_ERROR: "Tipo de orden no válido"}
+    
+    if accion not in [ACCION_COMPRAR, ACCION_VENDER]:
+        return {ESTADO_ERROR: "Acción no válida"}
+
+    if tipo_orden in [TIPO_ORDEN_LIMITE, TIPO_ORDEN_STOP_LIMIT] and (not precio_limite or precio_limite <= 0):
+        return {ESTADO_ERROR: "El precio límite es obligatorio para órdenes límite y stop-limit"}
+
+    if tipo_orden == TIPO_ORDEN_STOP_LIMIT and (not precio_disparo or precio_disparo <= 0):
+        return {ESTADO_ERROR: "El precio de disparo es obligatorio para órdenes stop-limit"}
+
+    moneda_principal, moneda_cotizada = par.split('/')
+    
+    if accion == ACCION_COMPRAR:
+        moneda_reservada = moneda_cotizada
+        cantidad_reservada = cantidad if tipo_orden == TIPO_ORDEN_MERCADO else cantidad * precio_limite
+    else: # Vender
+        moneda_reservada = moneda_principal
+        cantidad_reservada = cantidad
+
+    id_orden = f"{par.replace('/', '_').lower()}_{accion}_{datetime.now().timestamp()}"
+    
+    precio_disparo_final = precio_disparo if precio_disparo else precio_limite
+
+    nueva_orden = {
+        "id_orden": id_orden,
+        "par": par,
+        "accion": accion,
+        "tipo_orden": tipo_orden,
+        "cantidad": str(cantidad),
+        "precio_limite": str(precio_limite) if precio_limite else "0",
+        "precio_disparo": str(precio_disparo_final) if precio_disparo_final else "0",
+        "moneda_reservada": moneda_reservada,
+        "cantidad_reservada": str(cantidad_reservada),
+        "moneda_origen": moneda_reservada,
+        "moneda_destino": moneda_principal if accion == ACCION_COMPRAR else moneda_cotizada,
+        "estado": ESTADO_PENDIENTE if tipo_orden in [TIPO_ORDEN_LIMITE, TIPO_ORDEN_STOP_LIMIT] else ESTADO_EJECUTADA,
+        "timestamp_creacion": datetime.now().isoformat(),
+        "timestamp_ejecucion": None,
+        "cantidad_destino_final": "0"
+    }
+    
+    return nueva_orden
 
 ==================================================
 === ARCHIVO: ./backend/servicios/trading/procesador.py ===
@@ -1642,9 +1907,11 @@ from decimal import Decimal
 from typing import Tuple, Dict, Any
 
 from backend.acceso_datos.datos_billetera import cargar_billetera, guardar_billetera
+from config import ACCION_COMPRAR, ACCION_VENDER
 from backend.acceso_datos.datos_cotizaciones import obtener_precio
 from backend.acceso_datos.datos_ordenes import agregar_orden_pendiente
 from backend.servicios.trading.ejecutar_orden import ejecutar_transaccion
+from backend.utils.responses import crear_respuesta_error, crear_respuesta_exitosa
 from backend.utils.utilidades_numericas import (
     a_decimal, cuantizar_cripto, cuantizar_usd, 
     formato_cantidad_cripto, formato_cantidad_usd
@@ -1678,7 +1945,7 @@ def _calcular_detalles_intercambio(
     cantidad_destino_bruta = Decimal("0")
     valor_usd = Decimal("0")
     
-    if accion == "comprar":
+    if accion == ACCION_COMPRAR:
         if modo_ingreso == "monto":
             cantidad_destino_bruta = monto_form
             valor_usd = cantidad_destino_bruta * precio_destino_usdt
@@ -1711,24 +1978,24 @@ def _calcular_detalles_intercambio(
         "valor_usd": valor_usd
     }
     
-def _ejecutar_orden_mercado(moneda_origen: str, moneda_destino: str, monto_form: Decimal, modo_ingreso: str, accion: str) -> Tuple[bool, Dict[str, Any] | str]:
+def _ejecutar_orden_mercado(moneda_origen: str, moneda_destino: str, monto_form: Decimal, modo_ingreso: str, accion: str) -> Dict[str, Any]:
     """Orquesta la ejecución de una orden a precio de mercado."""
     precio_origen_usdt = obtener_precio(moneda_origen)
     precio_destino_usdt = obtener_precio(moneda_destino)
     if not all([precio_origen_usdt, precio_destino_usdt]):
-        return False, "❌ No se pudo obtener la cotización para realizar el swap."
+        return crear_respuesta_error("❌ No se pudo obtener la cotización para realizar el swap.")
 
     exito_calculo, detalles_brutos = _calcular_detalles_intercambio(accion, modo_ingreso, monto_form, precio_origen_usdt, precio_destino_usdt)
     if not exito_calculo:
-        return False, f"❌ {detalles_brutos}"
+        return crear_respuesta_error(f"❌ {detalles_brutos}")
 
     cantidad_origen_bruta = detalles_brutos["cantidad_origen_bruta"]
     billetera = cargar_billetera()
     exito_validacion, mensaje_error = _validar_saldo_disponible(billetera, moneda_origen, cantidad_origen_bruta)
     if not exito_validacion: 
-        return False, mensaje_error
+        return crear_respuesta_error(mensaje_error)
 
-    tipo_op_historial = "Compra" if accion == "comprar" else "Venta"
+    tipo_op_historial = "Compra" if accion == ACCION_COMPRAR else "Venta"
     exito_ejecucion, detalles_ejecucion = ejecutar_transaccion(
         billetera=billetera,
         moneda_origen=moneda_origen,
@@ -1739,7 +2006,8 @@ def _ejecutar_orden_mercado(moneda_origen: str, moneda_destino: str, monto_form:
     )
 
     if not exito_ejecucion:
-        return False, detalles_ejecucion.get("error", "Error desconocido durante la ejecución.")
+        error_msg = detalles_ejecucion.get("error", "Error desconocido durante la ejecución.")
+        return crear_respuesta_error(error_msg)
 
     guardar_billetera(billetera)
 
@@ -1752,70 +2020,116 @@ def _ejecutar_orden_mercado(moneda_origen: str, moneda_destino: str, monto_form:
             "comision": {"cantidad": formato_cantidad_cripto(detalles_ejecucion["cantidad_comision"]), "ticker": moneda_origen}
         }
     }
-    return True, resultado_operacion
+    return crear_respuesta_exitosa(resultado_operacion)
 
-def _crear_orden_pendiente(moneda_origen: str, moneda_destino: str, monto_form: Decimal, modo_ingreso: str, precio_disparo: Decimal, tipo_orden: str, accion: str, precio_limite: Decimal | None) -> Tuple[bool, Dict[str, Any] | str]:
-    """Crea y guarda una orden pendiente (Límite o Stop-Limit)."""
-    billetera = cargar_billetera()
-    
-    if precio_disparo.is_zero():
-        return False, "❌ El precio de disparo no puede ser cero."
+def _calcular_reserva_y_cantidad_principal(
+    accion: str, 
+    modo_ingreso: str, 
+    monto_form: Decimal, 
+    precio_disparo: Decimal,
+    precio_destino_usdt: Decimal | None = None
+) -> Dict[str, Any]:
+    """
+    Calcula la cantidad a reservar y la cantidad principal de la cripto para una orden pendiente.
+    Es una función de cálculo pura que no realiza I/O.
+    Devuelve un diccionario con el resultado.
+    """
+    cantidad_a_reservar = Decimal("0")
+    cantidad_cripto_principal = Decimal("0")
 
-    if accion == 'comprar':
-        moneda_a_reservar = moneda_origen
+    if accion == ACCION_COMPRAR:
         if modo_ingreso == 'monto':
             cantidad_cripto_principal = monto_form
             cantidad_a_reservar = cantidad_cripto_principal * precio_disparo
         elif modo_ingreso == 'total':
             cantidad_a_reservar = monto_form
+            if precio_disparo.is_zero():
+                return crear_respuesta_error("El precio de disparo no puede ser cero para este cálculo.")
             cantidad_cripto_principal = cantidad_a_reservar / precio_disparo
         else:
-            return False, f"Modo de ingreso '{modo_ingreso}' no válido para una compra límite."
+            return crear_respuesta_error(f"Modo de ingreso '{modo_ingreso}' no válido para una compra.")
 
-    elif accion == 'vender':
-        moneda_a_reservar = moneda_origen
+    elif accion == ACCION_VENDER:
         if modo_ingreso == 'monto':
             cantidad_cripto_principal = monto_form
             cantidad_a_reservar = cantidad_cripto_principal
         elif modo_ingreso == 'total':
-            precio_destino_usdt = obtener_precio(moneda_destino)
             if not precio_destino_usdt or precio_destino_usdt.is_zero():
-                return False, f"❌ No se pudo obtener la cotización actual de {moneda_destino} para calcular la reserva."
+                return crear_respuesta_error("Se requiere un precio de destino válido para este cálculo.")
+            if precio_disparo.is_zero():
+                return crear_respuesta_error("El precio de disparo no puede ser cero para este cálculo.")
+            
             valor_usd_objetivo = monto_form * precio_destino_usdt
             cantidad_cripto_principal = valor_usd_objetivo / precio_disparo
             cantidad_a_reservar = cantidad_cripto_principal
         else:
-            return False, f"Modo de ingreso '{modo_ingreso}' no válido para una venta límite."
+            return crear_respuesta_error(f"Modo de ingreso '{modo_ingreso}' no válido para una venta.")
     else:
-        return False, f"Acción desconocida: {accion}"
+        return crear_respuesta_error(f"Acción desconocida: {accion}")
+
+    return crear_respuesta_exitosa({
+        "cantidad_a_reservar": cantidad_a_reservar,
+        "cantidad_cripto_principal": cantidad_cripto_principal
+    })
+
+def _crear_orden_pendiente(moneda_origen: str, moneda_destino: str, monto_form: Decimal, modo_ingreso: str, precio_disparo: Decimal, tipo_orden: str, accion: str, precio_limite: Decimal | None) -> Dict[str, Any]:
+    """Crea y guarda una orden pendiente (Límite o Stop-Limit)."""
+    billetera = cargar_billetera()
+    
+    if precio_disparo.is_zero():
+        return crear_respuesta_error("❌ El precio de disparo no puede ser cero.")
+
+    # Obtener precio de destino si es necesario para el cálculo
+    precio_destino_usdt = None
+    if accion == ACCION_VENDER and modo_ingreso == 'total':
+        precio_destino_usdt = obtener_precio(moneda_destino)
+        if not precio_destino_usdt or precio_destino_usdt.is_zero():
+            return crear_respuesta_error(f"❌ No se pudo obtener la cotización actual de {moneda_destino} para calcular la reserva.")
+
+    # Calcular cantidades usando la nueva función de ayuda
+    resultado_calculo = _calcular_reserva_y_cantidad_principal(
+        accion, modo_ingreso, monto_form, precio_disparo, precio_destino_usdt
+    )
+    if resultado_calculo["estado"] == "error":
+        mensaje = f"Error en cálculo de reserva: {resultado_calculo['mensaje']}"
+        return crear_respuesta_error(mensaje)
+
+    datos_calculo = resultado_calculo["datos"]
+    cantidad_a_reservar = datos_calculo["cantidad_a_reservar"]
+    cantidad_cripto_principal = datos_calculo["cantidad_cripto_principal"]
+    
+    moneda_a_reservar = moneda_origen
 
     exito_validacion, mensaje_error = _validar_saldo_disponible(billetera, moneda_a_reservar, cantidad_a_reservar)
     if not exito_validacion: 
-        return False, mensaje_error
+        return crear_respuesta_error(mensaje_error)
 
     billetera[moneda_a_reservar]["saldos"]["disponible"] -= cantidad_a_reservar
     billetera[moneda_a_reservar]["saldos"]["reservado"] += cantidad_a_reservar
     guardar_billetera(billetera)
 
+    id_orden = str(uuid.uuid4())
+    par_correcto = f"{moneda_destino}/{moneda_origen}" if accion == ACCION_COMPRAR else f"{moneda_origen}/{moneda_destino}"
+
     nueva_orden = {
-        "id_orden": str(uuid.uuid4()),
+        "id_orden": id_orden,
         "timestamp_creacion": datetime.now().isoformat(),
         "tipo_orden": tipo_orden,
         "accion": accion,
-        "par": f"{moneda_origen}/{moneda_destino}", # Correcto: BASE/QUOTE
+        "par": par_correcto,
         "moneda_origen": moneda_origen,
         "moneda_destino": moneda_destino,
         "cantidad_cripto_principal": str(cuantizar_cripto(cantidad_cripto_principal)),
         "precio_disparo": str(cuantizar_usd(precio_disparo)),
-        "precio_limite": str(cuantizar_usd(precio_limite)) if precio_limite else None, # ### NUEVO ###
+        "precio_limite": str(cuantizar_usd(precio_limite)) if precio_limite else None,
         "cantidad_reservada": str(cuantizar_cripto(cantidad_a_reservar)),
         "moneda_reservada": moneda_a_reservar,
         "estado": "pendiente"
     }
     agregar_orden_pendiente(nueva_orden)
     
-    accion_texto = "Compra" if accion == 'comprar' else "Venta"
-    ticker_mostrado = moneda_destino if accion == 'comprar' else moneda_origen
+    accion_texto = "Compra" if accion == ACCION_COMPRAR else "Venta"
+    ticker_mostrado = moneda_destino if accion == ACCION_COMPRAR else moneda_origen
     
     resultado_operacion = {
         "titulo": f"Orden {tipo_orden.replace('-', ' ').title()} Creada",
@@ -1825,9 +2139,9 @@ def _crear_orden_pendiente(moneda_origen: str, moneda_destino: str, monto_form: 
             "precio_disparo": formato_cantidad_usd(precio_disparo)
         }
     }
-    return True, resultado_operacion
+    return crear_respuesta_exitosa(resultado_operacion)
 
-def procesar_operacion_trading(formulario: dict) -> Tuple[bool, Dict[str, Any] | str]:
+def procesar_operacion_trading(formulario: dict) -> Dict[str, Any]:
     """Punto de entrada principal para procesar una operación desde el formulario."""
     try:
         ticker_principal = formulario["ticker"].upper()
@@ -1836,12 +2150,14 @@ def procesar_operacion_trading(formulario: dict) -> Tuple[bool, Dict[str, Any] |
         modo_ingreso = formulario.get("modo-ingreso", "monto")
         tipo_orden = formulario.get("tipo-orden", "market").lower()
     except (KeyError, ValueError) as e:
-        return False, f"❌ Error en los datos del formulario: {e}"
+        return crear_respuesta_error(f"❌ Error en los datos del formulario: {e}")
 
-    if monto_form <= a_decimal(0): return False, "❌ El monto debe ser un número positivo."
+    if monto_form <= a_decimal(0): 
+        return crear_respuesta_error("❌ El monto debe ser un número positivo.")
 
-    moneda_origen, moneda_destino = (formulario.get("moneda-pago", "USDT").upper(), ticker_principal) if accion == "comprar" else (ticker_principal, formulario.get("moneda-recibir", "USDT").upper())
-    if moneda_origen == moneda_destino: return False, "❌ La moneda de origen y destino no pueden ser la misma."
+    moneda_origen, moneda_destino = (formulario.get("moneda-pago", "USDT").upper(), ticker_principal) if accion == ACCION_COMPRAR else (ticker_principal, formulario.get("moneda-recibir", "USDT").upper())
+    if moneda_origen == moneda_destino: 
+        return crear_respuesta_error("❌ La moneda de origen y destino no pueden ser la misma.")
 
     if tipo_orden == "market":
         return _ejecutar_orden_mercado(moneda_origen, moneda_destino, monto_form, modo_ingreso, accion)
@@ -1850,20 +2166,30 @@ def procesar_operacion_trading(formulario: dict) -> Tuple[bool, Dict[str, Any] |
         try:
             precio_disparo = a_decimal(formulario.get("precio_disparo"))
             if precio_disparo <= a_decimal(0): 
-                return False, "❌ Se requiere un precio de disparo válido y positivo."
+                return crear_respuesta_error("❌ Se requiere un precio de disparo válido y positivo.")
             
             precio_limite = None
             if tipo_orden == 'stop-limit':
                 precio_limite = a_decimal(formulario.get("precio_limite"))
                 if precio_limite <= a_decimal(0):
-                    return False, "❌ Se requiere un precio límite válido y positivo para una orden Stop-Limit."
+                    return crear_respuesta_error("❌ Se requiere un precio límite válido y positivo para una orden Stop-Limit.")
 
         except (KeyError, ValueError, TypeError):
-            return False, "❌ Precio de disparo o límite inválido o faltante."
+            return crear_respuesta_error("❌ Precio de disparo o límite inválido o faltante.")
         
-        return _crear_orden_pendiente(moneda_origen, moneda_destino, monto_form, modo_ingreso, precio_disparo, tipo_orden, accion, precio_limite)
+        return _crear_orden_pendiente(
+            moneda_origen, 
+            moneda_destino, 
+            monto_form, 
+            modo_ingreso, 
+            precio_disparo, 
+            tipo_orden, 
+            accion, 
+            precio_limite
+        )
     
-    return False, f"❌ Tipo de orden desconocido: '{tipo_orden}'."
+    else:
+        return crear_respuesta_error(f"Tipo de orden '{tipo_orden}' no soportado.")
 
 ==================================================
 === ARCHIVO: ./backend/utils/formatters.py ===
@@ -1931,8 +2257,27 @@ def format_datetime(timestamp: Union[int, float, str]) -> str:
         return "--:--"
 
 ==================================================
+=== ARCHIVO: ./backend/utils/responses.py ===
+==================================================
+
+"""
+Utilidades para estandarizar las respuestas de los servicios.
+"""
+
+def crear_respuesta_exitosa(datos, mensaje=""):
+    """Crea una respuesta estandarizada para operaciones exitosas."""
+    return {"estado": "ok", "datos": datos, "mensaje": mensaje}
+
+def crear_respuesta_error(mensaje):
+    """Crea una respuesta estandarizada para operaciones fallidas."""
+    return {"estado": "error", "mensaje": mensaje}
+
+
+==================================================
 === ARCHIVO: ./backend/utils/utilidades_numericas.py ===
 ==================================================
+
+# backend/utils/utilidades_numericas.py
 
 """
 Módulo de Utilidades Numéricas.
@@ -1940,11 +2285,6 @@ Módulo de Utilidades Numéricas.
 Este módulo centraliza todas las operaciones relacionadas con la manipulación
 de números en la aplicación, especialmente para garantizar la consistencia
 y precisión al trabajar con la librería `Decimal`.
-
-Funciones:
-- Conversión segura a `Decimal`.
-- Cuantización a precisiones estándar (cripto, USD).
-- Formateo para presentación en el frontend.
 """
 
 from decimal import Decimal, InvalidOperation
@@ -1955,21 +2295,10 @@ from config import PRECISION_CRIPTOMONEDA, PRECISION_USD
 def a_decimal(valor) -> Decimal:
     """
     Convierte de forma segura un valor a un objeto Decimal.
-
-    Maneja diferentes tipos de entrada (int, float, str, None) y valores
-    inválidos, devolviendo siempre Decimal('0') en caso de error o entrada nula.
-
-    Args:
-        valor: El valor a convertir.
-
-    Returns:
-        Un objeto Decimal.
     """
     if valor is None:
         return Decimal("0")
     try:
-        # Convertir a string primero es la forma más segura de crear un Decimal,
-        # especialmente desde un float, para evitar imprecisiones binarias.
         return Decimal(str(valor))
     except (InvalidOperation, TypeError, ValueError):
         return Decimal("0")
@@ -1977,68 +2306,52 @@ def a_decimal(valor) -> Decimal:
 def cuantizar_cripto(valor: Decimal) -> Decimal:
     """
     Cuantiza un valor Decimal a la precisión estándar para criptomonedas.
-
-    Args:
-        valor: El objeto Decimal a cuantizar.
-
-    Returns:
-        El valor Decimal cuantizado a 8 decimales.
     """
     return valor.quantize(PRECISION_CRIPTOMONEDA)
 
 def cuantizar_usd(valor: Decimal) -> Decimal:
     """
     Cuantiza un valor Decimal a la precisión estándar para USD.
-
-    Args:
-        valor: El objeto Decimal a cuantizar.
-
-    Returns:
-        El valor Decimal cuantizado a 2 o 4 decimales, según config.
     """
     return valor.quantize(PRECISION_USD)
 
 
-# --- Funciones de Formateo para Presentación ---
+# --- Funciones de Formateo para Presentación (Versión Final) ---
 
 def formato_cantidad_cripto(valor: Decimal) -> str:
     """
-    Formatea una cantidad de criptomoneda como string con 8 decimales.
-
-    Args:
-        valor (Decimal): La cantidad a formatear.
-
-    Returns:
-        La cantidad formateada como string. Ej: "0.12345678".
+    Formatea una cantidad de criptomoneda con separadores de miles
+    y elimina ceros decimales innecesarios.
     """
-    return f"{cuantizar_cripto(valor):.8f}"
+    valor_q = cuantizar_cripto(valor)
+    # El carácter "," es la clave para los separadores de miles.
+    precision = abs(PRECISION_CRIPTOMONEDA.as_tuple().exponent)
+    string_formateado = f"{valor_q:,.{precision}f}"
+    
+    if '.' in string_formateado:
+        string_formateado = string_formateado.rstrip('0').rstrip('.')
+        
+    return string_formateado
 
 def formato_cantidad_usd(valor: Decimal, simbolo: str = "$") -> str:
     """
-    Formatea un valor monetario en USD con 2 decimales y separadores de miles.
-
-    Args:
-        valor (Decimal): El valor a formatear.
-        simbolo (str, optional): Símbolo de la moneda. Por defecto es "$".
-
-    Returns:
-        El valor formateado. Ej: "$1,234.56".
+    Formatea un valor monetario en USD con separadores de miles
+    y elimina ceros decimales innecesarios.
     """
-    # La cantidad de decimales en la f-string debe coincidir con la precisión en config.py
-    # Decimal('0.0001'), usa .4f.
-    decimales = abs(PRECISION_USD.as_tuple().exponent)
-    return f"{simbolo}{cuantizar_usd(valor):,.{decimales}f}"
+    valor_q = cuantizar_usd(valor)
+    # El carácter "," es la clave para los separadores de miles.
+    precision = abs(PRECISION_USD.as_tuple().exponent)
+    string_formateado = f"{valor_q:,.{precision}f}"
+    
+    if '.' in string_formateado:
+        string_formateado = string_formateado.rstrip('0').rstrip('.')
+        
+    return f"{simbolo}{string_formateado}"
 
 def formato_numero_grande(valor: Decimal, simbolo: str = "$") -> str:
     """
     Formatea números grandes con abreviaturas (M, B, T).
-
-    Args:
-        valor (Decimal): El número a formatear.
-        simbolo (str, optional): Símbolo a prefijar. Por defecto es "$".
-
-    Returns:
-        El número formateado como string. Ej: "$1.25M", "$2.5B".
+    Para números menores a 1 millón, usa el formato USD estándar.
     """
     numero = a_decimal(valor)
 
@@ -2048,17 +2361,13 @@ def formato_numero_grande(valor: Decimal, simbolo: str = "$") -> str:
         return f"{simbolo}{(numero / Decimal('1e9')).quantize(Decimal('0.01'))}B"
     if numero >= 1_000_000:
         return f"{simbolo}{(numero / Decimal('1e6')).quantize(Decimal('0.01'))}M"
-    return f"{simbolo}{numero:,.0f}"
+    
+    # Para números por debajo de 1 millón, usamos el formato USD con comas.
+    return formato_cantidad_usd(numero, simbolo)
 
 def formato_porcentaje(valor: Decimal) -> str:
     """
     Formatea un número como un porcentaje con dos decimales.
-
-    Args:
-        valor (Decimal): El número a formatear.
-
-    Returns:
-        El número como string de porcentaje. Ej: "25.45%".
     """
     return f"{a_decimal(valor):.2f}%"
 
@@ -2066,10 +2375,23 @@ def formato_porcentaje(valor: Decimal) -> str:
 === ARCHIVO: ./config.py ===
 ==================================================
 
-# config.py
-### MODIFICADO ###
-
 import os
+
+# --- CONSTANTES DE LA APLICACIÓN ---
+# Acciones de Trading
+ACCION_COMPRAR = "comprar"
+ACCION_VENDER = "vender"
+
+# Tipos de Órdenes
+TIPO_ORDEN_MERCADO = "market"
+TIPO_ORDEN_LIMITE = "limit"
+TIPO_ORDEN_STOP_LIMIT = "stop-limit"
+
+# Estados de Órdenes
+ESTADO_PENDIENTE = "pendiente"
+ESTADO_EJECUTADA = "ejecutada"
+ESTADO_CANCELADA = "cancelada"
+ESTADO_ERROR = "error"
 from decimal import getcontext, ROUND_HALF_DOWN, Decimal
 from dotenv import load_dotenv
 
@@ -2121,6 +2443,7 @@ PRECISION_USD = Decimal("0.0001")
 # Umbrales para la lógica de "polvo" (saldos pequeños)
 UMBRAL_POLVO_USD = Decimal("0.01") # Valor en USD por debajo del cual se considera polvo
 UMBRAL_CASI_CERO = Decimal("0.00000001") # Cantidad por debajo de la cual se considera cero para ciertas validaciones
+
 
 ==================================================
 === ARCHIVO: ./documentacion.md ===
@@ -2684,8 +3007,18 @@ body {
 }
 
 
-.custom-toast-position {
-    margin-top: 60px;
+.swal2-toast .swal2-close {
+    font-size: 1.5rem;
+    color: #b0b0b0;
+    transition: color 0.2s ease;
+    
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.swal2-toast .swal2-close:hover {
+    color: #ffffff;
+    transform: none;
 }
 
 ==================================================
@@ -3031,6 +3364,235 @@ export async function renderTabla() {
 }
 
 ==================================================
+=== ARCHIVO: ./frontend/static/js/components/uiManager.js ===
+==================================================
+
+// frontend/static/js/components/uiManager.js
+
+import { DOMElements } from './domElements.js';
+import { UIState } from './uiState.js';
+import { UIUpdater } from './uiUpdater.js';
+import { FormLogic } from './formLogic.js';
+import { AppState } from '../services/appState.js';
+import { AppDataManager } from '../services/appDataManager.js';
+import { updateChartData } from './chartRenderer.js';
+import { fetchVelas } from '../services/apiService.js';
+import { saveTradingState } from '../services/statePersistence.js';
+
+export const UIManager = {
+    currentTicker: 'BTC',
+    currentInterval: '1d',
+    isChartLoading: false,
+
+    initialize(initialState) {
+        this.currentTicker = initialState.ticker;
+        this.currentInterval = initialState.interval;
+
+        // Renderizar partes de la UI que no dependen del formulario
+        UIUpdater.renderHistorial(initialState.historial);
+        this.renderOrdenesAbiertas(initialState.ordenesAbiertas);
+        
+        // Preparar plugins y listeners de eventos
+        this.setupSelect2();
+        this.setupEventListeners(); // Mover aquí para que los listeners estén listos
+        
+        // --- SECUENCIA DE INICIALIZACIÓN CORREGIDA ---
+        // 1. Establecer el modo por defecto ("comprar"). Esto muestra y oculta los campos correctos.
+        this.setTradeMode('comprar'); 
+        
+        // 2. Ahora que los campos son visibles, poblamos y seleccionamos los valores.
+        this.actualizarFormularioCompleto();
+        
+        // 3. Ajustamos el resto de los elementos.
+        this.handleTipoOrdenChange();
+        $('#timeframe-selector .timeframe-btn').removeClass('active').filter(`[data-interval="${this.currentInterval}"]`).addClass('active');
+    },
+
+    setupSelect2() {
+        [DOMElements.selectorPrincipal, DOMElements.selectorPagarCon, DOMElements.selectorRecibirEn].forEach((sel) => {
+            sel.select2({ width: '100%', dropdownCssClass: 'text-dark', theme: 'bootstrap-5' });
+        });
+    },
+
+    setupEventListeners() {
+        DOMElements.botonComprar.on('click', () => this.handleTradeModeChange('comprar'));
+        DOMElements.botonVender.on('click', () => this.handleTradeModeChange('vender'));
+        DOMElements.selectorPrincipal.on('change', () => this.handleSelectorPrincipalChange());
+        
+        DOMElements.selectorPagarCon.on('change', () => this.updateDynamicLabels());
+        DOMElements.selectorRecibirEn.on('change', () => this.updateDynamicLabels());
+        
+        $('#timeframe-selector').on('click', '.timeframe-btn', (e) => this.handleTimeframeChange(e));
+        $('input[name="tipo-orden"]').on('change', () => this.handleTipoOrdenChange());
+        DOMElements.radioModoIngreso.on('change', () => this.updateDynamicLabels());
+        
+        $('#precio_disparo, #precio_limite, #monto').on('input', (e) => this.validarInputNumerico(e));
+
+        $('#tabla-ordenes-abiertas').on('click', '.btn-cancelar-orden', (e) => this.handleCancelClick(e));
+    },
+
+    /**
+     * Función que se llama cuando el usuario hace clic en Comprar/Vender.
+     * @param {string} mode - 'comprar' o 'vender'.
+     */
+    handleTradeModeChange(mode) {
+        this.setTradeMode(mode);
+        this.actualizarFormularioCompleto();
+    },
+
+    /**
+     * Establece el estado visual básico del modo de trading (colores y visibilidad de campos).
+     * Ya no llama a la actualización completa del formulario para evitar bucles.
+     * @param {string} mode - 'comprar' o 'vender'.
+     */
+    setTradeMode(mode) {
+        DOMElements.inputAccion.val(mode);
+        UIUpdater.actualizarBotones();
+        UIUpdater.actualizarVisibilidadCampos();
+    },
+
+    /**
+     * Rellena y actualiza todos los selectores y etiquetas del formulario.
+     */
+    actualizarFormularioCompleto() {
+        const esCompra = UIState.esModoCompra();
+        const ticker = this.currentTicker;
+        
+        if (esCompra) {
+            FormLogic.popularSelector(DOMElements.selectorPrincipal, AppState.getAllCryptos().filter(c => c.ticker !== 'USDT'));
+        } else {
+            FormLogic.popularSelector(DOMElements.selectorPrincipal, AppState.getOwnedCoins().filter(c => c.ticker !== 'USDT'), 'No tienes monedas para vender');
+        }
+        DOMElements.selectorPrincipal.val(ticker).trigger('change.select2');
+        
+        FormLogic.actualizarOpcionesDeSelectores();
+        this.updateDynamicLabels();
+    },
+    
+    /**
+     * Actualiza solo las etiquetas que cambian dinámicamente.
+     */
+    updateDynamicLabels() {
+        const tickerParaBalance = UIState.esModoCompra() ? UIState.getTickerPago() : UIState.getTickerPrincipal();
+        UIUpdater.mostrarSaldo(tickerParaBalance);
+        UIUpdater.actualizarLabelsModoIngreso();
+        UIUpdater.actualizarLabelMonto();
+    },
+
+    handleSelectorPrincipalChange() {
+        const nuevoTicker = UIState.getTickerPrincipal();
+        if (!nuevoTicker || nuevoTicker === this.currentTicker) return;
+        this.currentTicker = nuevoTicker;
+        
+        this.actualizarFormularioCompleto();
+        this.actualizarGrafico();
+        saveTradingState(this.currentTicker, this.currentInterval);
+    },
+
+    async actualizarGrafico() {
+        if (!this.currentTicker || this.isChartLoading) return;
+        this.isChartLoading = true;
+        try {
+            const nuevosDatosVelas = await fetchVelas(this.currentTicker, this.currentInterval);
+            updateChartData(nuevosDatosVelas);
+        } catch (error) {
+            console.error(`Error al actualizar el gráfico para ${this.currentTicker}/${this.currentInterval}:`, error);
+            updateChartData([]);
+        } finally {
+            this.isChartLoading = false;
+        }
+    },
+    
+    handleTimeframeChange(event) {
+        this.currentInterval = $(event.currentTarget).data('interval');
+        $(event.currentTarget).addClass('active').siblings().removeClass('active');
+        this.actualizarGrafico();
+        saveTradingState(this.currentTicker, this.currentInterval);
+    },
+
+    handleTipoOrdenChange() {
+        const tipoOrden = $('input[name="tipo-orden"]:checked').val();
+        const [campoStop, inputStop, labelStop] = [$('#campo-precio-disparo'), $('#precio_disparo'), $('#label-precio-disparo')];
+        const [campoLimit, inputLimit] = [$('#campo-precio-limite'), $('#precio_limite')];
+
+        [campoStop, campoLimit].forEach(f => f.hide());
+        [inputStop, inputLimit].forEach(i => i.prop('required', false));
+    
+        if (tipoOrden === 'limit') {
+            labelStop.text('Precio Límite');
+            campoStop.show();
+            inputStop.prop('required', true);
+        } else if (tipoOrden === 'stop-limit') {
+            labelStop.text('Precio Stop');
+            campoStop.show();
+            campoLimit.show();
+            inputStop.prop('required', true);
+            inputLimit.prop('required', true);
+        }
+        this.updateDynamicLabels();
+    },
+
+    renderOrdenesAbiertas(ordenes) {
+        const tablaBody = $('#tabla-ordenes-abiertas tbody');
+        if (!ordenes || ordenes.length === 0) {
+            tablaBody.html('<tr><td colspan="7" class="text-center text-muted py-3">No hay órdenes abiertas.</td></tr>');
+            return;
+        } 
+        
+        const createOrdenAbiertaRowHTML = (orden) => {
+            const fechaCreacion = new Date(orden.timestamp_creacion).toLocaleString('es-AR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const tipoOrdenClase = orden.accion === 'comprar' ? 'text-success' : 'text-danger';
+            const cantidad = orden.cantidad_cripto_principal;
+            const tickerCantidad = orden.accion === 'vender' ? orden.moneda_origen : orden.moneda_destino;
+            const tipoOrdenFormatted = orden.tipo_orden.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            
+            return `
+                <tr>
+                    <td class="text-start ps-3 small">${fechaCreacion}</td>
+                    <td class="fw-bold">${orden.par}</td>
+                    <td>${tipoOrdenFormatted}</td>
+                    <td class="${tipoOrdenClase}">${orden.accion.charAt(0).toUpperCase() + orden.accion.slice(1)}</td>
+                    <td>${orden.precio_disparo}</td>
+                    <td>${cantidad} ${tickerCantidad}</td>
+                    <td><button class="btn btn-sm btn-outline-danger btn-cancelar-orden" data-id-orden="${orden.id_orden}">Cancelar</button></td>
+                </tr>`;
+        };
+        tablaBody.html(ordenes.map(createOrdenAbiertaRowHTML).join(''));
+    },
+    
+    async handleCancelClick(event) {
+        const orderId = $(event.currentTarget).data('id-orden');
+        const result = await Swal.fire({
+            title: '¿Estás seguro?', text: "No podrás revertir esta acción.",
+            icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6', confirmButtonText: 'Sí, ¡cancelar orden!',
+            cancelButtonText: 'No', background: '#212529', color: '#f8f9fa'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const respuesta = await AppDataManager.handleCancelOrder(orderId);
+                Toast.fire({ icon: 'success', html: respuesta.mensaje });
+                $(event.currentTarget).closest('tr').fadeOut(400, function() { $(this).remove(); });
+                this.updateDynamicLabels();
+            } catch (error) {
+                Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cancelar la orden.', background: '#212529', color: '#f8f9fa' });
+            }
+        }
+    },
+
+    validarInputNumerico(event, maxDecimales = 8) {
+        const input = event.target;
+        let value = input.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+        const parts = value.split('.');
+        if (parts[1] && parts[1].length > maxDecimales) {
+            value = parts[0] + '.' + parts[1].substring(0, maxDecimales);
+        }
+        input.value = value;
+    }
+};
+
+==================================================
 === ARCHIVO: ./frontend/static/js/components/uiState.js ===
 ==================================================
 
@@ -3171,11 +3733,13 @@ export const UIUpdater = {
 
         // Usamos AppState en lugar de 'window'
         const moneda = AppState.getOwnedCoinByTicker(ticker);
-        // Usamos 'cantidad_formatted' para mostrar, que ya viene del backend y es más preciso.
-        // Además, nos aseguramos de que el saldo mostrado sea el DISPONIBLE.
-        const saldoFormateado = moneda ? moneda.cantidad_formatted : '0.00000000';
-        const tickerMostrado = moneda ? moneda.ticker : ticker;
-        DOMElements.spanSaldoDisponible.text(`${saldoFormateado} ${tickerMostrado}`);
+
+
+
+        // Simplemente usa el valor formateado que ya tienes.
+        const saldoFormateado = moneda ? moneda.cantidad_disponible_formatted : '0.00';
+        
+        DOMElements.spanSaldoDisponible.text(`${saldoFormateado} ${ticker}`); 
     },
     
     setInputMonto(valor) {
@@ -3449,237 +4013,63 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // frontend/static/js/pages/tradingPage.js
 
-import { DOMElements } from '../components/domElements.js';
-import { UIState } from '../components/uiState.js';
-import { UIUpdater } from '../components/uiUpdater.js';
-import { FormLogic } from '../components/formLogic.js';
+import { AppDataManager } from '../services/appDataManager.js';
+import { UIManager } from '../components/uiManager.js';
 import { initializeChart, updateChartData } from '../components/chartRenderer.js';
-import {
-    fetchCotizaciones,
-    fetchEstadoBilletera,
-    fetchHistorial,
-    fetchVelas,
-    fetchOrdenesAbiertas,
-    cancelarOrden
-} from '../services/apiService.js';
-import { AppState } from '../services/appState.js';
-import { saveTradingState, loadTradingState } from '../services/statePersistence.js';
+import { loadTradingState, saveTradingState } from '../services/statePersistence.js';
+import { fetchVelas } from '../services/apiService.js';
 
-function createOrdenAbiertaRowHTML(orden) {
-    const fechaCreacion = new Date(orden.timestamp_creacion).toLocaleString('es-AR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-    const tipoOrdenClase = orden.accion === 'comprar' ? 'text-success' : 'text-danger';
-    const cantidad = orden.cantidad_cripto_principal; 
-    const tickerCantidad = orden.accion === 'vender' ? orden.moneda_origen : orden.moneda_destino;
-    return `<tr><td class="text-start ps-3 small">${fechaCreacion}</td><td class="fw-bold">${orden.par}</td><td>${orden.tipo_orden.charAt(0).toUpperCase() + orden.tipo_orden.slice(1)}</td><td class="${tipoOrdenClase}">${orden.accion.charAt(0).toUpperCase() + orden.accion.slice(1)}</td><td>$${parseFloat(orden.precio_disparo).toFixed(4)}</td><td>${parseFloat(cantidad).toFixed(6)} ${tickerCantidad}</td><td><button class="btn btn-sm btn-outline-danger btn-cancelar-orden" data-id-orden="${orden.id_orden}">Cancelar</button></td></tr>`;
+const POLLING_INTERVAL_MS = 20000; // 20 segundos
+
+/**
+ * Función principal que orquesta la inicialización de la página.
+ */
+async function initialize() {
+    console.log('Inicializando página de trading...');
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const tickerDesdeUrl = urlParams.get('ticker');
+    const savedState = loadTradingState();
+    const initialTicker = tickerDesdeUrl || savedState?.ticker || 'BTC';
+    const initialInterval = savedState?.interval || '1d';
+    if (tickerDesdeUrl) saveTradingState(initialTicker, initialInterval);
+
+    try {
+        const { historial, ordenesAbiertas } = await AppDataManager.loadInitialData();
+        
+        UIManager.initialize({
+            ticker: initialTicker,
+            interval: initialInterval,
+            historial,
+            ordenesAbiertas
+        });
+        
+        const datosVelas = await fetchVelas(initialTicker, initialInterval);
+        initializeChart(datosVelas);
+        
+        UIManager.setupEventListeners();
+
+        setInterval(async () => {
+            const data = await AppDataManager.pollData();
+            if (data) {
+                UIManager.renderOrdenesAbiertas(data.nuevasOrdenesAbiertas);
+                UIManager.updateDynamicLabels();
+            }
+        }, POLLING_INTERVAL_MS);
+
+        console.log('Página de trading inicializada correctamente.');
+
+    } catch (error) {
+        Swal.fire({
+            icon: 'error', title: 'Error de Conexión',
+            text: 'No se pudieron cargar los datos esenciales. Por favor, recarga la página.',
+            background: '#212529', color: '#f8f9fa'
+        });
+    }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    let currentTicker;
-    let currentInterval;
-    let isChartLoading = false;
-
-    function handleTipoOrdenChange() {
-        const tipoOrden = $('input[name="tipo-orden"]:checked').val();
-        const campoPrecioDisparo = $('#campo-precio-disparo');
-        const inputPrecioDisparo = $('#precio_disparo');
-        const labelPrecioDisparo = $('#label-precio-disparo');
-    
-
-        const campoPrecioLimite = $('#campo-precio-limite');
-        const inputPrecioLimite = $('#precio_limite');
-    
-
-        campoPrecioDisparo.hide();
-        campoPrecioLimite.hide();
-        inputPrecioDisparo.prop('required', false);
-        inputPrecioLimite.prop('required', false);
-    
-        if (tipoOrden === 'limit') {
-            labelPrecioDisparo.text('Precio Límite'); // Lo llamamos "Precio Límite"
-            campoPrecioDisparo.show();
-            inputPrecioDisparo.prop('required', true);
-    
-        } else if (tipoOrden === 'stop-limit') { // Cambiado de 'stop-loss'
-            labelPrecioDisparo.text('Precio Stop'); // Ahora este es el "Precio Stop"
-            campoPrecioDisparo.show();
-            campoPrecioLimite.show(); // Mostramos el segundo campo
-            inputPrecioDisparo.prop('required', true);
-            inputPrecioLimite.prop('required', true); // Ambos son requeridos
-        }
-        
-        // Para 'market', no se hace nada, ambos campos permanecen ocultos.
-        UIUpdater.actualizarLabelMonto();
-    }
-
-    // El resto del archivo no necesita cambios significativos
-    function actualizarFormularioUI() {
-        const esCompra = UIState.esModoCompra();
-        const allCryptos = AppState.getAllCryptos();
-        const ownedCoins = AppState.getOwnedCoins();
-        DOMElements.selectorPrincipal.off('change');
-        if (esCompra) {
-            const listaParaComprar = allCryptos.filter((c) => c.ticker !== 'USDT');
-            FormLogic.popularSelector(DOMElements.selectorPrincipal, listaParaComprar);
-        } else {
-            const ownedCoinsToSell = ownedCoins.filter(c => c.ticker !== 'USDT');
-            FormLogic.popularSelector(DOMElements.selectorPrincipal, ownedCoinsToSell, 'No tienes monedas para vender');
-        }
-        DOMElements.selectorPrincipal.val(currentTicker);
-        DOMElements.selectorPrincipal.on('change', handleSelectorPrincipalChange);
-        FormLogic.actualizarOpcionesDeSelectores();
-        const tickerParaBalance = esCompra ? UIState.getTickerPago() : UIState.getTickerPrincipal();
-        UIUpdater.mostrarSaldo(tickerParaBalance);
-        UIUpdater.actualizarLabelMonto();
-        UIUpdater.actualizarLabelsModoIngreso();
-    }
-
-    function handleSelectorPrincipalChange() {
-        const nuevoTicker = UIState.getTickerPrincipal();
-        if (!nuevoTicker || nuevoTicker === currentTicker) return;
-        currentTicker = nuevoTicker;
-        actualizarFormularioUI();
-        actualizarGrafico(currentTicker, currentInterval);
-        saveTradingState(currentTicker, currentInterval);
-    }
-
-    function setTradeMode(mode) {
-        DOMElements.inputAccion.val(mode);
-        UIUpdater.actualizarBotones();
-        UIUpdater.actualizarVisibilidadCampos();
-        actualizarFormularioUI();
-    }
-    
-    async function actualizarGrafico(ticker, interval) {
-        if (!ticker || isChartLoading) { return; }
-        isChartLoading = true;
-        try {
-            const nuevosDatosVelas = await fetchVelas(ticker, interval);
-            updateChartData(nuevosDatosVelas);
-        } catch (error) {
-            console.error(`Error al actualizar el gráfico para ${ticker}/${interval}:`, error);
-            updateChartData([]);
-        } finally {
-            isChartLoading = false;
-        }
-    }
-    
-    function validarInputNumerico(event, maxDecimales = 8) {
-        const input = event.target;
-        let value = input.value;
-        value = value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
-        const parts = value.split('.');
-        if (parts[1] && parts[1].length > maxDecimales) {
-            value = parts[0] + '.' + parts[1].substring(0, maxDecimales);
-        }
-        if (input.value !== value) {
-            input.value = value;
-        }
-    }
-    
-    function setupEventListeners() {
-        DOMElements.botonComprar.on('click', () => setTradeMode('comprar'));
-        DOMElements.botonVender.on('click', () => setTradeMode('vender'));
-        DOMElements.selectorPrincipal.on('change', handleSelectorPrincipalChange);
-        
-        DOMElements.selectorPagarCon.on('change', () => {
-            UIUpdater.mostrarSaldo(UIState.getTickerPago());
-            UIUpdater.actualizarLabelMonto();
-            UIUpdater.actualizarLabelsModoIngreso();
-        });
-        
-        DOMElements.selectorRecibirEn.on('change', () => {
-            UIUpdater.actualizarLabelMonto();
-            UIUpdater.actualizarLabelsModoIngreso();
-        });
-        
-        $('#timeframe-selector').on('click', '.timeframe-btn', function () {
-            currentInterval = $(this).data('interval');
-            $(this).addClass('active').siblings().removeClass('active');
-            actualizarGrafico(currentTicker, currentInterval);
-            saveTradingState(currentTicker, currentInterval);
-        });
-
-        $('input[name="tipo-orden"]').on('change', handleTipoOrdenChange);
-        DOMElements.radioModoIngreso.on('change', UIUpdater.actualizarLabelMonto);
-        
-        DOMElements.inputMonto.on('input', (e) => validarInputNumerico(e, 8));
-        $('#precio_disparo').on('input', (e) => validarInputNumerico(e, 8));
-
-        $('#tabla-ordenes-abiertas').on('click', '.btn-cancelar-orden', function() {
-            const orderId = $(this).data('id-orden');
-            Swal.fire({
-                title: '¿Estás seguro?', text: "No podrás revertir esta acción.",
-                icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6', confirmButtonText: 'Sí, ¡cancelar orden!',
-                cancelButtonText: 'No', background: '#212529', color: '#f8f9fa'
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    try {
-                        const respuesta = await cancelarOrden(orderId);
-                        Toast.fire({ icon: 'success', html: respuesta.mensaje });
-                        $(this).closest('tr').fadeOut(400, function() { $(this).remove(); if ($('#tabla-ordenes-abiertas tr').length === 0) {
-                            const tablaBody = $('#tabla-ordenes-abiertas');
-                            tablaBody.html('<tr><td colspan="7" class="text-center text-muted py-3">No hay órdenes abiertas.</td></tr>');
-                        }});
-                    } catch (error) {
-                        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cancelar la orden.', background: '#212529', color: '#f8f9fa' });
-                    }
-                }
-            });
-        });
-    }
-
-    async function initialize() {
-        console.log('Inicializando página de trading...');
-        const urlParams = new URLSearchParams(window.location.search);
-        const tickerDesdeUrl = urlParams.get('ticker');
-        const savedState = loadTradingState();
-        currentTicker = tickerDesdeUrl || savedState?.ticker || 'BTC';
-        currentInterval = savedState?.interval || '1d';
-        if (tickerDesdeUrl) saveTradingState(currentTicker, currentInterval);
-        
-        try {
-            const [cotizaciones, estadoBilletera, historial, ordenesAbiertas] = await Promise.all([
-                fetchCotizaciones(), fetchEstadoBilletera(), fetchHistorial(), fetchOrdenesAbiertas()
-            ]);
-
-            AppState.setAllCryptos(cotizaciones);
-            AppState.setOwnedCoins(estadoBilletera);
-
-            UIUpdater.renderHistorial(historial);
-            const tablaOrdenesBody = $('#tabla-ordenes-abiertas');
-            if (ordenesAbiertas.length === 0) {
-                tablaOrdenesBody.html('<tr><td colspan="7" class="text-center text-muted py-3">No hay órdenes abiertas.</td></tr>');
-            } else {
-                tablaOrdenesBody.html(ordenesAbiertas.map(createOrdenAbiertaRowHTML).join(''));
-            }
-
-            const datosVelas = await fetchVelas(currentTicker, currentInterval);
-            initializeChart(datosVelas);
-            
-            [DOMElements.selectorPrincipal, DOMElements.selectorPagarCon, DOMElements.selectorRecibirEn].forEach((sel) => {
-                sel.select2({ width: '100%', dropdownCssClass: 'text-dark', theme: 'bootstrap-5' });
-            });
-
-            setupEventListeners();
-            setTradeMode('comprar');
-            handleTipoOrdenChange();
-
-            $('#timeframe-selector .timeframe-btn').removeClass('active').filter(`[data-interval="${currentInterval}"]`).addClass('active');
-
-            console.log('Página de trading inicializada correctamente.');
-        } catch (error) {
-            console.error('Error fatal durante la inicialización:', error);
-            Swal.fire({
-                icon: 'error', title: 'Error de Conexión',
-                text: 'No se pudieron cargar los datos esenciales. Por favor, recarga la página.',
-                background: '#212529', color: '#f8f9fa'
-            });
-        }
-    }
-
-    initialize();
-});
+// Punto de entrada
+document.addEventListener('DOMContentLoaded', initialize);
 
 ==================================================
 === ARCHIVO: ./frontend/static/js/services/apiService.js ===
@@ -3742,6 +4132,87 @@ export const cancelarOrden = (idOrden) =>
     _fetchData(`/api/orden/cancelar/${idOrden}`, {
         method: 'POST'
     }, 'No se pudo cancelar la orden');
+
+==================================================
+=== ARCHIVO: ./frontend/static/js/services/appDataManager.js ===
+==================================================
+
+// frontend/static/js/services/appDataManager.js
+
+import {
+    fetchCotizaciones,
+    fetchEstadoBilletera,
+    fetchHistorial,
+    fetchOrdenesAbiertas,
+    cancelarOrden
+} from './apiService.js';
+import { AppState } from './appState.js';
+
+export const AppDataManager = {
+    /**
+     * Carga todos los datos iniciales necesarios para la página de trading.
+     * Devuelve los datos que son necesarios para el renderizado inicial de la UI.
+     */
+    async loadInitialData() {
+        console.log("Cargando datos iniciales...");
+        try {
+            const [cotizaciones, estadoBilletera, historial, ordenesAbiertas] = await Promise.all([
+                fetchCotizaciones(),
+                fetchEstadoBilletera(),
+                fetchHistorial(),
+                fetchOrdenesAbiertas()
+            ]);
+
+            AppState.setAllCryptos(cotizaciones);
+            AppState.setOwnedCoins(estadoBilletera);
+
+            return { historial, ordenesAbiertas };
+        } catch (error) {
+            console.error("Error fatal al cargar datos iniciales:", error);
+            throw error; // Re-lanzar para que el orquestador lo maneje
+        }
+    },
+
+    /**
+     * Realiza un sondeo periódico para actualizar los datos dinámicos.
+     * Devuelve los datos que la UI necesita para refrescarse.
+     */
+    async pollData() {
+        console.log("🔄 Realizando sondeo de datos en vivo...");
+        try {
+            const [nuevoEstadoBilletera, nuevasOrdenesAbiertas] = await Promise.all([
+                fetchEstadoBilletera(),
+                fetchOrdenesAbiertas()
+            ]);
+
+            AppState.setOwnedCoins(nuevoEstadoBilletera);
+
+            return { nuevasOrdenesAbiertas };
+        } catch (error) {
+            console.error("❌ Error durante el sondeo de datos:", error);
+            return null;
+        }
+    },
+    
+    /**
+     * Gestiona la cancelación de una orden, actualiza el estado y devuelve la respuesta.
+     * @param {string} orderId - El ID de la orden a cancelar.
+     * @returns {Promise<object>} - La respuesta de la API.
+     */
+    async handleCancelOrder(orderId) {
+        const respuesta = await cancelarOrden(orderId);
+        if (respuesta.datos && respuesta.datos.activo_actualizado) {
+            const activo = respuesta.datos.activo_actualizado;
+            const billeteraActual = AppState.getOwnedCoins();
+            const indice = billeteraActual.findIndex(a => a.ticker === activo.ticker);
+            if (indice !== -1) {
+                billeteraActual[indice] = activo;
+                AppState.setOwnedCoins(billeteraActual);
+            }
+        }
+        return respuesta;
+    }
+};
 
 ==================================================
 === ARCHIVO: ./frontend/static/js/services/appState.js ===
@@ -3879,6 +4350,7 @@ const Toast = Swal.mixin({
         popup: 'custom-toast-position'
     },
     timerProgressBar: true,
+    showCloseButton: true,
     didOpen: (toast) => {
         toast.addEventListener('mouseenter', Swal.stopTimer);
         toast.addEventListener('mouseleave', Swal.resumeTimer);
@@ -3982,8 +4454,7 @@ const Toast = Swal.mixin({
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BlocX - Billetera</title>
-    <link rel="icon" href="{{ url_for('static', filename='img/logo_BlocX.png') }}" type="image/x-icon">
-    <!-- Los estilos pueden ser los mismos de trading o unos específicos para billetera -->
+    <link rel="icon" href="{{ url_for('static', filename='img/logo_BlocX.webp') }}" type="image/x-icon">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles_trading.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
@@ -3993,7 +4464,7 @@ const Toast = Swal.mixin({
     <nav class="navbar navbar-expand-lg bg-black shadow">
         <div class="container-fluid">
             <a class="navbar-brand text-warning d-flex align-items-center gap-2" href="{{ url_for('home.index') }}">
-                <img src="{{ url_for('static', filename='img/logo_BlocX.png') }}" alt="Logo" width="40" height="40">
+                <img src="{{ url_for('static', filename='img/logo_BlocX.webp') }}" alt="Logo" width="40" height="40">
                 <span>BlocX</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -4101,7 +4572,7 @@ const Toast = Swal.mixin({
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>BlocX</title>
-	<link rel="icon" href="{{ url_for('static', filename='img/logo_BlocX.png') }}" type="image/x-icon">
+	<link rel="icon" href="{{ url_for('static', filename='img/logo_BlocX.webp') }}" type="image/x-icon">
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/styles_index.css') }}">
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet"
 		integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
@@ -4113,7 +4584,7 @@ const Toast = Swal.mixin({
 	<nav class="navbar navbar-expand-lg bg-black shadow">
 		<div class="container-fluid">
 			<a class="navbar-brand text-warning d-flex align-items-center gap-2" href="{{ url_for('home.index') }}">
-				<img src="{{ url_for('static', filename='img/logo_BlocX.png') }}" alt="Logo" width="40" height="40">
+				<img src="{{ url_for('static', filename='img/logo_BlocX.webp') }}" alt="Logo" width="40" height="40">
 				<span>BlocX</span>
 			</a>
 			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -4186,7 +4657,7 @@ const Toast = Swal.mixin({
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BlocX - Trading</title>
-    <link rel="icon" href="{{ url_for('static', filename='img/logo_BlocX.png') }}" type="image/x-icon">
+    <link rel="icon" href="{{ url_for('static', filename='img/logo_BlocX.webp') }}" type="image/x-icon">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles_trading.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -4201,7 +4672,7 @@ const Toast = Swal.mixin({
     <nav class="navbar navbar-expand-lg bg-black shadow">
         <div class="container-fluid">
             <a class="navbar-brand text-warning d-flex align-items-center gap-2" href="{{ url_for('home.index') }}">
-                <img src="{{ url_for('static', filename='img/logo_BlocX.png') }}" alt="Logo" width="40" height="40">
+                <img src="{{ url_for('static', filename='img/logo_BlocX.webp') }}" alt="Logo" width="40" height="40">
                 <span>BlocX</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -4394,15 +4865,14 @@ const Toast = Swal.mixin({
     </div>
 
     <!-- ===== SECCIÓN SCRIPTS ===== -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-    <script src="{{ url_for('static', filename='js/utils/sweetalert-init.js') }}"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" defer></script>
+    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js" defer></script>
+    <script src="{{ url_for('static', filename='js/utils/sweetalert-init.js') }}" defer></script>
     <script type="module" src="{{ url_for('static', filename='js/pages/tradingPage.js') }}"></script>
 </body>
-
 </html>
 
 ==================================================
@@ -4503,11 +4973,16 @@ simulador_exchange/
 │   │   ├── home.py
 │   │   ├── trading_vista.py
 │   │   ├── billetera_vista.py
-│   │   └── api_cotizaciones_vista.py
+│   │   └── api_externa.py
 │   ├── servicios/                  # Lógica de negocio de cada módulo
 │   │   ├── api_cotizaciones.py
 │   │   ├── estado_billetera.py
-│   │   └── velas_logica.py
+│   │   ├── transacciones.py
+│   │   └── trading/                # Lógica de ejecución de órdenes
+│   │       ├── gestor.py         # Orquesta la creación y validación
+│   │       ├── procesador.py     # Procesa y guarda las órdenes
+│   │       ├── motor.py          # Verifica y ejecuta órdenes pendientes
+│   │       └── ejecutar_orden.py # Lógica final de transacción
 │   ├── acceso_datos/               # Acceso y manipulación de archivos .json
 │   │   ├── datos_billetera.py
 │   │   ├── datos_cotizaciones.py
@@ -4525,7 +5000,7 @@ simulador_exchange/
 │       │   ├── styles_index.css
 │       │   └── styles_trading.css
 │       ├── img/
-│       │   └── logo_BlocX.png
+│       │   └── logo_BlocX.webp
 │       └── js/                     # Lógica del cliente
 │           ├── components/         # Módulos para actualizar la UI
 │           ├── pages/              # Scripts de orquestación por página
@@ -4588,6 +5063,7 @@ Fausto Lovera — Patricio Menta — Andrei Veis
 === ARCHIVO: ./requirements.txt ===
 ==================================================
 
+# Backend
 Flask==3.1.0
 itsdangerous==2.2.0
 Jinja2==3.1.6
@@ -4596,6 +5072,26 @@ requests==2.32.3
 Werkzeug==3.1.3
 python-dotenv==1.0.1
 
+# Pruebas
+pytest-xdist==3.6.1
+
+
+==================================================
+=== ARCHIVO: ./run.py ===
+==================================================
+
+# run.py
+
+from backend import crear_app
+
+# Crear la instancia de la aplicación Flask utilizando la factory.
+app = crear_app()
+
+if __name__ == '__main__':
+    # Ejecutar la aplicación.
+    # El host '0.0.0.0' hace que el servidor sea accesible desde otras máquinas en la misma red.
+    # El modo de depuración se activa para facilitar el desarrollo.
+    app.run(host='0.0.0.0', port=5001, debug=True)
 
 
 ==================================================
@@ -4605,14 +5101,240 @@ python-dotenv==1.0.1
 
 
 ==================================================
+=== ARCHIVO: ./tests/conftest.py ===
+==================================================
+
+import pytest
+import os
+import json
+import config
+
+@pytest.fixture
+def test_environment(tmp_path, monkeypatch):
+    """
+    Crea un entorno de prueba aislado con archivos de datos temporales.
+
+    Este fixture crea un directorio temporal y redirige las constantes de ruta
+    del módulo `config` para que apunten a archivos dentro de ese directorio.
+    Esto asegura que los tests no lean ni modifiquen los datos reales de la aplicación.
+
+    Uso:
+        def mi_test(test_environment):
+            # Ahora las funciones del backend usarán los archivos temporales.
+            # ...
+    """
+    # Crear un subdirectorio para los datos de prueba para mayor orden
+    datos_dir = tmp_path / "datos_test"
+    datos_dir.mkdir()
+
+    # Rutas a los archivos temporales
+    billetera_path = datos_dir / "billetera.json"
+    historial_path = datos_dir / "historial.json"
+    ordenes_path = datos_dir / "ordenes_pendientes.json"
+    cotizaciones_path = datos_dir / "cotizaciones.json"
+    comisiones_path = datos_dir / "comisiones.json"
+
+    # Redirigir las constantes del módulo config usando monkeypatch
+    monkeypatch.setattr(config, 'BILLETERA_PATH', str(billetera_path))
+    monkeypatch.setattr(config, 'HISTORIAL_PATH', str(historial_path))
+    monkeypatch.setattr(config, 'ORDENES_PENDIENTES_PATH', str(ordenes_path))
+    monkeypatch.setattr(config, 'COTIZACIONES_PATH', str(cotizaciones_path))
+    monkeypatch.setattr(config, 'COMISIONES_PATH', str(comisiones_path))
+
+    # Se puede inicializar archivos si es necesario, por ejemplo:
+    with open(billetera_path, 'w') as f:
+        json.dump({}, f)
+    with open(historial_path, 'w') as f:
+        json.dump([], f)
+    with open(ordenes_path, 'w') as f:
+        json.dump([], f)
+    with open(cotizaciones_path, 'w') as f:
+        json.dump([], f)
+    with open(comisiones_path, 'w') as f:
+        json.dump({}, f)
+
+    # El fixture puede devolver las rutas si algún test las necesita
+    yield {
+        "billetera": str(billetera_path),
+        "historial": str(historial_path),
+        "ordenes": str(ordenes_path),
+        "cotizaciones": str(cotizaciones_path),
+        "comisiones": str(comisiones_path)
+    }
+
+    # La limpieza es automática gracias a tmp_path
+
+
+==================================================
+=== ARCHIVO: ./tests/test_datos_cotizaciones.py ===
+==================================================
+
+import json
+from decimal import Decimal
+
+# La importación se corrige para apuntar al móduloimport json
+import pytest
+import config
+from pathlib import Path
+
+from backend.acceso_datos.datos_cotizaciones import (
+    cargar_datos_cotizaciones,
+    guardar_datos_cotizaciones,
+    obtener_precio,
+    recargar_cache_precios
+)
+
+def test_guardar_y_cargar_datos_cotizaciones_con_ruta_temporal(test_environment):
+    """
+    Prueba que se puedan guardar y luego cargar datos de cotizaciones
+    usando un archivo temporal gestionado por el fixture.
+    """
+    # 1. Preparación: Los datos se guardarán en la ruta gestionada por el fixture.
+    datos_a_guardar = [
+        {'ticker': 'BTC', 'nombre': 'Bitcoin', 'precio_usd': "50000.12345678"},
+        {'ticker': 'ETH', 'nombre': 'Ethereum', 'precio_usd': "3000.87654321"}
+    ]
+
+    # 2. Ejecución (Guardar): la función usará la ruta parcheada por el fixture.
+    guardar_datos_cotizaciones(datos_a_guardar)
+
+    # 3. Verificación (Guardar): comprobamos que el archivo se escribió correctamente.
+    ruta_temporal = Path(test_environment['cotizaciones'])
+    assert ruta_temporal.exists()
+    datos_leidos_raw = json.loads(ruta_temporal.read_text(encoding='utf-8'))
+    
+    assert len(datos_leidos_raw) == 2
+    assert datos_leidos_raw[0]['precio_usd'] == "50000.12345678"
+
+    # 4. Ejecución (Cargar): leemos desde la misma ruta temporal.
+    datos_cargados = cargar_datos_cotizaciones()
+
+    # 5. Verificación (Cargar): comprobamos que los datos se cargaron correctamente.
+    assert datos_cargados == datos_leidos_raw
+
+def test_cargar_datos_cotizaciones_archivo_no_existente(monkeypatch):
+    """
+    Prueba que `cargar_datos_cotizaciones` devuelva una lista vacía si el
+    archivo especificado no existe.
+    """
+    # Forzamos que la ruta apunte a un archivo que no existe
+    monkeypatch.setattr(config, 'COTIZACIONES_PATH', './ruta/inexistente.json')
+    resultado = cargar_datos_cotizaciones()
+    assert resultado == []
+
+def test_guardar_datos_actualiza_cache_correctamente(test_environment):
+    """
+    Verifica que guardar nuevas cotizaciones en un archivo actualiza 
+    correctamente el caché de precios global que usa `obtener_precio`.
+    """
+    # 1. Preparación:
+    # El fixture `test_environment` ya ha redirigido la ruta a un archivo temporal
+    # y lo ha creado vacío. Forzamos una recarga para asegurar que el caché esté vacío.
+    recargar_cache_precios()
+    assert obtener_precio('TESTCOIN') is None
+
+    # 2. Ejecución:
+    # Guardamos datos de prueba. El fixture asegura que se usa el archivo temporal.
+    datos_test = [{'ticker': 'TESTCOIN', 'nombre': 'Test Coin', 'precio_usd': "9999"}]
+    guardar_datos_cotizaciones(datos_test)
+
+    # 3. Verificación:
+    # La función `guardar_datos_cotizaciones` debe haber recargado el caché global.
+    # Ahora, `obtener_precio` debe devolver el nuevo valor.
+    assert obtener_precio('TESTCOIN') == Decimal("9999")
+
+==================================================
+=== ARCHIVO: ./tests/test_ejecutar_orden.py ===
+==================================================
+
+# --- FILENAME: tests/test_ejecutar_orden.py ---
+
+import pytest
+import json
+from decimal import Decimal
+
+from backend.servicios.trading.ejecutar_orden import ejecutar_transaccion
+from backend.acceso_datos.datos_billetera import cargar_billetera
+from config import TASA_COMISION, BILLETERA_PATH, COTIZACIONES_PATH, HISTORIAL_PATH, COMISIONES_PATH
+
+def test_ejecucion_exitosa_orden_mercado(test_environment):
+    """
+    Prueba un flujo de compra de mercado completo, verificando los archivos resultantes.
+    """
+    # ARRANGE: Crear los archivos necesarios en el directorio temporal
+    # 1. Crear billetera.json inicial
+    billetera_inicial_dict = {
+        "USDT": {"nombre": "Tether", "saldos": {"disponible": "10000.0", "reservado": "0.0"}},
+        "BTC": {"nombre": "Bitcoin", "saldos": {"disponible": "1.0", "reservado": "0.5"}}
+    }
+    with open(BILLETERA_PATH, 'w') as f:
+        json.dump(billetera_inicial_dict, f)
+
+    # 2. Crear cotizaciones.json con precios
+    cotizaciones_dict = [
+        {"ticker": "USDT", "precio_usd": "1.0"},
+        {"ticker": "BTC", "precio_usd": "50000.0"}
+    ]
+    with open(COTIZACIONES_PATH, 'w') as f:
+        json.dump(cotizaciones_dict, f)
+        
+    # ACT: Ejecutar la transacción
+    cantidad_a_gastar_bruta = Decimal('1000')
+    billetera_cargada = cargar_billetera() # La función a probar necesita el objeto billetera
+
+    exito, detalles = ejecutar_transaccion(
+        billetera=billetera_cargada,
+        moneda_origen='USDT',
+        cantidad_origen_bruta=cantidad_a_gastar_bruta,
+        moneda_destino='BTC',
+        tipo_operacion_historial='Compra Mercado',
+        es_orden_pendiente=False
+    )
+
+    # ASSERT: Verificar el estado final de los archivos
+    assert exito is True
+
+    # 1. Verificar el diccionario de detalles devuelto
+    comision_esperada = cantidad_a_gastar_bruta * TASA_COMISION
+    cantidad_neta_esperada = cantidad_a_gastar_bruta - comision_esperada
+    cantidad_destino_esperada = cantidad_neta_esperada / Decimal('50000')
+    assert detalles['cantidad_comision'] == comision_esperada
+    assert detalles['cantidad_destino_final'] == cantidad_destino_esperada
+
+    # 2. Verificar el archivo de historial
+    with open(HISTORIAL_PATH, 'r') as f:
+        historial = json.load(f)
+    assert len(historial) == 1
+    assert historial[0]['tipo'] == 'Compra Mercado'
+    assert historial[0]['destino']['ticker'] == 'BTC'
+
+    # 3. Verificar el archivo de comisiones
+    with open(COMISIONES_PATH, 'r') as f:
+        comisiones = json.load(f)
+    assert len(comisiones) == 1
+    assert comisiones[0]['ticker'] == 'USDT'
+    assert Decimal(comisiones[0]['cantidad']) == comision_esperada.quantize(Decimal("0.00000001"))
+
+    # 4. Verificar el estado final de la billetera (leyendo el objeto modificado)
+    assert billetera_cargada['USDT']['saldos']['disponible'] == Decimal('9000') # 10000 - 1000
+    assert billetera_cargada['BTC']['saldos']['disponible'] == Decimal('1') + cantidad_destino_esperada
+    assert billetera_cargada['BTC']['saldos']['reservado'] == Decimal('0.5') # No debe cambiar
+
+==================================================
 === ARCHIVO: ./tests/test_estado_billetera.py ===
 ==================================================
 
 import pytest
+import json
 from decimal import Decimal
 
-# Importamos las funciones a probar
-from backend.servicios.estado_billetera import _calcular_metricas_activo, estado_actual_completo
+# Importamos las funciones a probar, ahora refactorizadas
+from backend.servicios.estado_billetera import (
+    _calcular_metricas_activo,
+    _preparar_datos_compra,
+    estado_actual_completo,
+    obtener_historial_formateado
+)
 
 # --- Fixtures: Datos de prueba reutilizables ---
 
@@ -4624,45 +5346,66 @@ def datos_compra_btc():
         "cantidad_comprada": Decimal("1.5")
     }
 
-@pytest.fixture
-def mock_billetera_data():
-    """Fixture con datos simulados de la billetera."""
-    return [
-        {"ticker": "BTC", "cantidad": "1.5"},
-        {"ticker": "ETH", "cantidad": "2.0"}
-    ]
+# --- Tests para las funciones puras (sin cambios, no dependen de I/O) ---
 
-@pytest.fixture
-def mock_historial_data():
-    """Fixture con datos simulados del historial de transacciones."""
-    return [
+def test_preparar_datos_compra_mixto():
+    """
+    Prueba que solo se suman compras (ignora ventas y USDT) y agrupa por ticker.
+    """
+    historial = [
+        {"tipo": "compra", "destino": {"ticker": "BTC", "cantidad": "1.0"}, "valor_usd": "30000"},
+        {"tipo": "venta", "destino": {"ticker": "BTC", "cantidad": "0.5"}, "valor_usd": "15000"},
+        {"tipo": "compra", "destino": {"ticker": "ETH", "cantidad": "2.0"}, "valor_usd": "20000"},
+        {"tipo": "compra", "destino": {"ticker": "USDT", "cantidad": "1000"}, "valor_usd": "1000"},
+    ]
+    resultado = _preparar_datos_compra(historial)
+    assert set(resultado.keys()) == {"BTC", "ETH"}
+    assert resultado["BTC"]["total_invertido"] == Decimal("30000")
+    assert resultado["BTC"]["cantidad_comprada"] == Decimal("1.0")
+    assert resultado["ETH"]["total_invertido"] == Decimal("20000")
+    assert resultado["ETH"]["cantidad_comprada"] == Decimal("2.0")
+
+def test_preparar_datos_compra_vacio():
+    """
+    Prueba que un historial vacío retorna un diccionario vacío.
+    """
+    resultado = _preparar_datos_compra([])
+    assert resultado == {}
+
+def test_preparar_datos_compra_sin_compras():
+    """
+    Prueba que un historial sin compras retorna un diccionario vacío.
+    """
+    historial = [
+        {"tipo": "venta", "destino": {"ticker": "BTC", "cantidad": "1.0"}, "valor_usd": "30000"},
+        {"tipo": "transferencia", "destino": {"ticker": "ETH", "cantidad": "2.0"}, "valor_usd": "20000"},
+    ]
+    resultado = _preparar_datos_compra(historial)
+    assert resultado == {}
+
+def test_preparar_datos_compra_agrupa_multiples_compras():
+    """
+    Prueba que agrupa correctamente múltiples compras del mismo activo.
+    """
+    historial = [
         {"tipo": "compra", "destino": {"ticker": "BTC", "cantidad": "1.0"}, "valor_usd": "30000"},
         {"tipo": "compra", "destino": {"ticker": "BTC", "cantidad": "0.5"}, "valor_usd": "15000"},
-        {"tipo": "compra", "destino": {"ticker": "ETH", "cantidad": "2.0"}, "valor_usd": "20000"}
+        {"tipo": "compra", "destino": {"ticker": "BTC", "cantidad": "0.25"}, "valor_usd": "7000"},
     ]
+    resultado = _preparar_datos_compra(historial)
+    assert set(resultado.keys()) == {"BTC"}
+    assert resultado["BTC"]["total_invertido"] == Decimal("52000")
+    assert resultado["BTC"]["cantidad_comprada"] == Decimal("1.75")
 
-@pytest.fixture
-def mock_cotizaciones_data():
-    """Fixture con datos simulados de cotizaciones."""
-    return {
-        "BTC": Decimal("40000"),
-        "ETH": Decimal("1500")
-    }
-
-
-# --- Tests para las funciones ---
 
 def test_calcular_metricas_activo(datos_compra_btc):
     """Prueba la función de cálculo de métricas para un activo."""
-    # Arrange: Preparación de datos
     ticker = "BTC"
     cantidad_actual = Decimal("1.5")
     precio_actual = Decimal("40000")
     
-    # Act: Ejecución de la función
     resultado = _calcular_metricas_activo(ticker, cantidad_actual, precio_actual, datos_compra_btc)
 
-    # Assert: Verificación de resultados con `assert`
     assert resultado["ticker"] == "BTC"
     assert resultado["cantidad"] == cantidad_actual
     assert resultado["precio_actual"] == precio_actual
@@ -4671,297 +5414,459 @@ def test_calcular_metricas_activo(datos_compra_btc):
     assert resultado["costo_base_actual"] == cantidad_actual * Decimal("30000")
     assert resultado["ganancia_perdida"] == (cantidad_actual * precio_actual) - (cantidad_actual * Decimal("30000"))
 
-def test_estado_actual_completo(monkeypatch, mock_billetera_data, mock_historial_data, mock_cotizaciones_data):
-    """
-    Prueba la función orquestadora `estado_actual_completo` mockeando
-    sus dependencias de acceso a datos.
-    """
-    # Arrange: Configuración de los mocks usando monkeypatch
-    monkeypatch.setattr('backend.acceso_datos.datos_billetera.cargar_billetera', lambda: mock_billetera_data)
-    monkeypatch.setattr('backend.acceso_datos.datos_historial.cargar_historial', lambda: mock_historial_data)
-    monkeypatch.setattr('backend.acceso_datos.datos_cotizaciones.cargar_datos_cotizaciones', lambda: mock_cotizaciones_data)
+# --- Tests para las funciones con I/O (refactorizados) ---
 
-    # Act: Ejecución de la función
-    resultado = estado_actual_completo()
+def test_estado_actual_completo_con_archivos_temporales(tmp_path):
+    """
+    Prueba [estado_actual_completo](cci:1://file:///Users/andreiveis/UADE/2do%20cuatrimestre/05_Algoritmos%20y%20Estructura%20de%20datos%20I/Trabajo_Simulador_Exchange/backend/servicios/estado_billetera.py:76:0-132:36) usando archivos temporales reales,
+    eliminando la necesidad de mocks y fixtures de datos.
+    """
+    # 1. Preparación: Crear archivos de datos temporales
+    ruta_billetera = tmp_path / "billetera.json"
+    ruta_historial = tmp_path / "historial.json"
+    ruta_cotizaciones = tmp_path / "cotizaciones.json"
 
-    # Assert: Verificación de resultados
-    assert isinstance(resultado, dict)
-    assert "BTC" in resultado
-    assert "ETH" in resultado
-    
-    # Verificar cálculos para BTC
-    btc = resultado["BTC"]
+    billetera_data = {
+        "BTC": {"saldos": {"disponible": "1.5", "reservado": "0"}},
+        "ETH": {"saldos": {"disponible": "2.0", "reservado": "0"}},
+        "DOGE": {"saldos": {"disponible": "0", "reservado": "0"}}
+    }
+    historial_data = [
+        {"tipo": "compra", "destino": {"ticker": "BTC", "cantidad": "1.0"}, "valor_usd": "30000"},
+        {"tipo": "compra", "destino": {"ticker": "BTC", "cantidad": "0.5"}, "valor_usd": "15000"},
+        {"tipo": "compra", "destino": {"ticker": "ETH", "cantidad": "2.0"}, "valor_usd": "20000"}
+    ]
+    cotizaciones_data = [
+        {"ticker": "BTC", "nombre": "Bitcoin", "precio_usd": "40000", "logo": "logo_btc.png"},
+        {"ticker": "ETH", "nombre": "Ethereum", "precio_usd": "1500", "logo": "logo_eth.png"}
+    ]
+
+    ruta_billetera.write_text(json.dumps(billetera_data), encoding='utf-8')
+    ruta_historial.write_text(json.dumps(historial_data), encoding='utf-8')
+    ruta_cotizaciones.write_text(json.dumps(cotizaciones_data), encoding='utf-8')
+
+    # 2. Ejecución
+    resultado_lista = estado_actual_completo(
+        ruta_billetera=str(ruta_billetera),
+        ruta_historial=str(ruta_historial),
+        ruta_cotizaciones=str(ruta_cotizaciones)
+    )
+
+    # 3. Verificación
+    assert isinstance(resultado_lista, list)
+    assert len(resultado_lista) == 2
+    assert resultado_lista[0]['ticker'] == 'BTC'
+    assert resultado_lista[1]['ticker'] == 'ETH'
+    assert not any(activo['ticker'] == 'DOGE' for activo in resultado_lista)
+
+    btc = resultado_lista[0]
+    eth = resultado_lista[1]
+
     assert btc["ticker"] == "BTC"
-    assert btc["cantidad"] == Decimal("1.5")
-    assert btc["precio_actual"] == Decimal("40000")
-    
-    # Verificar cálculos para ETH
-    eth = resultado["ETH"]
+    assert btc["cantidad_total"] == "1.5"
+    assert btc["valor_usdt_formatted"] == "$60,000.00"
+    assert btc["logo"] == "logo_btc.png"
+    assert btc["ganancia_perdida_formatted"] == "+$15,000.00"
+
     assert eth["ticker"] == "ETH"
-    assert eth["cantidad"] == Decimal("2.0")
-    assert eth["precio_actual"] == Decimal("1500")
+    assert eth["cantidad_total"] == "2.0"
+    assert eth["valor_usdt_formatted"] == "$3,000.00"
+    assert eth["logo"] == "logo_eth.png"
+    assert eth["ganancia_perdida_formatted"] == "-$17,000.00"
+
+def test_obtener_historial_formateado_con_archivo_temporal(tmp_path):
+    """
+    Prueba que obtener_historial_formateado procese correctamente un
+    archivo de historial temporal.
+    """
+    ruta_historial = tmp_path / "historial_test.json"
+    historial_data = [
+        {
+            "id": "123", "tipo": "compra", "timestamp": "2023-10-27T10:00:00Z",
+            "origen": {"ticker": "USDT"},
+            "destino": {"ticker": "BTC", "cantidad": "0.5"},
+            "valor_usd": "25000"
+        }
+    ]
+    ruta_historial.write_text(json.dumps(historial_data), encoding='utf-8')
+
+    resultado = obtener_historial_formateado(ruta_historial=str(ruta_historial))
+
+    assert len(resultado) == 1
+    item = resultado[0]
+    assert item["id"] == "123"
+    assert item["tipo_formatted"] == "Compra"
+    assert item["par_formatted"] == "BTC/USDT"
+    assert "27/10/2023" in item["fecha_formatted"]
+    assert item["cantidad_formatted"] == "0.50000000 BTC"
+    assert item["valor_total_formatted"] == "$25,000.00"
 
 ==================================================
-=== ARCHIVO: ./tests/test_trading_logica.py ===
+=== ARCHIVO: ./tests/test_trading_gestor.py ===
 ==================================================
 
-import pytest
-from decimal import Decimal, getcontext
-from typing import Tuple
-
-# Aseguramos la precisión para los cálculos con Decimal, es una buena práctica
-getcontext().prec = 28
-
-# Importamos la función que vamos a testear (con el guion bajo)
-from backend.servicios.trading_logica import _calcular_detalles_swap
-
-
-# --- Tests para Casos de Éxito ---
-
-def test_compra_ingresando_monto_cripto():
-    """
-    Prueba una compra donde se especifica la cantidad de cripto a RECIBIR.
-    Ejemplo: Quiero comprar exactamente 0.02 BTC.
-    """
-    exito, detalles = _calcular_detalles_swap(
-        accion='comprar',
-        modo_ingreso='monto',  # El usuario ingresa la cantidad de cripto
-        monto_form=Decimal('0.02'),
-        precio_origen_usdt=Decimal('1'),      # Precio de USDT
-        precio_destino_usdt=Decimal('50000')  # Precio de BTC
-    )
-    
-    assert exito is True
-    assert detalles == {
-        'origen': Decimal('1000.0'),  # Costará 1000 USDT
-        'destino': Decimal('0.02'),   # Para recibir 0.02 BTC
-        'valor_usd': Decimal('1000.0')
-    }
-
-def test_compra_ingresando_total_fiat():
-    """
-    Prueba una compra donde se especifica la cantidad de fiat a GASTAR.
-    Ejemplo: Quiero gastar exactamente 1000 USDT en BTC.
-    """
-    exito, detalles = _calcular_detalles_swap(
-        accion='comprar',
-        modo_ingreso='total',  # El usuario ingresa la cantidad de fiat
-        monto_form=Decimal('1000'),
-        precio_origen_usdt=Decimal('1'),      # Precio de USDT
-        precio_destino_usdt=Decimal('50000')  # Precio de BTC
-    )
-    
-    assert exito is True
-    assert detalles == {
-        'origen': Decimal('1000'),    # Gastaré 1000 USDT
-        'destino': Decimal('0.02'),   # Y recibiré 0.02 BTC
-        'valor_usd': Decimal('1000')
-    }
-
-def test_venta_ingresando_monto_cripto():
-    """
-    Prueba una venta donde el usuario especifica la cantidad de cripto a VENDER.
-    Ejemplo: Quiero vender exactamente 0.1 BTC.
-    """
-    exito, detalles = _calcular_detalles_swap(
-        accion='vender',
-        modo_ingreso='monto',  # En ventas, siempre se ingresa la cantidad de cripto
-        monto_form=Decimal('0.1'),
-        precio_origen_usdt=Decimal('50000'),  # Precio de BTC
-        precio_destino_usdt=Decimal('1')      # Precio de USDT
-    )
-    
-    assert exito is True
-    assert detalles == {
-        'origen': Decimal('0.1'),     # Venderé 0.1 BTC
-        'destino': Decimal('5000'),   # Y recibiré 5000 USDT
-        'valor_usd': Decimal('5000')
-    }
-
-# --- Tests para Casos Límite y Errores ---
-
-def test_calculo_con_monto_cero():
-    """
-    Prueba que un monto de entrada cero resulte en un swap de valor cero.
-    """
-    exito, detalles = _calcular_detalles_swap(
-        accion='comprar',
-        modo_ingreso='total',
-        monto_form=Decimal('0'),
-        precio_origen_usdt=Decimal('1'),
-        precio_destino_usdt=Decimal('50000')
-    )
-    
-    assert exito is True
-    assert detalles == {
-        'origen': Decimal('0'),
-        'destino': Decimal('0'),
-        'valor_usd': Decimal('0')
-    }
-
-def test_calculo_con_precio_destino_cero():
-    """
-    Prueba que si el precio de destino es cero, no se puede recibir nada.
-    """
-    exito, detalles = _calcular_detalles_swap(
-        accion='comprar',
-        modo_ingreso='total',
-        monto_form=Decimal('1000'),
-        precio_origen_usdt=Decimal('1'),
-        precio_destino_usdt=Decimal('0')  # Precio de destino es 0
-    )
-    
-    assert exito is True
-    # Si el precio de destino es 0, el valor total no puede convertirse en nada.
-    # La implementación actual puede dar un ZeroDivisionError aquí, esto es un buen test para descubrirlo.
-    # Asumiendo que se maneja, el destino debería ser 0.
-    # NOTA: Este test podría fallar con ZeroDivisionError si no hay un try-except en la función.
-    # Si la función no lo maneja, el test debería ser para esperar ese error.
-    # Por ahora, asumimos que tu función es robusta. Si no, ¡este test te lo dirá!
-    assert detalles['destino'] == Decimal('0')
-
-
-def test_falla_al_vender_en_modo_total():
-    """
-    Prueba que la función falle si se intenta vender en modo 'total'.
-    """
-    exito, resultado = _calcular_detalles_swap(
-        accion='vender',
-        modo_ingreso='total',
-        monto_form=Decimal('100'),
-        precio_origen_usdt=Decimal('50000'),
-        precio_destino_usdt=Decimal('1')
-    )
-    
-    assert exito is False
-    assert isinstance(resultado, str)
-    assert "Al vender, debe ingresar la cantidad" in resultado
-
-def test_falla_con_accion_desconocida():
-    """
-    Prueba que la función falle si la acción no es 'comprar' ni 'vender'.
-    """
-    exito, resultado = _calcular_detalles_swap(
-        accion='intercambiar',
-        modo_ingreso='monto',
-        monto_form=Decimal('1'),
-        precio_origen_usdt=Decimal('1'),
-        precio_destino_usdt=Decimal('1')
-    )
-    
-    assert exito is False
-    assert "Acción de trading desconocida" in resultado
-
-==================================================
-=== ARCHIVO: ./tests/test_velas_logica.py ===
-==================================================
-
+# --- FILENAME: tests/test_trading_gestor.py (VERSIÓN SIMPLIFICADA) ---
 import pytest
 import json
-import io  # Usaremos io.StringIO para simular archivos de texto de forma más limpia
 from decimal import Decimal
-from backend.servicios.velas_logica import guardar_datos_cotizaciones, cargar_datos_cotizaciones
 
-# --- Test para guardar_datos_cotizaciones ---
+# Importar la función a probar
+from backend.servicios.trading.gestor import cancelar_orden_pendiente
+# Importar funciones de acceso a datos para verificar
+from backend.acceso_datos.datos_billetera import cargar_billetera
+from backend.acceso_datos.datos_ordenes import cargar_ordenes_pendientes
+# Importar el módulo config para redirigir las rutas temporalmente
+import config
 
-def test_guardar_datos_cotizaciones(monkeypatch):
+def crear_archivo_json(ruta, contenido):
+    """Función de ayuda para crear archivos JSON en los tests."""
+    with open(ruta, 'w') as f:
+        json.dump(contenido, f, indent=4)
+
+def test_cancelacion_exitosa_con_archivos(tmp_path):
     """
-    Prueba que `guardar_datos_cotizaciones` intente crear el directorio
-    y escribir los datos correctos en el archivo.
+    Prueba que una orden pendiente se cancela y los fondos se liberan,
+    interactuando con archivos temporales.
     """
-    # 1. Datos de muestra que se pasarán a la función
-    datos_a_guardar = [
-        {'ticker': 'BTC', 'nombre': 'Bitcoin', 'precio_usd': Decimal('50000')}
-    ]
+    # Arrange: Preparar el entorno de archivos temporales
+    datos_dir = tmp_path / "datos"
+    datos_dir.mkdir()
+    config.BILLETERA_PATH = str(datos_dir / "billetera.json")
+    config.ORDENES_PENDIENTES_PATH = str(datos_dir / "ordenes.json")
+    # Para la llamada a estado_actual_completo
+    config.HISTORIAL_PATH = str(datos_dir / "historial.json")
+    config.COTIZACIONES_PATH = str(datos_dir / "cotizaciones.json")
     
-    # 2. Variables para capturar las llamadas a los mocks
-    # Usaremos listas para poder modificarlas desde dentro de las funciones mock
-    ruta_makedirs_llamada = []
-    datos_escritos = []
-
-    # 3. Mocks de las funciones del sistema de archivos
-    def mock_makedirs(path, exist_ok=False):
-        # Capturamos la ruta con la que se llamó a makedirs
-        ruta_makedirs_llamada.append(path)
-        assert exist_ok is True
-
-    def mock_open_para_escritura(file, mode):
-        # Verificamos que se intente abrir el archivo en modo escritura ('w')
-        assert 'w' in mode
-        # Simulamos un objeto archivo que captura lo que se escribe
-        class MockFileWriter:
-            def write(self, data):
-                datos_escritos.append(data)
-            def __enter__(self):
-                return self
-            def __exit__(self, type, value, traceback):
-                pass
-        return MockFileWriter()
-
-    # 4. Aplicamos los mocks
-    monkeypatch.setattr('os.makedirs', mock_makedirs)
-    # Usamos 'builtins.open' para mockear la función open() global
-    monkeypatch.setattr('builtins.open', mock_open_para_escritura)
-
-    # 5. Ejecutamos la función a probar
-    guardar_datos_cotizaciones(datos_a_guardar)
-    
-    # 6. Verificamos los resultados
-    # Comprobamos que se intentó crear la carpeta 'datos'
-    assert ruta_makedirs_llamada and 'datos' in str(ruta_makedirs_llamada[0])
-    
-    # Comprobamos que lo que se escribió en el archivo es el JSON correcto
-    # Convertimos el string JSON escrito de vuelta a un objeto Python para compararlo
-    assert len(datos_escritos) == 1
-    datos_guardados = json.loads(datos_escritos[0])
-    # Como JSON no tiene tipo Decimal, lo comparamos como string
-    assert datos_guardados[0]['precio_usd'] == '50000'
-    assert datos_guardados[0]['ticker'] == 'BTC'
-
-
-# --- Tests para cargar_datos_cotizaciones ---
-
-def test_cargar_datos_cotizaciones_cuando_archivo_existe(monkeypatch):
-    """
-    Prueba que `cargar_datos_cotizaciones` lea y procese correctamente
-    un archivo JSON cuando este existe.
-    """
-    # 1. Datos que simularemos que están en el archivo
-    contenido_json_mock = json.dumps([
-        {'ticker': 'BTC', 'nombre': 'Bitcoin', 'precio_usd': '50000.0'}
+    crear_archivo_json(config.BILLETERA_PATH, {
+        "USDT": {"saldos": {"disponible": "10000.0", "reservado": "0.0"}},
+        "BTC": {"saldos": {"disponible": "1.0", "reservado": "0.5"}}
+    })
+    crear_archivo_json(config.ORDENES_PENDIENTES_PATH, [
+        {"id_orden": "btc_venta_1", "estado": "pendiente", "moneda_reservada": "BTC", "cantidad_reservada": "0.5", "par": "BTC/USDT"},
+        {"id_orden": "eth_compra_1", "estado": "ejecutada", "moneda_reservada": "USDT", "cantidad_reservada": "1000"}
     ])
-    
-    # 2. Mocks
-    # Simulamos que el archivo SÍ existe
-    monkeypatch.setattr('os.path.exists', lambda path: True)
-    
-    # Simulamos la apertura del archivo, devolviendo nuestro contenido mock
-    # io.StringIO es perfecto para simular un archivo de texto en memoria
-    monkeypatch.setattr('builtins.open', lambda file, mode: io.StringIO(contenido_json_mock))
-    
-    # 3. Ejecutamos la función
-    resultado = cargar_datos_cotizaciones()
-    
-    # 4. Verificamos los resultados
-    assert len(resultado) == 1
-    assert resultado[0]['ticker'] == 'BTC'
-    assert resultado[0]['nombre'] == 'Bitcoin'
-    # La función debe convertir el string del JSON a Decimal
-    assert resultado[0]['precio_usd'] == Decimal('50000.0')
+    # Archivos vacíos necesarios para estado_actual_completo
+    crear_archivo_json(config.HISTORIAL_PATH, [])
+    crear_archivo_json(config.COTIZACIONES_PATH, [])
 
-def test_cargar_datos_cotizaciones_cuando_archivo_no_existe(monkeypatch):
-    """
-    Prueba que `cargar_datos_cotizaciones` devuelva una lista vacía
-    si el archivo de datos no existe.
-    """
-    # 1. Mock: Simulamos que el archivo NO existe
-    monkeypatch.setattr('os.path.exists', lambda path: False)
+    # Act
+    resultado = cancelar_orden_pendiente("btc_venta_1")
+
+    # Assert
+    assert "error" not in resultado
+    assert "Orden BTC/USDT cancelada" in resultado["mensaje"]
     
-    # 2. Ejecutamos la función
-    resultado = cargar_datos_cotizaciones()
+    # Verificar leyendo directamente los archivos modificados
+    billetera_final = cargar_billetera(config.BILLETERA_PATH)
+    ordenes_finales = cargar_ordenes_pendientes(config.ORDENES_PENDIENTES_PATH)
     
-    # 3. Verificamos el resultado
-    assert resultado == []
+    # Fondos liberados
+    assert billetera_final["BTC"]["saldos"]["reservado"] == Decimal("0")
+    assert billetera_final["BTC"]["saldos"]["disponible"] == Decimal("1.5")
+    
+    # Estado de la orden cambiado
+    orden_cancelada = next(o for o in ordenes_finales if o["id_orden"] == "btc_venta_1")
+    assert orden_cancelada["estado"] == "cancelada"
+
+def test_cancelar_orden_inexistente(tmp_path):
+    """Prueba que falla al intentar cancelar una orden que no existe."""
+    # Arrange: Solo necesitamos un archivo de órdenes vacío
+    datos_dir = tmp_path / "datos"
+    datos_dir.mkdir()
+    config.ORDENES_PENDIENTES_PATH = str(datos_dir / "ordenes.json")
+    crear_archivo_json(config.ORDENES_PENDIENTES_PATH, [])
+
+    # Act
+    resultado = cancelar_orden_pendiente("id_invalido")
+
+    # Assert
+    assert "error" in resultado
+    assert "No se encontró una orden" in resultado["error"]
+
+==================================================
+=== ARCHIVO: ./tests/test_trading_motor.py ===
+==================================================
+
+# --- FILENAME: tests/test_trading_motor.py (VERSIÓN SIMPLIFICADA) ---
+import pytest
+import json
+from decimal import Decimal
+
+# Funciones puras a probar
+from backend.servicios.trading.motor import _verificar_condicion_orden
+# Función principal de integración a probar
+from backend.servicios.trading.motor import verificar_y_ejecutar_ordenes_pendientes
+
+# Funciones de acceso a datos para verificar resultados
+from backend.acceso_datos.datos_billetera import cargar_billetera
+from backend.acceso_datos.datos_ordenes import cargar_ordenes_pendientes
+
+# Módulo de configuración para redirigir rutas
+import config
+
+# --- Tests para la lógica pura de verificación (sin cambios) ---
+
+@pytest.mark.parametrize("accion, tipo, precio_limite, precio_mercado, esperado", [
+    ("compra", "limit", "40000", "39000", True),
+    ("compra", "limit", "40000", "40001", False),
+    ("venta", "limit", "60000", "61000", True),
+    ("venta", "limit", "60000", "59999", False),
+    ("compra", "stop-limit", "55000", "56000", True),
+    ("compra", "stop-limit", "55000", "54999", False),
+    ("venta", "stop-limit", "45000", "44000", True),
+    ("venta", "stop-limit", "45000", "45001", False),
+])
+def test_verificar_condicion_orden(accion, tipo, precio_limite, precio_mercado, esperado):
+    orden = {"accion": accion, "tipo_orden": tipo, "precio_disparo": precio_limite}
+    assert _verificar_condicion_orden(orden, Decimal(precio_mercado)) is esperado
+
+# --- Tests para la función principal del motor (simplificados) ---
+
+def crear_archivo_json(ruta, contenido):
+    """Función de ayuda para crear archivos JSON en los tests."""
+    with open(ruta, 'w') as f:
+        json.dump(contenido, f, indent=4)
+
+def test_motor_ejecuta_orden_favorable_con_archivos(tmp_path):
+    """
+    Prueba que el motor ejecuta una orden si el precio es favorable,
+    interactuando con archivos temporales.
+    """
+    # Arrange: Preparar el entorno de archivos temporales
+    datos_dir = tmp_path / "datos"
+    datos_dir.mkdir()
+    config.BILLETERA_PATH = str(datos_dir / "billetera.json")
+    config.ORDENES_PENDIENTES_PATH = str(datos_dir / "ordenes.json")
+    config.COTIZACIONES_PATH = str(datos_dir / "cotizaciones.json")
+    config.HISTORIAL_PATH = str(datos_dir / "historial.json") # Necesario para ejecutar_transaccion
+    config.COMISIONES_PATH = str(datos_dir / "comisiones.json") # Necesario para ejecutar_transaccion
+
+    # Datos de prueba
+    crear_archivo_json(config.BILLETERA_PATH, {
+        "USDT": {"saldos": {"disponible": "0", "reservado": "4000"}}
+    })
+    crear_archivo_json(config.ORDENES_PENDIENTES_PATH, [{
+        "id_orden": "1", "par": "BTC/USDT", "estado": "pendiente", "accion": "compra", 
+        "tipo_orden": "limit", "precio_disparo": "40000", "moneda_reservada": "USDT",
+        "cantidad_reservada": "4000", "moneda_destino": "BTC", "moneda_origen": "USDT",
+        "cantidad_cripto_principal": "0.1"
+    }])
+    # Precio favorable para la compra límite
+    crear_archivo_json(config.COTIZACIONES_PATH, [
+        {"ticker": "BTC", "precio_usd": "39000"},
+        {"ticker": "USDT", "precio_usd": "1"}
+    ])
+
+    # Act: Ejecutar el motor
+    verificar_y_ejecutar_ordenes_pendientes()
+
+    # Assert: Verificar el estado final de los archivos
+    ordenes_finales = cargar_ordenes_pendientes(config.ORDENES_PENDIENTES_PATH)
+    billetera_final = cargar_billetera(config.BILLETERA_PATH)
+
+    assert ordenes_finales[0]["estado"] == "ejecutada"
+    assert billetera_final["USDT"]["saldos"]["reservado"] == Decimal("0")
+    assert "BTC" in billetera_final
+    assert billetera_final["BTC"]["saldos"]["disponible"] > 0
+
+==================================================
+=== ARCHIVO: ./tests/test_trading_procesador.py ===
+==================================================
+
+# --- FILENAME: tests/test_trading_procesador.py ---
+
+import pytest
+from decimal import Decimal
+import json
+
+# Las funciones de bajo nivel son "puras", sus tests no necesitan mocks
+from backend.servicios.trading.procesador import _validar_saldo_disponible, _calcular_detalles_intercambio
+# Probaremos esta función que sí interactúa con archivos
+from backend.servicios.trading.procesador import _crear_orden_pendiente
+from config import BILLETERA_PATH, ORDENES_PENDIENTES_PATH
+
+# --- Tests para funciones puras (sin cambios) ---
+
+def test_validar_saldo_suficiente():
+    billetera_fake = {"BTC": {"saldos": {"disponible": Decimal("2.5")}}}
+    exito, mensaje = _validar_saldo_disponible(billetera_fake, "BTC", Decimal("1.0"))
+    assert exito is True
+
+def test_validar_saldo_insuficiente():
+    billetera_fake = {"BTC": {"saldos": {"disponible": Decimal("2.5")}}}
+    exito, mensaje = _validar_saldo_disponible(billetera_fake, "BTC", Decimal("3.0"))
+    assert exito is False
+    assert "Saldo insuficiente" in mensaje
+
+# ... (puedes mantener el test parametrizado de _calcular_detalles_intercambio si quieres) ...
+
+# --- Test para _crear_orden_pendiente (estilo básico) ---
+
+def test_crear_orden_limite_reserva_fondos_correctamente(test_environment):
+    """
+    Prueba que se crea una orden pendiente y se reservan los fondos en la billetera.
+    """
+    # ARRANGE: Crear el archivo de billetera inicial
+    billetera_inicial_dict = {
+        "USDT": {"nombre": "Tether", "saldos": {"disponible": "10000.0", "reservado": "0.0"}},
+        "BTC": {"nombre": "Bitcoin", "saldos": {"disponible": "2.5", "reservado": "0.0"}}
+    }
+    with open(BILLETERA_PATH, 'w') as f:
+        json.dump(billetera_inicial_dict, f)
+
+    # ACT: Llamar a la función para crear una orden de compra límite gastando 1000 USDT
+    exito, resultado = _crear_orden_pendiente(
+        moneda_origen='USDT', 
+        moneda_destino='BTC', 
+        monto_form=Decimal('1000'), 
+        modo_ingreso='total', 
+        precio_disparo=Decimal('40000'), 
+        tipo_orden='limit', 
+        accion='comprar',
+        precio_limite=None
+    )
+
+    # ASSERT
+    assert exito is True
+    assert "Orden Limit Creada" in resultado["titulo"]
+
+    # 1. Verificar el archivo de órdenes pendientes
+    with open(ORDENES_PENDIENTES_PATH, 'r') as f:
+        ordenes = json.load(f)
+    assert len(ordenes) == 1
+    orden_creada = ordenes[0]
+    assert orden_creada['estado'] == 'pendiente'
+    assert orden_creada['accion'] == 'comprar'
+    assert orden_creada['par'] == 'BTC/USDT' # Corregido: El par debe ser MonedaPrincipal/MonedaCotizada (BTC/USDT)
+    assert orden_creada['moneda_reservada'] == 'USDT'
+    assert Decimal(orden_creada['cantidad_reservada']) == Decimal('1000')
+
+    # 2. Verificar el archivo de billetera modificado
+    with open(BILLETERA_PATH, 'r') as f:
+        billetera_final = json.load(f)
+    assert Decimal(billetera_final['USDT']['saldos']['disponible']) == Decimal('9000')
+    assert Decimal(billetera_final['USDT']['saldos']['reservado']) == Decimal('1000')
+
+==================================================
+=== ARCHIVO: ./tests/test_utilidades_numericas.py ===
+==================================================
+
+import pytest
+from decimal import Decimal
+from backend.utils.utilidades_numericas import a_decimal, cuantizar_cripto, cuantizar_usd
+
+# --- Tests para a_decimal ---
+
+def test_a_decimal_str():
+    """
+    Prueba que convierte un string válido a Decimal.
+    """
+    assert a_decimal("123.45") == Decimal("123.45")
+
+def test_a_decimal_int():
+    """
+    Prueba que convierte un int a Decimal.
+    """
+    assert a_decimal(123) == Decimal("123")
+
+def test_a_decimal_float():
+    """
+    Prueba que convierte un float a Decimal.
+    """
+    assert a_decimal(123.45) == Decimal("123.45")
+
+def test_a_decimal_none():
+    """
+    Prueba que None devuelve Decimal('0').
+    """
+    assert a_decimal(None) == Decimal("0")
+
+def test_a_decimal_invalid_str():
+    """
+    Prueba que un string inválido devuelve Decimal('0').
+    """
+    assert a_decimal("hola") == Decimal("0")
+
+# --- Tests para cuantizar_cripto ---
+
+def test_cuantizar_cripto_redondeo():
+    """
+    Prueba que cuantizar_cripto redondea correctamente a 8 decimales.
+    """
+    valor = Decimal("0.123456789")
+    assert cuantizar_cripto(valor) == Decimal("0.12345679")
+
+# --- Tests para cuantizar_usd ---
+
+def test_cuantizar_usd_redondeo():
+    """
+    Prueba que cuantizar_usd redondea correctamente a 4 decimales.
+    """
+    valor = Decimal("123.45678")
+    assert cuantizar_usd(valor) == Decimal("123.4568")
+
+# --- Tests para formato_cantidad_cripto ---
+
+def test_formato_cantidad_cripto_entero():
+    """
+    Prueba que un número entero se formatea correctamente con separador de miles.
+    """
+    from backend.utils.utilidades_numericas import formato_cantidad_cripto
+    assert formato_cantidad_cripto(Decimal('10000')) == "10,000"
+
+def test_formato_cantidad_cripto_decimales():
+    """
+    Prueba que un número con decimales se formatea correctamente.
+    """
+    from backend.utils.utilidades_numericas import formato_cantidad_cripto
+    assert formato_cantidad_cripto(Decimal('12345.67')) == "12,345.67"
+
+def test_formato_cantidad_cripto_elimina_ceros():
+    """
+    Prueba que elimina ceros decimales sobrantes.
+    """
+    from backend.utils.utilidades_numericas import formato_cantidad_cripto
+    assert formato_cantidad_cripto(Decimal('12.1200')) == "12.12"
+
+# --- Tests para formato_cantidad_usd ---
+
+def test_formato_cantidad_usd_basico():
+    """
+    Prueba que un valor se formatea como USD con símbolo y formato correcto.
+    """
+    from backend.utils.utilidades_numericas import formato_cantidad_usd
+    assert formato_cantidad_usd(Decimal('12345.67')) == "$12,345.67"
+
+def test_formato_cantidad_usd_elimina_ceros():
+    """
+    Prueba que elimina ceros decimales sobrantes en USD.
+    """
+    from backend.utils.utilidades_numericas import formato_cantidad_usd
+    assert formato_cantidad_usd(Decimal('10.1000')) == "$10.1"
+
+# --- Tests para formato_numero_grande ---
+
+def test_formato_numero_grande_millon():
+    """
+    Prueba que un valor en millones se formatea con 'M'.
+    """
+    from backend.utils.utilidades_numericas import formato_numero_grande
+    assert formato_numero_grande(Decimal('1500000')) == "$1.50M"
+
+def test_formato_numero_grande_billones():
+    """
+    Prueba que un valor en miles de millones se formatea con 'B'.
+    """
+    from backend.utils.utilidades_numericas import formato_numero_grande
+    assert formato_numero_grande(Decimal('2500000000')) == "$2.50B"
+
+def test_formato_numero_grande_menor_millon():
+    """
+    Prueba que un valor menor a un millón usa el formato de formato_cantidad_usd.
+    """
+    from backend.utils.utilidades_numericas import formato_numero_grande
+    assert formato_numero_grande(Decimal('1234.56')) == "$1,234.56"
+
 
 ==================================================
 === FIN DEL REPORTE ===

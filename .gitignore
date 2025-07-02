@@ -1,9 +1,11 @@
 # ARCHIVOS PROPIOS NUESTROS
+/datos/
 /datos/datos_cotizaciones.json
 /datos/datos_velas.json
 /datos/billetera.json
 /datos/historial_operaciones.json
-
+/datos/ordenes_pendientes.json
+Trabajo_Simulador_Exchange_REPORT.txt
 
 # Python
 __pycache__/

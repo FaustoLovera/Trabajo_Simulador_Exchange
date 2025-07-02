@@ -17,21 +17,22 @@ def procesar_trading_form():
     """
     ### REFACTORIZADO ###
     Procesa el formulario y pasa un JSON al sistema de flash en caso de éxito.
+    Maneja la nueva respuesta estandarizada en formato de diccionario.
     """
     print(">>> DATOS RECIBIDOS DEL FORMULARIO:", request.form)
 
     ticker_operado = request.form.get("ticker", "BTC").upper()
     
-    # Ahora 'mensaje' puede ser un diccionario o un string de error
-    exito, mensaje = procesar_operacion_trading(request.form)
+    # La función de servicio ahora devuelve un único diccionario de respuesta.
+    respuesta = procesar_operacion_trading(request.form)
 
-    if exito:
-        # Si la operación fue exitosa, 'mensaje' es un diccionario.
+    if respuesta["estado"] == "ok":
+        # Si la operación fue exitosa, los datos están en la clave 'datos'.
         # Lo convertimos a un string JSON para guardarlo en la sesión flash.
-        flash(json.dumps(mensaje), "success")
+        flash(json.dumps(respuesta["datos"]), "success")
     else:
-        # Si falló, 'mensaje' ya es un string de error.
-        flash(mensaje, "danger")
+        # Si falló, el mensaje de error está en la clave 'mensaje'.
+        flash(respuesta["mensaje"], "danger")
     
     # La lógica de redirección no cambia.
     redirect_url = url_for("trading.mostrar_trading_page", ticker=ticker_operado)

@@ -81,11 +81,16 @@ simulador_exchange/
 │   │   ├── home.py
 │   │   ├── trading_vista.py
 │   │   ├── billetera_vista.py
-│   │   └── api_cotizaciones_vista.py
+│   │   └── api_externa.py
 │   ├── servicios/                  # Lógica de negocio de cada módulo
 │   │   ├── api_cotizaciones.py
 │   │   ├── estado_billetera.py
-│   │   └── velas_logica.py
+│   │   ├── transacciones.py
+│   │   └── trading/                # Lógica de ejecución de órdenes
+│   │       ├── gestor.py         # Orquesta la creación y validación
+│   │       ├── procesador.py     # Procesa y guarda las órdenes
+│   │       ├── motor.py          # Verifica y ejecuta órdenes pendientes
+│   │       └── ejecutar_orden.py # Lógica final de transacción
 │   ├── acceso_datos/               # Acceso y manipulación de archivos .json
 │   │   ├── datos_billetera.py
 │   │   ├── datos_cotizaciones.py
@@ -103,7 +108,7 @@ simulador_exchange/
 │       │   ├── styles_index.css
 │       │   └── styles_trading.css
 │       ├── img/
-│       │   └── logo_BlocX.png
+│       │   └── logo_BlocX.webp
 │       └── js/                     # Lógica del cliente
 │           ├── components/         # Módulos para actualizar la UI
 │           ├── pages/              # Scripts de orquestación por página
