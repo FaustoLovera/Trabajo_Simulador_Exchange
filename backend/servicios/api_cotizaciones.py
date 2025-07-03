@@ -52,8 +52,7 @@ def obtener_datos_criptos_coingecko() -> List[Dict[str, Any]]:
     try:
         respuesta = requests.get(config.COINGECKO_URL, params, timeout=10)
         respuesta.raise_for_status()
-    except requests.exceptions.RequestException as e:
-        # En un entorno de producción, esto debería ser manejado por un sistema de logging.
+    except Exception as e:
         print(f"❌ Error al obtener datos de CoinGecko: {str(e)}")
         return []
 
@@ -62,6 +61,8 @@ def obtener_datos_criptos_coingecko() -> List[Dict[str, Any]]:
     try:
         datos = respuesta.json()
         resultado = []
+        
+        # Itera sobre los datos recibidos de la API de cada criptomoneda, comenzando en 1.
         for i, dato in enumerate(datos, start=1):
             resultado.append({
                 "id": i,
@@ -77,7 +78,6 @@ def obtener_datos_criptos_coingecko() -> List[Dict[str, Any]]:
                 "circulating_supply": str(Decimal(str(dato.get("circulating_supply", 0)))),
             })
     except (KeyError, TypeError, ValueError, json.JSONDecodeError) as e:
-        # En un entorno de producción, esto debería ser manejado por un sistema de logging.
         print(f"❌ Error al procesar los datos de CoinGecko: {str(e)}")
         return []
 
@@ -111,7 +111,6 @@ def obtener_velas_de_api(ticker: str, interval: str) -> List[Dict[str, Any]]:
         respuesta = requests.get(config.BINANCE_URL, params, timeout=10)
         respuesta.raise_for_status()
     except requests.exceptions.RequestException as e:
-        # En un entorno de producción, esto debería ser manejado por un sistema de logging.
         print(f"❌ Error al obtener datos de Binance para {ticker} ({interval}): {str(e)}")
         return []
 

@@ -134,3 +134,34 @@ def test_verificar_y_ejecutar_ordenes_pendientes_debe_ejecutar_orden_cuando_cond
     assert billetera_final["USDT"]["saldos"]["reservado"] == Decimal("0")
     assert "BTC" in billetera_final
     assert billetera_final["BTC"]["saldos"]["disponible"] > 0
+
+def test_motor_no_ejecuta_orden_si_condicion_no_es_favorable(test_environment):
+    """
+    Verifica que el motor no modifica nada si el precio de mercado no es favorable
+    para ninguna orden pendiente.
+    """
+    # ARRANGE
+    billetera_inicial = {"USDT": {"saldos": {"disponible": "0", "reservado": "4000"}}}
+    orden_pendiente = {
+        "id_orden": "1", "par": "BTC/USDT", "estado": "pendiente", "accion": "compra",
+        "tipo_orden": "limit", "precio_disparo": "40000", "moneda_reservada": "USDT",
+        "cantidad_reservada": "4000", "moneda_destino": "BTC", "moneda_origen": "USDT",
+        "cantidad": "0.1" # Nombre de clave corregido para consistencia
+    }
+    # Precio NO favorable para la compra límite (es más alto)
+    cotizaciones = [{"ticker": "BTC", "precio_usd": "41000"}, {"ticker": "USDT", "precio_usd": "1"}]
+    
+    with open(test_environment['billetera'], 'w') as f: json.dump(billetera_inicial, f)
+    with open(test_environment['ordenes'], 'w') as f: json.dump([orden_pendiente], f)
+    with open(test_environment['cotizaciones'], 'w') as f: json.dump(cotizaciones, f)
+
+    # ACT
+    verificar_y_ejecutar_ordenes_pendientes()
+
+    # ASSERT
+    ordenes_final = cargar_ordenes_pendientes(test_environment['ordenes'])
+    billetera_final = cargar_billetera(test_environment['billetera'])
+
+    # Nada debe haber cambiado
+    assert ordenes_final[0]["estado"] == "pendiente"
+    assert billetera_final["USDT"]["saldos"]["reservado"] == Decimal("4000")

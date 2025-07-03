@@ -29,7 +29,8 @@ def get_performance_indicator(value: Union[str, Decimal]) -> dict:
         if valor_decimal >= 0:
             return {"className": "positivo", "arrow": "▲"}
         return {"className": "negativo", "arrow": "▼"}
-    except (ValueError, TypeError, InvalidOperation):
+    except Exception as e:
+        print(f"Error al formatear indicador de rendimiento: {e}")
         return {"className": "", "arrow": ""}
 
 
@@ -58,5 +59,6 @@ def format_datetime(timestamp: Union[int, float, str]) -> str:
             return "--:--"
             
         return dt_object.strftime("%d/%m/%Y %H:%M:%S")
-    except (ValueError, TypeError):
+    except Exception as e:
+        print(f"Error al formatear fecha: {e}")
         return "--:--"

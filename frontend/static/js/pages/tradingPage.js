@@ -55,7 +55,7 @@ async function initialize() {
         });
         
         initializeChart([]); // <-- Inicializa el gráfico vacío para que no falle.
-        UIManager.setupEventListeners(); // <-- ¡LA CLAVE! Haz la página interactiva ahora.
+        UIManager.setupEventListeners(); // Esto hace que la página sea interactiva.
         
         // 3. Carga los datos pesados del gráfico de forma asíncrona SIN bloquear
         fetchVelas(initialTicker, initialInterval)

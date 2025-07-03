@@ -123,4 +123,36 @@ def test_cancelar_orden_pendiente_debe_fallar_cuando_orden_no_esta_en_estado_pen
 
     # Assert
     assert resultado["estado"] == "error"
-    assert "no puede ser cancelada porque su estado es 'ejecutada'" in resultado["mensaje"]
+    assert "no puede ser cancelada" in resultado["mensaje"]
+    assert "estado actual: 'ejecutada'" in resultado["mensaje"]
+    
+def test_cancelar_orden_con_error_de_consistencia_de_fondos(test_environment):
+    """
+    Verifica que la cancelación falla si los fondos a liberar en la orden
+    no coinciden con los fondos reservados en la billetera.
+    """
+    # ARRANGE: Crear una inconsistencia de datos
+    billetera_data = {
+        "BTC": {"nombre": "Bitcoin", "saldos": {"disponible": "1.0", "reservado": "0.1"}} # Solo 0.1 reservado
+    }
+    orden_data = [{
+        "id_orden": "btc_venta_inconsistente",
+        "estado": "pendiente",
+        "moneda_reservada": "BTC",
+        "cantidad_reservada": "0.5" # ¡La orden cree que reservó 0.5!
+    }]
+    with open(test_environment['billetera'], 'w') as f:
+        json.dump(billetera_data, f)
+    with open(test_environment['ordenes'], 'w') as f:
+        json.dump(orden_data, f)
+
+    # ACT
+    resultado = cancelar_orden_pendiente("btc_venta_inconsistente")
+
+    # ASSERT
+    assert resultado["estado"] == "error"
+    assert "Error de consistencia" in resultado["mensaje"]
+
+    # Verificar que el estado de la orden se marcó como erróneo
+    ordenes_finales = cargar_ordenes_pendientes(ruta_archivo=test_environment['ordenes'])
+    assert ordenes_finales[0]["estado"] == "error"

@@ -10,8 +10,11 @@ es gestionar las peticiones HTTP relacionadas con la página de trading:
 
 import json
 
-from flask import Blueprint, request, redirect, url_for, render_template, flash
+from flask import Blueprint, render_template, request, flash, redirect, url_for
+
+import config
 from backend.servicios.trading.procesador import procesar_operacion_trading
+
 
 # Define el Blueprint con el prefijo de URL `/trading`.
 bp = Blueprint("trading", __name__, url_prefix="/trading")
@@ -51,20 +54,24 @@ def procesar_trading_form():
     """
     print(">>> DATOS RECIBIDOS DEL FORMULARIO:", request.form)
 
-    ticker_operado = request.form.get("ticker", "BTC").upper()
+    ticker_operado = request.form.get(config.FORM_TICKER, "BTC").upper()
 
     # El servicio de procesamiento devuelve una respuesta estandarizada en un diccionario.
     respuesta = procesar_operacion_trading(request.form)
 
-    if respuesta["estado"] == "ok":
+    if respuesta[config.RESPUESTA_ESTADO] == config.ESTADO_RESPUESTA_OK:
         # Si la operación fue exitosa, los datos de la transacción están en la clave 'datos'.
         # Se convierten a un string JSON para almacenarlos en el mensaje flash.
-        flash(json.dumps(respuesta["datos"]), "success")
+        flash(json.dumps(respuesta[config.RESPUESTA_DATOS]), config.FLASH_SUCCESS)
     else:
         # Si la operación falló, el motivo del error se encuentra en la clave 'mensaje'.
-        flash(respuesta["mensaje"], "danger")
+        flash(respuesta[config.RESPUESTA_MENSAJE], config.FLASH_DANGER)
 
         # Redirige de vuelta a la página de trading, pasando el ticker como
     # parámetro para que la interfaz pueda mostrar el mercado correcto.
-    redirect_url = url_for("trading.mostrar_trading_page", ticker=ticker_operado)
+    # Genera la URL de redirección de forma robusta usando constantes de `config.py`.
+    # `url_for` crea la URL para el endpoint `ENDPOINT_TRADING_PAGE`.
+    # El `**{...}` es una técnica para usar una constante (`FORM_TICKER`) como el nombre
+    # del argumento de palabra clave, resultando en `...ticker=ticker_operado`.
+    redirect_url = url_for(config.ENDPOINT_TRADING_PAGE, ticker=ticker_operado)
     return redirect(redirect_url)

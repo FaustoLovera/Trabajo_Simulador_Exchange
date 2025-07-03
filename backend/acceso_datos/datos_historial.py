@@ -31,7 +31,7 @@ def cargar_historial(ruta_archivo: Optional[str] = None) -> List[Dict[str, Any]]
     Returns:
         List[Dict[str, Any]]: Una lista de registros de transacciones.
     """
-    ruta_efectiva = ruta_archivo if ruta_archivo is not None else config.HISTORIAL_PATH
+    ruta_efectiva = ruta_archivo or config.HISTORIAL_PATH
     if not os.path.exists(ruta_efectiva) or os.path.getsize(ruta_efectiva) == 0:
         return []
 
@@ -69,7 +69,7 @@ def guardar_en_historial(
         valor_usd (Decimal): Valor total de la transacción en USD.
         ruta_archivo (Optional[str]): Ruta al archivo de historial.
     """
-    ruta_efectiva = ruta_archivo if ruta_archivo is not None else config.HISTORIAL_PATH
+    ruta_efectiva = ruta_archivo or config.HISTORIAL_PATH
     os.makedirs(os.path.dirname(ruta_efectiva), exist_ok=True)
     historial = cargar_historial(ruta_archivo=ruta_efectiva)
 
@@ -81,7 +81,7 @@ def guardar_en_historial(
     # Creación del nuevo registro de transacción.
     operacion = {
         "id": len(historial) + 1,
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now().isoformat(),  # Se va a ver asi: 2025-07-02T22:12:34.123456
         "tipo": tipo_operacion,
         "origen": {"ticker": moneda_origen, "cantidad": str(cantidad_origen_q)},
         "destino": {"ticker": moneda_destino, "cantidad": str(cantidad_destino_q)},

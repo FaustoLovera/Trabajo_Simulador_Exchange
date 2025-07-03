@@ -97,3 +97,28 @@ def test_ejecutar_transaccion_debe_completar_compra_y_actualizar_archivos_cuando
     assert billetera_cargada['USDT']['saldos']['disponible'] == Decimal('9000') # 10000 - 1000
     assert billetera_cargada['BTC']['saldos']['disponible'] == Decimal('1') + cantidad_destino_esperada
     assert billetera_cargada['BTC']['saldos']['reservado'] == Decimal('0.5') # No debe cambiar
+
+def test_ejecutar_transaccion_debe_fallar_si_no_se_encuentra_precio(test_environment):
+    """
+    Verifica que la transacción falla de forma controlada si falta una cotización.
+    """
+    # ARRANGE
+    billetera_cargada = { "USDT": {"saldos": {"disponible": Decimal("1000")}}}
+    # El archivo de cotizaciones está intencionalmente vacío
+    with open(test_environment['cotizaciones'], 'w') as f:
+        json.dump([], f)
+
+    # ACT
+    exito, detalles = ejecutar_transaccion(
+        billetera=billetera_cargada,
+        moneda_origen='USDT',
+        cantidad_origen_bruta=Decimal('100'),
+        moneda_destino='BTC',
+        tipo_operacion_historial='Compra Mercado',
+        ruta_cotizaciones=test_environment['cotizaciones']
+    )
+
+    # ASSERT
+    assert exito is False
+    assert "error" in detalles
+    assert "No se pudo obtener la cotización" in detalles["error"]

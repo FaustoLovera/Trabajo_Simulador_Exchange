@@ -117,7 +117,7 @@ async function renderComisiones() {
     try {
         const datosComisiones = await fetchComisiones();
         if (!datosComisiones || datosComisiones.length === 0) {
-            cuerpoTabla.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">No se han cobrado comisiones.</td></tr>';
+            cuerpoTabla.innerHTML = '<tr><td colspan="4" class="text-center py-3">No se han cobrado comisiones.</td></tr>';
         } else {
             cuerpoTabla.innerHTML = datosComisiones.map(createComisionRowHTML).join('');
         }

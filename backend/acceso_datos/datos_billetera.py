@@ -13,7 +13,7 @@ import json
 import os
 from typing import Dict, Optional
 
-from backend.utils.utilidades_numericas import a_decimal, cuantizar_cripto
+from backend.utils.utilidades_numericas import a_decimal, cuantizar_cripto, cuantizar_usd
 import config
 
 def _crear_billetera_inicial() -> Dict[str, Dict]:
@@ -53,7 +53,7 @@ def cargar_billetera(ruta_archivo: Optional[str] = None) -> Dict[str, Dict]:
         - Crea el directorio y el archivo de la billetera si no existen.
         - Sobrescribe archivos corruptos o vacíos con una billetera nueva.
     """
-    ruta_efectiva = ruta_archivo if ruta_archivo is not None else config.BILLETERA_PATH
+    ruta_efectiva = ruta_archivo or config.BILLETERA_PATH
     os.makedirs(os.path.dirname(ruta_efectiva), exist_ok=True)
 
     if not os.path.exists(ruta_efectiva) or os.path.getsize(ruta_efectiva) == 0:
@@ -65,8 +65,7 @@ def cargar_billetera(ruta_archivo: Optional[str] = None) -> Dict[str, Dict]:
         with open(ruta_efectiva, "r", encoding="utf-8") as f:
             datos_cargados = json.load(f)
     except Exception as e:
-                # Fallback: si el archivo está corrupto, se crea una billetera nueva
-        # para asegurar la continuidad de la aplicación.
+        #Si el archivo está corrupto, se crea una billetera una nueva para asegurar la continuidad de la aplicación.
         print(f"Advertencia: Archivo '{ruta_efectiva}' corrupto o ilegible. Se reiniciará la billetera. Error: {e}")
         billetera_inicial = _crear_billetera_inicial()
         guardar_billetera(billetera_inicial, ruta_archivo=ruta_efectiva)
@@ -100,7 +99,7 @@ def guardar_billetera(billetera: Dict[str, Dict], ruta_archivo: Optional[str] = 
         - Crea el directorio de la billetera si no existe.
         - Sobrescribe completamente el archivo de la billetera en disco.
     """
-    ruta_efectiva = ruta_archivo if ruta_archivo is not None else config.BILLETERA_PATH
+    ruta_efectiva = ruta_archivo or config.BILLETERA_PATH
     os.makedirs(os.path.dirname(ruta_efectiva), exist_ok=True)
 
     datos_para_json = {}
@@ -111,8 +110,14 @@ def guardar_billetera(billetera: Dict[str, Dict], ruta_archivo: Optional[str] = 
         saldo_reservado = saldos.get("reservado", a_decimal(0))
         
         # 1. Cuantizar para asegurar la precisión estándar antes de guardar.
-        saldo_disponible_q = cuantizar_cripto(saldo_disponible)
-        saldo_reservado_q = cuantizar_cripto(saldo_reservado)
+        if ticker == config.MONEDA_FIAT_DEFAULT:
+            # Usar la precisión de USD para la moneda fiat (USDT).
+            saldo_disponible_q = cuantizar_usd(saldo_disponible)
+            saldo_reservado_q = cuantizar_usd(saldo_reservado)
+        else:
+            # Usar la precisión de cripto para las demás.
+            saldo_disponible_q = cuantizar_cripto(saldo_disponible)
+            saldo_reservado_q = cuantizar_cripto(saldo_reservado)
 
         # 2. Convertir a string para la serialización en JSON.
         str_disponible = str(saldo_disponible_q)

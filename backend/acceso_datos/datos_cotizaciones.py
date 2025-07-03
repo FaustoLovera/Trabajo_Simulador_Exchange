@@ -33,7 +33,7 @@ def limpiar_cache_precios():
     print("🧹 Caché de precios limpiado.")
 
 def recargar_cache_precios(ruta_archivo: Optional[str] = None):
-    """(Re)carga el caché de precios desde un archivo JSON.
+    """Recarga el caché de precios desde un archivo JSON.
 
     Esta función lee el archivo de cotizaciones, lo procesa y actualiza la
     variable global `_cache_precios`. Está diseñada para ser llamada
@@ -46,7 +46,7 @@ def recargar_cache_precios(ruta_archivo: Optional[str] = None):
     Side Effects:
         - Modifica la variable global `_cache_precios`.
     """
-    ruta_a_usar = ruta_archivo if ruta_archivo is not None else config.COTIZACIONES_PATH
+    ruta_a_usar = ruta_archivo or config.COTIZACIONES_PATH
     global _cache_precios
     print(f"🔄 Recargando caché de precios desde '{ruta_a_usar}'...")
 
@@ -60,11 +60,14 @@ def recargar_cache_precios(ruta_archivo: Optional[str] = None):
             print(f"⚠️ No se pudo leer el archivo de cotizaciones en '{ruta_a_usar}'. Se usará una lista vacía. Error: {e}")
             lista_criptos = []
 
-    _cache_precios = {
-        cripto.get("ticker", "").upper(): cripto
-        for cripto in lista_criptos
-        if cripto.get("ticker")
-    }
+    _cache_precios = {}
+    
+    for cripto in lista_criptos:
+        ticker = cripto.get("ticker")
+        
+        if isinstance(ticker, str) and ticker:
+            _cache_precios[ticker.upper()] = cripto
+    
     print("✅ Caché de precios actualizado en memoria.")
 
 def obtener_precio(ticker: str, ruta_archivo: Optional[str] = None) -> Optional[Decimal]:
@@ -108,7 +111,7 @@ def cargar_datos_cotizaciones(ruta_archivo: Optional[str] = None) -> list[dict]:
         list[dict]: Una lista de diccionarios con los datos de las cotizaciones.
                     Devuelve una lista vacía en caso de error.
     """
-    ruta_a_usar = ruta_archivo if ruta_archivo else config.COTIZACIONES_PATH
+    ruta_a_usar = ruta_archivo or config.COTIZACIONES_PATH
     if not os.path.exists(ruta_a_usar) or os.path.getsize(ruta_a_usar) == 0:
         return []
     try:
@@ -133,7 +136,7 @@ def guardar_datos_cotizaciones(data: list[dict[str, Any]], ruta_archivo: Optiona
         - Escribe o sobrescribe un archivo en disco.
         - Puede disparar una recarga del caché de precios.
     """
-    ruta_a_usar = ruta_archivo if ruta_archivo else config.COTIZACIONES_PATH
+    ruta_a_usar = ruta_archivo or config.COTIZACIONES_PATH
     print(f"💾 Guardando datos en '{ruta_a_usar}'...")
     try:
         with open(ruta_a_usar, "w", encoding="utf-8") as f:

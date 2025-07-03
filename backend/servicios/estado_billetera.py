@@ -21,17 +21,12 @@ from backend.acceso_datos.datos_billetera import cargar_billetera
 from backend.acceso_datos.datos_cotizaciones import cargar_datos_cotizaciones
 from backend.acceso_datos.datos_historial import cargar_historial
 from backend.utils.formatters import format_datetime
-from backend.utils.utilidades_numericas import (
-    a_decimal,
-    formato_cantidad_cripto,
-    formato_cantidad_usd,
-    formato_porcentaje,
-)
+from backend.utils import utilidades_numericas
 import config
 
 def _division_segura(numerador: Decimal, denominador: Decimal) -> Decimal:
     """Divide dos números Decimal de forma segura, evitando errores de división por cero."""
-    return numerador / denominador if denominador > a_decimal(0) else a_decimal(0)
+    return numerador / denominador if denominador > utilidades_numericas.a_decimal(0) else utilidades_numericas.a_decimal(0)
 
 def _preparar_datos_compra(
     historial: List[Dict[str, Any]]
@@ -59,13 +54,13 @@ def _preparar_datos_compra(
                 continue
             if ticker not in datos_compra_por_ticker:
                 datos_compra_por_ticker[ticker] = {
-                    "total_invertido": a_decimal(0),
-                    "cantidad_comprada": a_decimal(0),
+                    "total_invertido": utilidades_numericas.a_decimal(0),
+                    "cantidad_comprada": utilidades_numericas.a_decimal(0),
                 }
-            datos_compra_por_ticker[ticker]["total_invertido"] += a_decimal(
+            datos_compra_por_ticker[ticker]["total_invertido"] += utilidades_numericas.a_decimal(
                 operacion.get("valor_usd")
             )
-            datos_compra_por_ticker[ticker]["cantidad_comprada"] += a_decimal(
+            datos_compra_por_ticker[ticker]["cantidad_comprada"] += utilidades_numericas.a_decimal(
                 destino.get("cantidad")
             )
     return datos_compra_por_ticker
@@ -93,11 +88,11 @@ def _calcular_metricas_activo(
         Un diccionario con todas las métricas calculadas, aún en formato `Decimal`.
     """
     valor_actual_usd = cantidad_total * precio_actual
-    total_invertido = datos_compra.get("total_invertido", a_decimal(0))
-    cantidad_comprada = datos_compra.get("cantidad_comprada", a_decimal(0))
+    total_invertido = datos_compra.get("total_invertido", utilidades_numericas.a_decimal(0))
+    cantidad_comprada = datos_compra.get("cantidad_comprada", utilidades_numericas.a_decimal(0))
     precio_promedio_compra = _division_segura(total_invertido, cantidad_comprada)
     costo_base_actual = cantidad_total * precio_promedio_compra
-    ganancia_o_perdida = valor_actual_usd - costo_base_actual if costo_base_actual > 0 else a_decimal(0)
+    ganancia_o_perdida = valor_actual_usd - costo_base_actual if costo_base_actual > 0 else utilidades_numericas.a_decimal(0)
     porcentaje_ganancia = _division_segura(ganancia_o_perdida, costo_base_actual) * Decimal("100")
     return {
         "ticker": ticker, "cantidad": cantidad_total, "precio_actual": precio_actual,
@@ -132,8 +127,8 @@ def _formatear_activo_para_presentacion(
     es_polvo = activo_calculado["valor_usdt"] < config.UMBRAL_POLVO_USD
 
     cantidad_total = activo_calculado["cantidad"]
-    saldo_disponible = saldos.get("disponible", a_decimal(0))
-    saldo_reservado = saldos.get("reservado", a_decimal(0))
+    saldo_disponible = saldos.get("disponible", utilidades_numericas.a_decimal(0))
+    saldo_reservado = saldos.get("reservado", utilidades_numericas.a_decimal(0))
 
     return {
         "ticker": activo_calculado["ticker"],
@@ -145,16 +140,16 @@ def _formatear_activo_para_presentacion(
         "cantidad_disponible": str(saldo_disponible),
         "cantidad_reservada": str(saldo_reservado),
 
-        "cantidad_total_formatted": formato_cantidad_cripto(cantidad_total),
-        "cantidad_disponible_formatted": formato_cantidad_cripto(saldo_disponible),
-        "cantidad_reservada_formatted": formato_cantidad_cripto(saldo_reservado),
+        "cantidad_total_formatted": utilidades_numericas.formato_cantidad_cripto(cantidad_total),
+        "cantidad_disponible_formatted": utilidades_numericas.formato_cantidad_cripto(saldo_disponible),
+        "cantidad_reservada_formatted": utilidades_numericas.formato_cantidad_cripto(saldo_reservado),
         
-        "precio_actual_formatted": formato_cantidad_usd(activo_calculado["precio_actual"]),
-        "valor_usdt_formatted": formato_cantidad_usd(activo_calculado["valor_usdt"]),
-        "ganancia_perdida_formatted": formato_cantidad_usd(activo_calculado["ganancia_perdida"]),
+        "precio_actual_formatted": utilidades_numericas.formato_cantidad_usd(activo_calculado["precio_actual"]),
+        "valor_usdt_formatted": utilidades_numericas.formato_cantidad_usd(activo_calculado["valor_usdt"]),
+        "ganancia_perdida_formatted": utilidades_numericas.formato_cantidad_usd(activo_calculado["ganancia_perdida"]),
         "ganancia_perdida_cruda": str(activo_calculado["ganancia_perdida"]),
-        "porcentaje_ganancia_formatted": formato_porcentaje(activo_calculado["porcentaje_ganancia"]),
-        "porcentaje_formatted": formato_porcentaje(porcentaje_en_billetera),
+        "porcentaje_ganancia_formatted": utilidades_numericas.formato_porcentaje(activo_calculado["porcentaje_ganancia"]),
+        "porcentaje_formatted": utilidades_numericas.formato_porcentaje(porcentaje_en_billetera),
     }
 
 def estado_actual_completo(
@@ -186,8 +181,14 @@ def estado_actual_completo(
     historial = cargar_historial(ruta_archivo=ruta_historial)
     cotizaciones_raw = cargar_datos_cotizaciones(ruta_archivo=ruta_cotizaciones)
     
-    info_criptos = {c['ticker']: c for c in cotizaciones_raw}
-    precios_locales = {c['ticker']: a_decimal(c.get('precio_usd', '0')) for c in cotizaciones_raw}
+    info_criptos = {}
+    for c in cotizaciones_raw:
+        if c.get('ticker'):
+            info_criptos[c['ticker']] = c
+    precios_locales = {}
+    for c in cotizaciones_raw:
+        if c.get('ticker'):
+            precios_locales[c['ticker']] = utilidades_numericas.a_decimal(c.get('precio_usd', '0'))
     
     # Paso 3: Forzar datos canónicos para USDT.
     # Esto asegura consistencia en la UI, evitando que variantes de USDT de
@@ -204,42 +205,41 @@ def estado_actual_completo(
     # Paso 5: Calcular métricas para cada activo en la billetera.
     for ticker, activo_data in billetera.items():
         saldos = activo_data.get("saldos", {})
-        cantidad_total = saldos.get("disponible", a_decimal(0)) + saldos.get(
-            "reservado", a_decimal(0)
-        )
+        cantidad_total = utilidades_numericas.a_decimal(saldos.get("disponible", 0)) + utilidades_numericas.a_decimal(saldos.get("reservado", 0))
 
-        if cantidad_total < config.UMBRAL_CASI_CERO:
-            continue
+        # Solo procesamos activos que no se consideran 'polvo' (cantidad muy pequeña).
+        if cantidad_total >= config.UMBRAL_CASI_CERO:
+            # Usamos el diccionario 'curado' para obtener la info de la cripto.
+            cripto_info_actual = info_criptos.get(ticker, {"nombre": ticker, "logo": ""})
+
+            if ticker == "USDT":
+                metricas = {
+                    "ticker": "USDT", "cantidad": cantidad_total, "precio_actual": utilidades_numericas.a_decimal(1),
+                    "valor_usdt": cantidad_total, "ganancia_perdida": utilidades_numericas.a_decimal(0),
+                    "porcentaje_ganancia": utilidades_numericas.a_decimal(0),
+                }
+            else:
+                precio_actual = precios_locales.get(ticker, utilidades_numericas.a_decimal(0))
+                datos_compra_activo = datos_compra_por_ticker.get(ticker, {})
+                metricas = _calcular_metricas_activo(ticker, cantidad_total, precio_actual, datos_compra_activo)
             
-        # Usamos el diccionario 'curado' para obtener la info de la cripto.
-        cripto_info_actual = info_criptos.get(ticker, {"nombre": ticker, "logo": ""})
-
-        if ticker == "USDT":
-            metricas = {
-                "ticker": "USDT", "cantidad": cantidad_total, "precio_actual": a_decimal(1),
-                "valor_usdt": cantidad_total, "ganancia_perdida": a_decimal(0),
-                "porcentaje_ganancia": a_decimal(0),
-            }
-        else:
-            precio_actual = precios_locales.get(ticker, a_decimal(0))
-            datos_compra_activo = datos_compra_por_ticker.get(ticker, {})
-            metricas = _calcular_metricas_activo(ticker, cantidad_total, precio_actual, datos_compra_activo)
-        
-        metricas['cripto_info'] = cripto_info_actual
-        metricas['saldos'] = saldos
-        activos_calculados.append(metricas)
+            metricas['cripto_info'] = cripto_info_actual
+            metricas['saldos'] = saldos
+            activos_calculados.append(metricas)
 
     # Paso 6: Ordenar activos por valor y calcular el total del portafolio.
     activos_calculados.sort(key=lambda x: x["valor_usdt"], reverse=True)
-    total_billetera_usd = sum(activo["valor_usdt"] for activo in activos_calculados)
+    total_billetera_usd = utilidades_numericas.a_decimal(0)
+    for activo in activos_calculados:
+        total_billetera_usd += activo["valor_usdt"]
 
     # Paso 7: Formatear cada activo para la presentación final.
-    activos_para_presentacion = [
-        _formatear_activo_para_presentacion(
+    activos_para_presentacion = []
+    for activo in activos_calculados:
+        activo_formateado = _formatear_activo_para_presentacion(
             activo, activo["cripto_info"], activo["saldos"], total_billetera_usd
         )
-        for activo in activos_calculados
-    ]
+        activos_para_presentacion.append(activo_formateado)
     return activos_para_presentacion
 
 def obtener_historial_formateado(
@@ -256,20 +256,37 @@ def obtener_historial_formateado(
     Returns:
         Una lista de diccionarios, donde cada uno es una transacción formateada.
     """
+    # Carga el historial de transacciones desde el archivo JSON.
     historial_crudo = cargar_historial(ruta_archivo=ruta_historial)
+
+    # Lista para almacenar las transacciones con formato para la UI.
     historial_formateado = []
+
+    # Itera sobre cada transacción para extraer y formatear los datos.
     for item in historial_crudo:
+        # Extrae los datos básicos de la transacción.
         tipo_op = item.get('tipo', '')
         par_origen = item.get('origen', {}).get('ticker', '?')
         par_destino = item.get('destino', {}).get('ticker', '?')
-        cantidad = a_decimal(item.get('destino', {}).get('cantidad')) if tipo_op.endswith('compra') else a_decimal(item.get('origen', {}).get('cantidad'))
+
+        # Determina la cantidad de la transacción.
+        # Si es una compra, la cantidad es del activo de destino.
+        # Si es una venta, es la del activo de origen.
+        if tipo_op.endswith('compra'):
+            cantidad = utilidades_numericas.a_decimal(item.get('destino', {}).get('cantidad'))
+        else:
+            cantidad = utilidades_numericas.a_decimal(item.get('origen', {}).get('cantidad'))
+
+        # Construye el diccionario con los datos formateados para la presentación.
         item_formateado = {
-            "id": item.get("id"), "tipo": tipo_op,
+            "id": item.get("id"),
+            "tipo": tipo_op,
             "fecha_formatted": format_datetime(item.get('timestamp')),
             "par_formatted": f"{par_destino}/{par_origen}",
             "tipo_formatted": tipo_op.replace('-', ' ').capitalize(),
-            "cantidad_formatted": formato_cantidad_cripto(cantidad),
-            "valor_total_formatted": formato_cantidad_usd(a_decimal(item.get('valor_usd'))),
+            "cantidad_formatted": utilidades_numericas.formato_cantidad_cripto(cantidad),
+            "valor_total_formatted": utilidades_numericas.formato_cantidad_usd(utilidades_numericas.a_decimal(item.get('valor_usd'))),
         }
         historial_formateado.append(item_formateado)
+
     return historial_formateado

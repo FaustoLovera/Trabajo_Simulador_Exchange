@@ -25,7 +25,7 @@ def cargar_ordenes_pendientes(ruta_archivo: Optional[str] = None) -> list[dict]:
     Side Effects:
         - Crea el directorio para el archivo si este no existe.
     """
-    ruta_efectiva = ruta_archivo if ruta_archivo is not None else config.ORDENES_PENDIENTES_PATH
+    ruta_efectiva = ruta_archivo or config.ORDENES_PENDIENTES_PATH
     os.makedirs(os.path.dirname(ruta_efectiva), exist_ok=True)
     
     if not os.path.exists(ruta_efectiva) or os.path.getsize(ruta_efectiva) == 0:
@@ -53,7 +53,7 @@ def guardar_ordenes_pendientes(lista_ordenes: list[dict], ruta_archivo: Optional
         - Crea el directorio si no existe.
         - Escribe en el archivo, reemplazando su contenido.
     """
-    ruta_efectiva = ruta_archivo if ruta_archivo is not None else config.ORDENES_PENDIENTES_PATH
+    ruta_efectiva = ruta_archivo or config.ORDENES_PENDIENTES_PATH
     os.makedirs(os.path.dirname(ruta_efectiva), exist_ok=True)
 
     try:

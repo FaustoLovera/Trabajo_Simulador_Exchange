@@ -15,6 +15,9 @@ load_dotenv()
 
 # --- Constantes de Dominio del Negocio ---
 
+# Moneda fiat por defecto para el trading y saldos iniciales.
+MONEDA_FIAT_DEFAULT = "USDT"
+
 # Acciones de Trading: Definen las operaciones básicas que un usuario puede realizar.
 ACCION_COMPRAR = "compra"
 ACCION_VENDER = "venta"
@@ -82,3 +85,28 @@ PRECISION_USD = Decimal("0.0001")
 # Umbrales para la lógica de "polvo" (saldos pequeños)
 UMBRAL_POLVO_USD = Decimal("0.01") # Valor en USD por debajo del cual se considera polvo
 UMBRAL_CASI_CERO = Decimal("0.00000001") # Cantidad por debajo de la cual se considera cero para ciertas validaciones
+
+
+# --- Estados de Respuesta de Servicios ---
+# Utilizados en las respuestas de los servicios para indicar el resultado de una operación.
+ESTADO_RESPUESTA_OK = "ok"
+
+
+# --- Claves de Comunicación y UI ---
+
+# Claves estándar para las respuestas de los servicios.
+RESPUESTA_ESTADO = "estado"
+RESPUESTA_DATOS = "datos"
+RESPUESTA_MENSAJE = "mensaje"
+
+# Campos comunes en formularios web.
+FORM_TICKER = "ticker"
+
+# Categorías para los mensajes flash de Flask.
+FLASH_SUCCESS = "success"
+FLASH_DANGER = "danger"
+
+
+# --- Endpoints de la Aplicación ---
+# Nombres de endpoints para usar con url_for(), evitando strings hardcodeados.
+ENDPOINT_TRADING_PAGE = "trading.mostrar_trading_page"

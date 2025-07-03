@@ -90,8 +90,11 @@ def ejecutar_transaccion(
     precio_origen_usdt = obtener_precio(moneda_origen, ruta_archivo=ruta_cotizaciones)
     precio_destino_usdt = obtener_precio(moneda_destino, ruta_archivo=ruta_cotizaciones)
 
-    if not all([precio_origen_usdt, precio_destino_usdt, not precio_destino_usdt.is_zero()]):
+    if precio_origen_usdt is None or precio_destino_usdt is None:
         return False, {"error": "No se pudo obtener la cotización para ejecutar la transacción."}
+
+    if precio_destino_usdt == 0:
+        return False, {"error": "El precio del activo de destino no puede ser cero."}
 
     # 1. Calcular comisión y cantidades netas.
     # La comisión se calcula sobre la cantidad bruta de la moneda de origen.

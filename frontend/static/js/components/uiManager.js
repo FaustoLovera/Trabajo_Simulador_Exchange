@@ -221,7 +221,7 @@ export const UIManager = {
         if (!tablaBody.length) return;
 
         if (!ordenes || ordenes.length === 0) {
-            tablaBody.html('<tr><td colspan="7" class="text-center text-muted py-3">No hay órdenes abiertas.</td></tr>');
+            tablaBody.html('<tr><td colspan="7" class="text-center py-3">No hay órdenes abiertas.</td></tr>');
             return;
         }
         

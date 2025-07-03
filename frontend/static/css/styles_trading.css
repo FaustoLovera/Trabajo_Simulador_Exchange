@@ -6,6 +6,8 @@
     --color-borde: #6c757d; /* Un gris más claro para bordes */
     --color-texto: #f8f9fa; /* Texto casi blanco */
     --border-radius-suave: 0.375rem; /* El radio de borde por defecto de Bootstrap */
+    --color-amarillo: #f0c000;
+    --color-amarillo-activo: rgb(150, 131, 72);
 }
 
 * {
@@ -17,7 +19,7 @@
 body {
     font-family: Arial, sans-serif;
     background-color: #1e1e1e !important; /* Un fondo un poco más oscuro que antes */
-    color: #f0c000;
+    color: var(--color-amarillo);
 }
 
 #chart {
@@ -166,4 +168,50 @@ body {
 .swal2-toast .swal2-close:hover {
     color: #ffffff;
     transform: none;
+}
+
+
+/* --- ESTILOS PARA BOTONES --- */
+.btn-group .timeframe-btn.active {
+    background-color: var(--color-amarillo-activo) !important;
+    border-color: var(--color-amarillo-activo) !important;
+}
+
+.form-check-input:checked {
+    background-color: var(--color-amarillo-activo) !important;
+    border-color: var(--color-amarillo-activo) !important;
+}
+
+.btn-check + .btn:hover, .btn-group .btn-outline-primary:hover {
+    border-color: var(--color-amarillo-activo) !important;
+    color: var(--color-amarillo-activo) !important;
+}
+
+.btn-group .btn-check:checked + .btn-outline-primary,
+.btn-group .btn.active:not(.boton-comprar):not(.boton-vender) {
+    background-color: var(--color-amarillo-activo) !important;
+    border-color: var(--color-amarillo-activo) !important;
+    color: var(--color-texto) !important;
+}
+
+
+/* ========== ESTILOS PARA EL SALDO DISPONIBLE ========== */
+
+.saldo-disponible-container {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.saldo-disponible-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    color: #f8f9fa;
+    font-weight: 500;
+}
+
+#saldo-icono-cripto {
+    width: 20px;
+    height: 20px;
 }

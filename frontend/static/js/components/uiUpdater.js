@@ -92,15 +92,39 @@ export const UIUpdater = {
      * @effects Actualiza el texto del `span` de saldo disponible.
      */
     mostrarSaldo(ticker) {
+        // Apuntamos a los nuevos elementos que creamos en el HTML
+        const saldoTextoElem = $('#saldo-disponible-texto');
+        const iconoCriptoElem = $('#saldo-icono-cripto');
+    
         if (!ticker) {
-            DOMElements.spanSaldoDisponible.text('--');
+            // Estado por defecto si no hay ticker: ocultar todo
+            saldoTextoElem.text('--');
+            iconoCriptoElem.hide().attr('src', '');
             return;
         }
-
-        const moneda = AppState.getOwnedCoinByTicker(ticker);
-        const saldoFormateado = moneda ? moneda.cantidad_disponible_formatted : '0.00';
+    
+        // Buscamos la información de la moneda. Primero en la billetera del usuario.
+        let moneda = AppState.getOwnedCoinByTicker(ticker);
+        let logoUrl = moneda ? moneda.logo : null;
+    
+        // Si no encontramos el logo en la billetera (ej. USDT al inicio),
+        // lo buscamos en la lista general de todas las criptomonedas.
+        if (!logoUrl) {
+            const cryptoInfo = AppState.getAllCryptos().find(c => c.ticker === ticker);
+            logoUrl = cryptoInfo ? cryptoInfo.logo : null;
+        }
         
-        DOMElements.spanSaldoDisponible.text(`${saldoFormateado} ${ticker}`); 
+        // Actualizamos el ícono: si tenemos URL, la ponemos y lo mostramos. Si no, lo ocultamos.
+        if (logoUrl) {
+            iconoCriptoElem.attr('src', logoUrl).show();
+        } else {
+            iconoCriptoElem.hide().attr('src', '');
+        }
+        
+        // Actualizamos el texto del saldo como antes.
+        // Si la moneda existe en la billetera, usamos su saldo. Si no, mostramos 0.00.
+        const saldoFormateado = moneda ? moneda.cantidad_disponible_formatted : '0.00';
+        saldoTextoElem.text(`${saldoFormateado} ${ticker}`);
     },
     
     /**
@@ -123,7 +147,7 @@ export const UIUpdater = {
 
         if (historialData.length === 0) {
             tablaHistorial.html(
-                '<tr><td colspan="5" class="text-center text-muted py-3">No hay transacciones en el historial.</td></tr>'
+                '<tr><td colspan="5" class="text-center py-3">No hay transacciones en el historial.</td></tr>'
             );
             return;
         }

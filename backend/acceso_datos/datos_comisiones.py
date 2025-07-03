@@ -29,7 +29,7 @@ def cargar_comisiones(ruta_archivo: Optional[str] = None) -> list:
               Devuelve una lista vacía si el archivo no puede ser cargado o no
               contiene una lista.
     """
-    ruta_efectiva = ruta_archivo if ruta_archivo is not None else config.COMISIONES_PATH
+    ruta_efectiva = ruta_archivo or config.COMISIONES_PATH
     if not os.path.exists(ruta_efectiva) or os.path.getsize(ruta_efectiva) == 0:
         return []
     try:
@@ -68,7 +68,7 @@ def registrar_comision(
         - Crea el directorio si no existe.
         - Lee y reescribe el archivo de comisiones completo.
     """
-    ruta_efectiva = ruta_archivo if ruta_archivo is not None else config.COMISIONES_PATH
+    ruta_efectiva = ruta_archivo or config.COMISIONES_PATH
     os.makedirs(os.path.dirname(ruta_efectiva), exist_ok=True)
     comisiones = cargar_comisiones(ruta_archivo=ruta_efectiva)
 
