@@ -175,22 +175,35 @@ def _calcular_reserva_y_cantidad_principal(
 
 def procesar_operacion_trading(formulario: Dict[str, Any]) -> Dict[str, Any]:
     """Punto de entrada principal para procesar una operación desde el formulario."""
+    # --- 1. PARSEO Y VALIDACIÓN INICIAL UNIFICADA ---
     try:
-        # --- 1. PARSEO Y VALIDACIÓN INICIAL UNIFICADA ---
-        ticker_principal = formulario["ticker"].upper()
-        accion = formulario["accion"]
-        monto_form = a_decimal(formulario["monto"])
+        ticker_principal = formulario.get("ticker", "").upper()
+        accion = formulario.get("accion")
+        monto_form = a_decimal(formulario.get("monto"))
         modo_ingreso = formulario.get("modo-ingreso", "monto")
         tipo_orden = formulario.get("tipo-orden", config.TIPO_ORDEN_MERCADO).lower()
         precio_disparo = a_decimal(formulario.get("precio_disparo"))
         precio_limite = a_decimal(formulario.get("precio_limite"))
-    except Exception as e:
+        
+        if not all([ticker_principal, accion, monto_form]):
+             raise ValueError("Faltan datos esenciales en el formulario (ticker, accion, monto).")
+
+    except (ValueError, TypeError) as e:
         return crear_respuesta_error(f"❌ Error en los datos del formulario: {e}")
 
     if monto_form <= Decimal("0"):
         return crear_respuesta_error("❌ El monto debe ser un número positivo.")
 
-    moneda_origen, moneda_destino = (config.MONEDA_FIAT_DEFAULT, ticker_principal) if accion == config.ACCION_COMPRAR else (ticker_principal, config.MONEDA_FIAT_DEFAULT)
+    # --- LÓGICA DE ASIGNACIÓN DE MONEDAS (CORREGIDA) ---
+    if accion == config.ACCION_COMPRAR:
+        moneda_origen = formulario.get("moneda-pago", config.MONEDA_FIAT_DEFAULT)
+        moneda_destino = ticker_principal
+    elif accion == config.ACCION_VENDER:
+        moneda_origen = ticker_principal
+        moneda_destino = formulario.get("moneda-recibir", config.MONEDA_FIAT_DEFAULT)
+    else:
+        return crear_respuesta_error(f"Acción de trading desconocida: '{accion}'")
+
     if moneda_origen == moneda_destino:
         return crear_respuesta_error("❌ La moneda de origen y destino no pueden ser la misma.")
 
@@ -216,18 +229,20 @@ def procesar_operacion_trading(formulario: Dict[str, Any]) -> Dict[str, Any]:
         if tipo_orden == config.TIPO_ORDEN_STOP_LIMIT and precio_mercado_actual:
             if accion == config.ACCION_COMPRAR:
                 if precio_disparo <= precio_mercado_actual:
-                    return crear_respuesta_error(f"❌ Compra Stop: Precio Stop ({precio_disparo}) debe ser > al precio actual ({precio_mercado_actual}).")
+                    return crear_respuesta_error(f"❌ Compra Stop: Precio Stop ({formato_cantidad_usd(precio_disparo)}) debe ser > al precio actual ({formato_cantidad_usd(precio_mercado_actual)}).")
                 if precio_limite < precio_disparo:
-                    return crear_respuesta_error(f"❌ Compra Stop-Limit: Precio Límite ({precio_limite}) no puede ser < al Precio Stop ({precio_disparo}).")
+                    return crear_respuesta_error(f"❌ Compra Stop-Limit: Precio Límite ({formato_cantidad_usd(precio_limite)}) no puede ser < al Precio Stop ({formato_cantidad_usd(precio_disparo)}).")
             elif accion == config.ACCION_VENDER:
                 if precio_disparo >= precio_mercado_actual:
-                    return crear_respuesta_error(f"❌ Venta Stop: Precio Stop ({precio_disparo}) debe ser < al precio actual ({precio_mercado_actual}).")
+                    return crear_respuesta_error(f"❌ Venta Stop: Precio Stop ({formato_cantidad_usd(precio_disparo)}) debe ser < al precio actual ({formato_cantidad_usd(precio_mercado_actual)}).")
                 if precio_limite > precio_disparo:
-                    return crear_respuesta_error(f"❌ Venta Stop-Limit: Precio Límite ({precio_limite}) no puede ser > al Precio Stop ({precio_disparo}).")
+                    return crear_respuesta_error(f"❌ Venta Stop-Limit: Precio Límite ({formato_cantidad_usd(precio_limite)}) no puede ser > al Precio Stop ({formato_cantidad_usd(precio_disparo)}).")
+        
+        # Para órdenes límite, la reserva siempre se calcula contra el precio límite.
+        precio_referencia = precio_limite if tipo_orden == config.TIPO_ORDEN_STOP_LIMIT else precio_disparo
         
         # Cálculo de cantidades y reserva
-        # Para órdenes límite, la reserva siempre se calcula contra el precio límite, no el de disparo.
-        respuesta_calculo = _calcular_reserva_y_cantidad_principal(accion, modo_ingreso, monto_form, precio_limite)
+        respuesta_calculo = _calcular_reserva_y_cantidad_principal(accion, modo_ingreso, monto_form, precio_referencia)
         if respuesta_calculo["estado"] == config.ESTADO_ERROR:
             return crear_respuesta_error(respuesta_calculo["mensaje"])
 
@@ -279,7 +294,7 @@ def procesar_operacion_trading(formulario: Dict[str, Any]) -> Dict[str, Any]:
                 "precio_limite": formato_cantidad_usd(a_decimal(nueva_orden["precio_limite"])) if tipo_orden == config.TIPO_ORDEN_STOP_LIMIT else "N/A",
             }
         }
-        return crear_respuesta_exitosa(resultado_operacion)
+        return crear_respuesta_exitosa(resultado_operacion, f"Orden {tipo_orden.capitalize()} creada exitosamente.")
     
     else:
         return crear_respuesta_error(f"Tipo de orden '{tipo_orden}' no soportado.")
