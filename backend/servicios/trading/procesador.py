@@ -214,18 +214,34 @@ def procesar_operacion_trading(formulario: Dict[str, Any]) -> Dict[str, Any]:
     elif tipo_orden in [config.TIPO_ORDEN_LIMITE, config.TIPO_ORDEN_STOP_LIMIT]:
         # --- 3. LÓGICA PARA ÓRDENES PENDIENTES ---
         
-        # Para órdenes 'limit' simples, el precio límite y el de disparo son conceptualmente el mismo.
         if tipo_orden == config.TIPO_ORDEN_LIMITE:
             precio_limite = precio_disparo
 
-        # Validación de precios
+        # Validación básica de precios
         if precio_disparo <= 0:
             return crear_respuesta_error("❌ Se requiere un precio de disparo válido y positivo.")
         if tipo_orden == config.TIPO_ORDEN_STOP_LIMIT and precio_limite <= 0:
             return crear_respuesta_error("❌ Se requiere un precio límite válido y positivo para una orden Stop-Limit.")
 
-        # Validación de precios Stop-Limit contra el precio de mercado actual
+        # Obtener el precio de mercado una sola vez para las validaciones
         precio_mercado_actual = obtener_precio(ticker_principal)
+
+        # --- VALIDACIÓN PARA ÓRDENES LÍMITE ---
+        if tipo_orden == config.TIPO_ORDEN_LIMITE and precio_mercado_actual:
+            if accion == config.ACCION_COMPRAR and precio_disparo > precio_mercado_actual:
+                return crear_respuesta_error(
+                    f"❌ Precio Límite ({formato_cantidad_usd(precio_disparo)}) "
+                    f"es mayor al precio de mercado actual ({formato_cantidad_usd(precio_mercado_actual)}). "
+                    "Use una orden a Mercado para comprar inmediatamente."
+                )
+            elif accion == config.ACCION_VENDER and precio_disparo < precio_mercado_actual:
+                 return crear_respuesta_error(
+                    f"❌ Precio Límite ({formato_cantidad_usd(precio_disparo)}) "
+                    f"es menor al precio de mercado actual ({formato_cantidad_usd(precio_mercado_actual)}). "
+                    "Use una orden a Mercado para vender inmediatamente."
+                )
+
+        # Validación de precios Stop-Limit
         if tipo_orden == config.TIPO_ORDEN_STOP_LIMIT and precio_mercado_actual:
             if accion == config.ACCION_COMPRAR:
                 if precio_disparo <= precio_mercado_actual:
@@ -238,10 +254,8 @@ def procesar_operacion_trading(formulario: Dict[str, Any]) -> Dict[str, Any]:
                 if precio_limite > precio_disparo:
                     return crear_respuesta_error(f"❌ Venta Stop-Limit: Precio Límite ({formato_cantidad_usd(precio_limite)}) no puede ser > al Precio Stop ({formato_cantidad_usd(precio_disparo)}).")
         
-        # Para órdenes límite, la reserva siempre se calcula contra el precio límite.
         precio_referencia = precio_limite if tipo_orden == config.TIPO_ORDEN_STOP_LIMIT else precio_disparo
         
-        # Cálculo de cantidades y reserva
         respuesta_calculo = _calcular_reserva_y_cantidad_principal(accion, modo_ingreso, monto_form, precio_referencia)
         if respuesta_calculo["estado"] == config.ESTADO_ERROR:
             return crear_respuesta_error(respuesta_calculo["mensaje"])
@@ -250,7 +264,6 @@ def procesar_operacion_trading(formulario: Dict[str, Any]) -> Dict[str, Any]:
         cantidad_a_reservar = datos_calculo["cantidad_a_reservar"]
         cantidad_cripto_principal = datos_calculo["cantidad_cripto_principal"]
 
-        # Validación de saldo y modificación de billetera
         billetera = cargar_billetera()
         exito_validacion, mensaje_error = _validar_saldo_disponible(billetera, moneda_origen, cantidad_a_reservar)
         if not exito_validacion:
@@ -259,34 +272,34 @@ def procesar_operacion_trading(formulario: Dict[str, Any]) -> Dict[str, Any]:
         billetera[moneda_origen]['saldos']['disponible'] -= cantidad_a_reservar
         billetera[moneda_origen]['saldos']['reservado'] += cantidad_a_reservar
 
-        # Creación de la orden usando la fábrica centralizada
         if accion == config.ACCION_COMPRAR:
             par_trading = f"{moneda_destino}/{moneda_origen}"
         else: # Venta
             par_trading = f"{moneda_origen}/{moneda_destino}"
         
         nueva_orden = _crear_nueva_orden(
-            par=par_trading,
-            tipo_orden=tipo_orden,
-            accion=accion,
-            cantidad=cantidad_cripto_principal,
-            precio_limite=precio_limite,
+            par=par_trading, tipo_orden=tipo_orden, accion=accion,
+            cantidad=cantidad_cripto_principal, precio_limite=precio_limite,
             precio_disparo=precio_disparo
         )
 
         if config.ESTADO_ERROR in nueva_orden:
-            # Si la fábrica falla, revertir la reserva en memoria antes de salir.
             billetera[moneda_origen]['saldos']['disponible'] += cantidad_a_reservar
             billetera[moneda_origen]['saldos']['reservado'] -= cantidad_a_reservar
             return crear_respuesta_error(nueva_orden[config.ESTADO_ERROR])
         
-        # Persistencia de datos
         guardar_billetera(billetera)
         agregar_orden_pendiente(nueva_orden)
 
-        # Respuesta para el frontend
+        if tipo_orden == config.TIPO_ORDEN_LIMITE:
+            nombre_orden_amigable = "Límite"
+        elif tipo_orden == config.TIPO_ORDEN_STOP_LIMIT:
+            nombre_orden_amigable = "Stop-Limit"
+        else:
+            nombre_orden_amigable = tipo_orden.capitalize()
+
         resultado_operacion = {
-            "titulo": "Orden Pendiente Creada",
+            "titulo": f"Orden {nombre_orden_amigable} Creada",
             "tipo": tipo_orden,
             "detalles": {
                 "id_orden": nueva_orden["id_orden"],
@@ -297,7 +310,7 @@ def procesar_operacion_trading(formulario: Dict[str, Any]) -> Dict[str, Any]:
                 "precio_limite": formato_cantidad_usd(a_decimal(nueva_orden["precio_limite"])) if tipo_orden == config.TIPO_ORDEN_STOP_LIMIT else "N/A",
             }
         }
-        return crear_respuesta_exitosa(resultado_operacion, f"Orden {tipo_orden.capitalize()} creada exitosamente.")
+        return crear_respuesta_exitosa(resultado_operacion, f"Orden {nombre_orden_amigable} creada exitosamente.")
     
     else:
         return crear_respuesta_error(f"Tipo de orden '{tipo_orden}' no soportado.")

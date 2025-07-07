@@ -14,7 +14,37 @@ import pytest
 import os
 import json
 import config
+from backend import crear_app
 from backend.acceso_datos.datos_cotizaciones import limpiar_cache_precios
+
+@pytest.fixture
+def app():
+    """
+    Crea y configura una nueva instancia de la aplicación Flask para cada test.
+    Esto asegura que cada prueba se ejecute en un entorno limpio y aislado.
+    """
+    # Crear la instancia de la aplicación usando tu fábrica.
+    app = crear_app()
+
+    # Configurar la aplicación para el modo de prueba.
+    # TESTING=True deshabilita el manejo de errores para que los tests obtengan
+    # mejores tracebacks y desactiva algunas comprobaciones de seguridad.
+    app.config.update({
+        "TESTING": True,
+    })
+
+    # 'yield' pasa la instancia de la app al test.
+    # El código después del yield se ejecutaría como limpieza si fuera necesario.
+    yield app
+
+
+@pytest.fixture
+def client(app):
+    """
+    Proporciona un cliente de pruebas para la instancia de la aplicación Flask.
+    Este cliente puede simular peticiones HTTP (GET, POST, etc.) a tus rutas.
+    """
+    return app.test_client()
 
 @pytest.fixture
 def test_environment(tmp_path, monkeypatch):
