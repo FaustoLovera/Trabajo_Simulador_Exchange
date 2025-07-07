@@ -65,8 +65,12 @@ def recargar_cache_precios(ruta_archivo: Optional[str] = None):
     for cripto in lista_criptos:
         ticker = cripto.get("ticker")
         
-        if isinstance(ticker, str) and ticker:
-            _cache_precios[ticker.upper()] = cripto
+        try:
+            if ticker:
+                _cache_precios[ticker.upper()] = cripto
+        except AttributeError:
+            # Se ignora el activo si el ticker no es un string válido.
+            pass
     
     print("✅ Caché de precios actualizado en memoria.")
 

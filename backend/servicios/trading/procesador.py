@@ -141,27 +141,40 @@ def _calcular_reserva_y_cantidad_principal(
     modo_ingreso: str,
     monto_form: Decimal,
     precio_referencia: Decimal,
+    precio_origen_usdt: Decimal,
+    precio_destino_usdt: Decimal,
 ) -> Dict[str, Any]:
     """Calcula la cantidad a reservar y la cantidad principal de la cripto."""
-    if precio_referencia.is_zero():
-        return crear_respuesta_error("El precio de referencia no puede ser cero.")
+    if precio_referencia.is_zero() or precio_origen_usdt.is_zero() or precio_destino_usdt.is_zero():
+        return crear_respuesta_error("El precio de referencia o de las monedas no puede ser cero.")
 
     if accion == config.ACCION_COMPRAR:
         if modo_ingreso == 'monto':
-            cantidad_cripto_principal = monto_form
-            cantidad_a_reservar = cantidad_cripto_principal * precio_referencia
+            cantidad_cripto_principal = monto_form # Cantidad de la moneda destino (ej. BNB)
+            # Valor total en USDT de lo que quiero comprar
+            valor_total_usdt = cantidad_cripto_principal * precio_referencia
+            # Cantidad a reservar de la moneda origen (ej. ETH)
+            cantidad_a_reservar = valor_total_usdt / precio_origen_usdt
         elif modo_ingreso == 'total':
-            cantidad_a_reservar = monto_form
-            cantidad_cripto_principal = cantidad_a_reservar / precio_referencia
+            cantidad_a_reservar = monto_form # Cantidad de la moneda origen (ej. ETH)
+            # Valor total en USDT de lo que quiero pagar
+            valor_total_usdt = cantidad_a_reservar * precio_origen_usdt
+            # Cantidad de la cripto principal que recibiré
+            cantidad_cripto_principal = valor_total_usdt / precio_referencia
         else:
             return crear_respuesta_error(f"Modo de ingreso '{modo_ingreso}' no válido.")
             
     elif accion == config.ACCION_VENDER:
         if modo_ingreso == 'monto':
-            cantidad_cripto_principal = monto_form
+            cantidad_cripto_principal = monto_form # Cantidad de la moneda origen (ej. ETH)
             cantidad_a_reservar = cantidad_cripto_principal
         elif modo_ingreso == 'total':
-            cantidad_cripto_principal = monto_form / precio_referencia
+            # Cantidad deseada de la moneda destino (ej. BNB)
+            cantidad_destino_deseada = monto_form
+            # Valor total en USDT de lo que quiero recibir
+            valor_total_usdt = cantidad_destino_deseada * precio_referencia
+            # Cantidad de la cripto principal a vender para obtener ese valor
+            cantidad_cripto_principal = valor_total_usdt / precio_destino_usdt
             cantidad_a_reservar = cantidad_cripto_principal
         else:
             return crear_respuesta_error(f"Modo de ingreso '{modo_ingreso}' no válido.")
@@ -185,11 +198,11 @@ def procesar_operacion_trading(formulario: Dict[str, Any]) -> Dict[str, Any]:
         precio_disparo = a_decimal(formulario.get("precio_disparo"))
         precio_limite = a_decimal(formulario.get("precio_limite"))
         
-        if not all([ticker_principal, accion, monto_form]):
-             raise ValueError("Faltan datos esenciales en el formulario (ticker, accion, monto).")
-
-    except (ValueError, TypeError) as e:
+    except Exception as e:
         return crear_respuesta_error(f"❌ Error en los datos del formulario: {e}")
+
+    if not all([ticker_principal, accion, monto_form]):
+        return crear_respuesta_error("❌ Faltan datos esenciales en el formulario (ticker, accion, monto).")
 
     if monto_form <= Decimal("0"):
         return crear_respuesta_error("❌ El monto debe ser un número positivo.")
@@ -223,40 +236,50 @@ def procesar_operacion_trading(formulario: Dict[str, Any]) -> Dict[str, Any]:
         if tipo_orden == config.TIPO_ORDEN_STOP_LIMIT and precio_limite <= 0:
             return crear_respuesta_error("❌ Se requiere un precio límite válido y positivo para una orden Stop-Limit.")
 
-        # Obtener el precio de mercado una sola vez para las validaciones
+        # Obtener precios para las validaciones y cálculos
         precio_mercado_actual = obtener_precio(ticker_principal)
+        # OBTENER PRECIOS DE AMBAS MONEDAS
+        precio_origen_usdt = obtener_precio(moneda_origen)
+        precio_destino_usdt = obtener_precio(moneda_destino)
+        
+        if not all([precio_origen_usdt, precio_destino_usdt]):
+            return crear_respuesta_error("❌ No se pudo obtener la cotización para una o ambas monedas.")
 
-        # --- VALIDACIÓN PARA ÓRDENES LÍMITE ---
-        if tipo_orden == config.TIPO_ORDEN_LIMITE and precio_mercado_actual:
-            if accion == config.ACCION_COMPRAR and precio_disparo > precio_mercado_actual:
-                return crear_respuesta_error(
-                    f"❌ Precio Límite ({formato_cantidad_usd(precio_disparo)}) "
-                    f"es mayor al precio de mercado actual ({formato_cantidad_usd(precio_mercado_actual)}). "
-                    "Use una orden a Mercado para comprar inmediatamente."
-                )
-            elif accion == config.ACCION_VENDER and precio_disparo < precio_mercado_actual:
-                 return crear_respuesta_error(
-                    f"❌ Precio Límite ({formato_cantidad_usd(precio_disparo)}) "
-                    f"es menor al precio de mercado actual ({formato_cantidad_usd(precio_mercado_actual)}). "
-                    "Use una orden a Mercado para vender inmediatamente."
-                )
-
-        # Validación de precios Stop-Limit
-        if tipo_orden == config.TIPO_ORDEN_STOP_LIMIT and precio_mercado_actual:
-            if accion == config.ACCION_COMPRAR:
-                if precio_disparo <= precio_mercado_actual:
-                    return crear_respuesta_error(f"❌ Compra Stop: Precio Stop ({formato_cantidad_usd(precio_disparo)}) debe ser > al precio actual ({formato_cantidad_usd(precio_mercado_actual)}).")
-                if precio_limite < precio_disparo:
-                    return crear_respuesta_error(f"❌ Compra Stop-Limit: Precio Límite ({formato_cantidad_usd(precio_limite)}) no puede ser < al Precio Stop ({formato_cantidad_usd(precio_disparo)}).")
-            elif accion == config.ACCION_VENDER:
-                if precio_disparo >= precio_mercado_actual:
-                    return crear_respuesta_error(f"❌ Venta Stop: Precio Stop ({formato_cantidad_usd(precio_disparo)}) debe ser < al precio actual ({formato_cantidad_usd(precio_mercado_actual)}).")
-                if precio_limite > precio_disparo:
-                    return crear_respuesta_error(f"❌ Venta Stop-Limit: Precio Límite ({formato_cantidad_usd(precio_limite)}) no puede ser > al Precio Stop ({formato_cantidad_usd(precio_disparo)}).")
+        # Validaciones de precios contra el mercado
+        if precio_mercado_actual:
+            if tipo_orden == config.TIPO_ORDEN_LIMITE:
+                if accion == config.ACCION_COMPRAR and precio_disparo > precio_mercado_actual:
+                    return crear_respuesta_error(
+                        f"❌ Precio Límite ({formato_cantidad_usd(precio_disparo)}) es mayor al precio de mercado actual ({formato_cantidad_usd(precio_mercado_actual)}). Use una orden a Mercado para comprar inmediatamente."
+                    )
+                elif accion == config.ACCION_VENDER and precio_disparo < precio_mercado_actual:
+                    return crear_respuesta_error(
+                        f"❌ Precio Límite ({formato_cantidad_usd(precio_disparo)}) es menor al precio de mercado actual ({formato_cantidad_usd(precio_mercado_actual)}). Use una orden a Mercado para vender inmediatamente."
+                    )
+            elif tipo_orden == config.TIPO_ORDEN_STOP_LIMIT:
+                if accion == config.ACCION_COMPRAR:
+                    if precio_disparo <= precio_mercado_actual:
+                        return crear_respuesta_error(f"❌ Compra Stop: Precio Stop ({formato_cantidad_usd(precio_disparo)}) debe ser > al precio actual ({formato_cantidad_usd(precio_mercado_actual)}).")
+                    if precio_limite < precio_disparo:
+                        return crear_respuesta_error(f"❌ Compra Stop-Limit: Precio Límite ({formato_cantidad_usd(precio_limite)}) no puede ser < al Precio Stop ({formato_cantidad_usd(precio_disparo)}).")
+                elif accion == config.ACCION_VENDER:
+                    if precio_disparo >= precio_mercado_actual:
+                        return crear_respuesta_error(f"❌ Venta Stop: Precio Stop ({formato_cantidad_usd(precio_disparo)}) debe ser < al precio actual ({formato_cantidad_usd(precio_mercado_actual)}).")
+                    if precio_limite > precio_disparo:
+                        return crear_respuesta_error(f"❌ Venta Stop-Limit: Precio Límite ({formato_cantidad_usd(precio_limite)}) no puede ser > al Precio Stop ({formato_cantidad_usd(precio_disparo)}).")
         
         precio_referencia = precio_limite if tipo_orden == config.TIPO_ORDEN_STOP_LIMIT else precio_disparo
         
-        respuesta_calculo = _calcular_reserva_y_cantidad_principal(accion, modo_ingreso, monto_form, precio_referencia)
+        # LLAMADA A LA FUNCIÓN MODIFICADA
+        respuesta_calculo = _calcular_reserva_y_cantidad_principal(
+            accion=accion, 
+            modo_ingreso=modo_ingreso, 
+            monto_form=monto_form, 
+            precio_referencia=precio_referencia,
+            precio_origen_usdt=precio_origen_usdt,
+            precio_destino_usdt=precio_destino_usdt
+        )
+
         if respuesta_calculo["estado"] == config.ESTADO_ERROR:
             return crear_respuesta_error(respuesta_calculo["mensaje"])
 
@@ -264,6 +287,7 @@ def procesar_operacion_trading(formulario: Dict[str, Any]) -> Dict[str, Any]:
         cantidad_a_reservar = datos_calculo["cantidad_a_reservar"]
         cantidad_cripto_principal = datos_calculo["cantidad_cripto_principal"]
 
+        # Validación de saldo y reserva de fondos
         billetera = cargar_billetera()
         exito_validacion, mensaje_error = _validar_saldo_disponible(billetera, moneda_origen, cantidad_a_reservar)
         if not exito_validacion:
@@ -272,6 +296,7 @@ def procesar_operacion_trading(formulario: Dict[str, Any]) -> Dict[str, Any]:
         billetera[moneda_origen]['saldos']['disponible'] -= cantidad_a_reservar
         billetera[moneda_origen]['saldos']['reservado'] += cantidad_a_reservar
 
+        # Creación y guardado de la orden
         if accion == config.ACCION_COMPRAR:
             par_trading = f"{moneda_destino}/{moneda_origen}"
         else: # Venta
@@ -291,6 +316,7 @@ def procesar_operacion_trading(formulario: Dict[str, Any]) -> Dict[str, Any]:
         guardar_billetera(billetera)
         agregar_orden_pendiente(nueva_orden)
 
+        # Formateo de la respuesta de éxito
         if tipo_orden == config.TIPO_ORDEN_LIMITE:
             nombre_orden_amigable = "Límite"
         elif tipo_orden == config.TIPO_ORDEN_STOP_LIMIT:

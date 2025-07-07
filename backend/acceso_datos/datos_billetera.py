@@ -13,8 +13,13 @@ import json
 import os
 from typing import Dict, Optional
 
-from backend.utils.utilidades_numericas import a_decimal, cuantizar_cripto, cuantizar_usd
+from backend.utils.utilidades_numericas import (
+    a_decimal,
+    cuantizar_cripto,
+    cuantizar_usd,
+)
 import config
+
 
 def _crear_billetera_inicial() -> Dict[str, Dict]:
     """Genera la estructura de datos para una billetera nueva.
@@ -28,10 +33,11 @@ def _crear_billetera_inicial() -> Dict[str, Dict]:
             "nombre": "Tether",
             "saldos": {
                 "disponible": a_decimal(config.BALANCE_INICIAL_USDT),
-                "reservado": a_decimal("0")
-            }
+                "reservado": a_decimal("0"),
+            },
         }
     }
+
 
 def cargar_billetera(ruta_archivo: Optional[str] = None) -> Dict[str, Dict]:
     """Carga la billetera desde un archivo JSON, creándola si es necesario.
@@ -65,8 +71,10 @@ def cargar_billetera(ruta_archivo: Optional[str] = None) -> Dict[str, Dict]:
         with open(ruta_efectiva, "r", encoding="utf-8") as f:
             datos_cargados = json.load(f)
     except Exception as e:
-        #Si el archivo está corrupto, se crea una billetera una nueva para asegurar la continuidad de la aplicación.
-        print(f"Advertencia: Archivo '{ruta_efectiva}' corrupto o ilegible. Se reiniciará la billetera. Error: {e}")
+        # Si el archivo está corrupto, se crea una billetera una nueva para asegurar la continuidad de la aplicación.
+        print(
+            f"Advertencia: Archivo '{ruta_efectiva}' corrupto o ilegible. Se reiniciará la billetera. Error: {e}"
+        )
         billetera_inicial = _crear_billetera_inicial()
         guardar_billetera(billetera_inicial, ruta_archivo=ruta_efectiva)
         return billetera_inicial
@@ -77,11 +85,14 @@ def cargar_billetera(ruta_archivo: Optional[str] = None) -> Dict[str, Dict]:
         billetera_final[ticker] = {
             "nombre": activo.get("nombre", ticker),
             "saldos": {
-                "disponible": a_decimal(activo.get("saldos", {}).get("disponible", "0")),
-                "reservado": a_decimal(activo.get("saldos", {}).get("reservado", "0"))
-            }
+                "disponible": a_decimal(
+                    activo.get("saldos", {}).get("disponible", "0")
+                ),
+                "reservado": a_decimal(activo.get("saldos", {}).get("reservado", "0")),
+            },
         }
     return billetera_final
+
 
 def guardar_billetera(billetera: Dict[str, Dict], ruta_archivo: Optional[str] = None):
     """Guarda el estado de la billetera en un archivo JSON.
@@ -105,35 +116,41 @@ def guardar_billetera(billetera: Dict[str, Dict], ruta_archivo: Optional[str] = 
     datos_para_json = {}
     for ticker, activo in billetera.items():
         saldos = activo.get("saldos", {})
-        
+
         saldo_disponible = saldos.get("disponible", a_decimal(0))
         saldo_reservado = saldos.get("reservado", a_decimal(0))
-        
+
         # 1. Cuantizar para asegurar la precisión estándar antes de guardar.
         if ticker == config.MONEDA_FIAT_DEFAULT:
             # Usar la precisión de USD para la moneda fiat (USDT).
             saldo_disponible_q = cuantizar_usd(saldo_disponible)
             saldo_reservado_q = cuantizar_usd(saldo_reservado)
+            # Obtener el número de decimales desde la configuración de precisión.
+            # Se convierte a formato de texto plano ('f') para evitar notación científica (ej. '1E-8').
+            precision = len(f"{config.PRECISION_USD:f}".split(".")[1])
         else:
             # Usar la precisión de cripto para las demás.
             saldo_disponible_q = cuantizar_cripto(saldo_disponible)
             saldo_reservado_q = cuantizar_cripto(saldo_reservado)
+            # Obtener el número de decimales desde la configuración de precisión.
+            precision = len(f"{config.PRECISION_CRIPTOMONEDA:f}".split(".")[1])
 
         # 2. Convertir a string para la serialización en JSON.
-        str_disponible = str(saldo_disponible_q)
-        str_reservado = str(saldo_reservado_q)
-        
+        str_disponible = f"{saldo_disponible_q:.{precision}f}"
+        str_reservado = f"{saldo_reservado_q:.{precision}f}"
+
         datos_para_json[ticker] = {
             "nombre": activo.get("nombre", ticker),
             "saldos": {
                 "disponible": str_disponible,
                 "reservado": str_reservado,
-            }
+            },
         }
 
     try:
         with open(ruta_efectiva, "w", encoding="utf-8") as f:
             json.dump(datos_para_json, f, indent=4)
     except Exception as e:
-        # En un entorno de producción, esto debería ser manejado por un sistema de logging.
-        print(f"Error Crítico: No se pudo guardar el archivo de billetera en '{ruta_efectiva}'. Error: {e}")
+        print(
+            f"Error Crítico: No se pudo guardar el archivo de billetera en '{ruta_efectiva}'. Error: {e}"
+        )

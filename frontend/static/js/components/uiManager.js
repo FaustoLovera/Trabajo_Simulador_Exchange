@@ -40,18 +40,21 @@ export const UIManager = {
 
         UIUpdater.renderHistorial(initialState.historial);
         this.renderOrdenesAbiertas(initialState.ordenesAbiertas);
-        
+
         this.setupSelect2();
         this.setupEventListeners();
-        
+
         // Secuencia de inicialización del formulario:
         // 1. Establecer el modo (compra/venta) para asegurar la visibilidad correcta de los campos.
-        this.setTradeMode('compra'); 
+        this.setTradeMode('compra');
         // 2. Poblar los selectores y establecer valores ahora que los campos son visibles.
         this.actualizarFormularioCompleto();
         // 3. Ajustar campos dependientes del tipo de orden y el timeframe.
         this.handleTipoOrdenChange();
-        $('#timeframe-selector .timeframe-btn').removeClass('active').filter(`[data-interval="${this.currentInterval}"]`).addClass('active');
+        $('#timeframe-selector .timeframe-btn')
+            .removeClass('active')
+            .filter(`[data-interval="${this.currentInterval}"]`)
+            .addClass('active');
     },
 
     /**
@@ -73,14 +76,14 @@ export const UIManager = {
         DOMElements.botonComprar.on('click', () => this.handleTradeModeChange('compra'));
         DOMElements.botonVender.on('click', () => this.handleTradeModeChange('venta'));
         DOMElements.selectorPrincipal.on('change', () => this.handleSelectorPrincipalChange());
-        
+
         DOMElements.selectorPagarCon.on('change', () => this.updateDynamicLabels());
         DOMElements.selectorRecibirEn.on('change', () => this.updateDynamicLabels());
-        
+
         $('#timeframe-selector').on('click', '.timeframe-btn', (e) => this.handleTimeframeChange(e));
         $('input[name="tipo-orden"]').on('change', () => this.handleTipoOrdenChange());
         DOMElements.radioModoIngreso.on('change', () => this.updateDynamicLabels());
-        
+
         $('#precio_disparo, #precio_limite, #monto').on('input', (e) => this.validarInputNumerico(e));
 
         $('#tabla-ordenes-abiertas').on('click', '.btn-cancelar-orden', (e) => this.handleCancelClick(e));
@@ -114,18 +117,25 @@ export const UIManager = {
     actualizarFormularioCompleto() {
         const esCompra = UIState.esModoCompra();
         const ticker = this.currentTicker;
-        
+
         if (esCompra) {
-            FormLogic.popularSelector(DOMElements.selectorPrincipal, AppState.getAllCryptos().filter(c => c.ticker !== 'USDT'));
+            FormLogic.popularSelector(
+                DOMElements.selectorPrincipal,
+                AppState.getAllCryptos().filter((c) => c.ticker !== 'USDT')
+            );
         } else {
-            FormLogic.popularSelector(DOMElements.selectorPrincipal, AppState.getOwnedCoins().filter(c => c.ticker !== 'USDT'), 'No tienes monedas para vender');
+            FormLogic.popularSelector(
+                DOMElements.selectorPrincipal,
+                AppState.getOwnedCoins().filter((c) => c.ticker !== 'USDT'),
+                'No tienes monedas para vender'
+            );
         }
         DOMElements.selectorPrincipal.val(ticker).trigger('change.select2');
-        
+
         FormLogic.actualizarOpcionesDeSelectores();
         this.updateDynamicLabels();
     },
-    
+
     /**
      * @private
      * Actualiza elementos de la UI que cambian frecuentemente, como saldos y etiquetas de campos.
@@ -145,7 +155,7 @@ export const UIManager = {
         const nuevoTicker = UIState.getTickerPrincipal();
         if (!nuevoTicker || nuevoTicker === this.currentTicker) return;
         this.currentTicker = nuevoTicker;
-        
+
         this.actualizarFormularioCompleto();
         this.actualizarGrafico();
         saveTradingState(this.currentTicker, this.currentInterval);
@@ -168,7 +178,7 @@ export const UIManager = {
             this.isChartLoading = false;
         }
     },
-    
+
     /**
      * @private
      * Maneja el cambio de intervalo de tiempo para el gráfico.
@@ -197,7 +207,7 @@ export const UIManager = {
         campoLimit.hide();
         inputStop.prop('required', false);
         inputLimit.prop('required', false);
-    
+
         if (tipoOrden === 'limit') {
             labelStop.text('Precio Límite');
             campoStop.show();
@@ -206,7 +216,7 @@ export const UIManager = {
             labelStop.text('Precio Stop');
             campoStop.show();
             inputStop.prop('required', true);
-            
+
             campoLimit.show();
             inputLimit.prop('required', true);
         }
@@ -225,27 +235,71 @@ export const UIManager = {
             tablaBody.html('<tr><td colspan="7" class="text-center py-3">No hay órdenes abiertas.</td></tr>');
             return;
         }
-        
+
         const createOrdenAbiertaRowHTML = (orden) => {
-            const fechaCreacion = new Date(orden.timestamp_creacion).toLocaleString('es-AR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            // Formatear la fecha para hacerla más legible
+            const fechaCreacion = new Date(orden.timestamp_creacion).toLocaleString('es-AR', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        
+            // Determinar la clase CSS para el color de la acción (verde para compra, rojo para venta)
             const tipoOrdenClase = orden.accion === 'compra' ? 'text-success' : 'text-danger';
-            const cantidad = orden.cantidad_cripto_principal;
+        
+            // --- FIX APLICADO AQUÍ ---
+            // Convertir el string de cantidad a un número y luego formatearlo a un string con 4 decimales
+            const cantidadNumerica = parseFloat(orden.cantidad);
+            const cantidadFormateada = isNaN(cantidadNumerica) ? 'N/A' : cantidadNumerica.toFixed(4);
+        
+            // Determinar el ticker de la moneda para la columna de cantidad
             const tickerCantidad = orden.accion === 'venta' ? orden.moneda_origen : orden.moneda_destino;
-            const tipoOrdenFormatted = orden.tipo_orden.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
-            
+        
+            // Formatear el nombre del tipo de orden (ej. 'stop-limit' -> 'Stop Limit')
+            const tipoOrdenFormatted = orden.tipo_orden.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+        
+            // Buscar la información de la criptomoneda para obtener su logo
+            const criptoInfo = AppState.getAllCryptos().find((c) => c.ticker === tickerCantidad);
+            const logoUrl = criptoInfo ? criptoInfo.logo : '';
+            const logoHtml = logoUrl ? `<img src="${logoUrl}" width="18" class="me-2" style="vertical-align: middle;" alt="${tickerCantidad} logo">` : '';
+        
+            // Preparar el HTML para la columna de precio, que es diferente según el tipo de orden
+            let precioHtml;
+            if (orden.tipo_orden === 'stop-limit') {
+                // Para Stop-Limit, mostrar ambos precios
+                precioHtml = `
+                    <div class="d-flex flex-column align-items-center">
+                        <span>${orden.precio_disparo} <small class="text-white-50">(Stop)</small></span>
+                        <span>${orden.precio_limite} <small class="text-white-50">(Límite)</small></span>
+                    </div>
+                `;
+            } else {
+                // Para Límite, mostrar solo un precio
+                precioHtml = `<span>${orden.precio_disparo}</span>`;
+            }
+        
+            // Construir y devolver la fila completa de la tabla
             return `
                 <tr>
                     <td class="text-start ps-3 small">${fechaCreacion}</td>
                     <td class="fw-bold">${orden.par}</td>
                     <td>${tipoOrdenFormatted}</td>
                     <td class="${tipoOrdenClase}">${orden.accion.charAt(0).toUpperCase() + orden.accion.slice(1)}</td>
-                    <td>${orden.precio_disparo}</td>
+                    <td>${precioHtml}</td>
+                    <td>${logoHtml}${cantidadFormateada} ${tickerCantidad}</td>
                     <td><button class="btn btn-sm btn-outline-danger btn-cancelar-orden" data-id-orden="${orden.id_orden}">Cancelar</button></td>
                 </tr>`;
         };
-        tablaBody.html(ordenes.map(createOrdenAbiertaRowHTML).join(''));
+
+        // 1. Usar .map() para crear un array de strings HTML, uno por cada orden.
+        const tablaHTML = ordenes.map(createOrdenAbiertaRowHTML).join('');
+
+        // 2. Inyectar el HTML final en el cuerpo de la tabla.
+        tablaBody.html(tablaHTML);
     },
-    
+
     /**
      * @private
      * Maneja el clic en el botón 'Cancelar' de una orden abierta.
@@ -254,20 +308,36 @@ export const UIManager = {
     async handleCancelClick(event) {
         const orderId = $(event.currentTarget).data('id-orden');
         const result = await Swal.fire({
-            title: '¿Estás seguro?', text: "No podrás revertir esta acción.",
-            icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6', confirmButtonText: 'Sí, ¡cancelar orden!',
-            cancelButtonText: 'No', background: '#212529', color: '#f8f9fa'
+            title: '¿Estás seguro?',
+            text: 'No podrás revertir esta acción.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, ¡cancelar orden!',
+            cancelButtonText: 'No',
+            background: '#212529',
+            color: '#f8f9fa',
         });
 
         if (result.isConfirmed) {
             try {
                 const respuesta = await AppDataManager.handleCancelOrder(orderId);
                 Toast.fire({ icon: 'success', html: respuesta.mensaje });
-                $(event.currentTarget).closest('tr').fadeOut(400, function() { $(this).remove(); });
+                $(event.currentTarget)
+                    .closest('tr')
+                    .fadeOut(400, function () {
+                        $(this).remove();
+                    });
                 this.updateDynamicLabels(); // Actualizar saldo tras cancelación
             } catch (error) {
-                Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cancelar la orden.', background: '#212529', color: '#f8f9fa' });
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No se pudo cancelar la orden.',
+                    background: '#212529',
+                    color: '#f8f9fa',
+                });
             }
         }
     },
@@ -288,12 +358,12 @@ export const UIManager = {
         }
         input.value = value;
     },
-      /**
+    /**
      * @private
      * Guarda el estado actual completo del formulario de trading en localStorage.
      * Se ejecuta justo antes de que el formulario se envíe.
      */
-      saveFormStateToStorage() {
+    saveFormStateToStorage() {
         const state = {
             accion: $('#accion').val(),
             ticker: $('#cripto').val(),
@@ -307,7 +377,7 @@ export const UIManager = {
         };
         // Convertimos el objeto a un string JSON y lo guardamos
         localStorage.setItem('tradingFormState', JSON.stringify(state));
-        console.log("💾 Estado del formulario guardado en localStorage.", state);
+        console.log('💾 Estado del formulario guardado en localStorage.', state);
     },
 
     /**
@@ -319,7 +389,7 @@ export const UIManager = {
         const savedStateJSON = localStorage.getItem('tradingFormState');
         if (!savedStateJSON) return; // No hay estado guardado, no hacer nada
 
-        console.log("🔄 Aplicando estado del formulario desde localStorage...");
+        console.log('🔄 Aplicando estado del formulario desde localStorage...');
         const state = JSON.parse(savedStateJSON);
 
         // Aplicar el estado a cada elemento del formulario
@@ -327,7 +397,7 @@ export const UIManager = {
         $('#cripto').val(state.ticker).trigger('change.select2');
         $('#moneda-recibir').val(state.monedaRecibir);
         $('#moneda-pago').val(state.monedaPagar);
-        
+
         // Seleccionar el radio button correcto
         $(`input[name="tipo-orden"][value="${state.tipoOrden}"]`).prop('checked', true).trigger('change');
         $(`input[name="modo-ingreso"][value="${state.modoIngreso}"]`).prop('checked', true);
@@ -339,8 +409,8 @@ export const UIManager = {
 
         // ¡MUY IMPORTANTE! Limpiar el estado para que no se aplique de nuevo en una recarga normal.
         localStorage.removeItem('tradingFormState');
-        console.log("✅ Estado aplicado y localStorage limpiado.");
-        
+        console.log('✅ Estado aplicado y localStorage limpiado.');
+
         // Forzar una actualización de todas las etiquetas y saldos después de restaurar
         this.actualizarFormularioCompleto();
     },

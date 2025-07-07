@@ -24,74 +24,70 @@ const POLLING_INTERVAL_MS = 15000; // 15 segundos
  * @async
  * @function initialize
  * @description Orquesta la secuencia de inicialización completa de la página de trading.
- * 1. Determina el ticker y el intervalo a mostrar (desde URL o estado guardado).
- * 2. Carga datos esenciales (historial, órdenes) a través de `AppDataManager`.
- * 3. Inicializa el `UIManager` con los datos y el estado inicial.
- * 4. Obtiene los datos de velas y renderiza el gráfico principal.
- * 5. Configura todos los manejadores de eventos de la UI.
- * 6. Inicia un sondeo periódico para actualizar datos en tiempo real (órdenes, saldos).
- * @effects Modifica gran parte del DOM a través de `UIManager` y `initializeChart`.
- *          Muestra una alerta de error si la carga inicial falla.
  */
 async function initialize() {
+    // 1. Determinar el estado inicial (ticker e intervalo) desde la URL o el almacenamiento local.
     const urlParams = new URLSearchParams(window.location.search);
     const tickerDesdeUrl = urlParams.get('ticker');
     const savedState = loadTradingState();
     const initialTicker = tickerDesdeUrl || savedState?.ticker || 'BTC';
     const initialInterval = savedState?.interval || '1d';
-    if (tickerDesdeUrl) saveTradingState(initialTicker, initialInterval);
+
+    // Si se especificó un ticker en la URL, se guarda como el nuevo estado por defecto.
+    if (tickerDesdeUrl) {
+        saveTradingState(initialTicker, initialInterval);
+    }
 
     try {
-        // 1. Carga los datos esenciales (rápidos)
-        await triggerActualizacionDatos(); // Buena práctica añadir esto aquí
+        // 2. Cargar los datos esenciales del backend antes de renderizar nada.
+        await triggerActualizacionDatos();
         const { historial, ordenesAbiertas } = await AppDataManager.loadInitialData();
 
-        // 2. Inicializa la UI, el gráfico (vacío) y los listeners INMEDIATAMENTE
+        // 3. Inicializar los componentes de la UI una sola vez.
+        // Esto prepara el terreno pero no necesariamente carga todos los datos visuales.
         UIManager.initialize({
             ticker: initialTicker,
             interval: initialInterval,
             historial,
-            ordenesAbiertas
+            ordenesAbiertas,
         });
         
-        // Inicializa la UI, el gráfico (vacío) y los listeners INMEDIATAMENTE
-        UIManager.initialize({
-            ticker: initialTicker,
-            interval: initialInterval,
-            historial,
-            ordenesAbiertas
-        });
-        
-        UIManager.applyFormStateFromStorage(); // Aplicar el estado guardado al formulario
+        // 4. Inicializar el gráfico con un estado vacío para que la UI no se rompa.
+        initializeChart([]);
 
-        initializeChart([]); // <-- Inicializa el gráfico vacío para que no falle.
+        // 5. Aplicar cualquier estado de formulario guardado después de un envío.
+        UIManager.applyFormStateFromStorage();
         
-        // 3. Carga los datos pesados del gráfico de forma asíncrona SIN bloquear
+        // 6. Cargar los datos del gráfico (que pueden tardar) de forma asíncrona.
         fetchVelas(initialTicker, initialInterval)
             .then(datosVelas => {
-                updateChartData(datosVelas); // Actualiza el gráfico cuando los datos lleguen
+                updateChartData(datosVelas); // Actualiza el gráfico cuando los datos lleguen.
             })
             .catch(err => {
                 console.error("Error al cargar datos del gráfico:", err);
-                updateChartData([]); // Muestra el mensaje de error en el gráfico
+                updateChartData([]); // Muestra el mensaje de error en el gráfico.
             });
 
-        // 4. Inicia el sondeo periódico (polling)
+        // 7. Iniciar el sondeo periódico para mantener la página actualizada.
         setInterval(async () => {
             const data = await AppDataManager.pollData();
             if (data) {
+                // Actualiza solo las partes que cambian, como las órdenes y el saldo.
                 UIManager.renderOrdenesAbiertas(data.nuevasOrdenesAbiertas);
                 UIManager.updateDynamicLabels();
             }
         }, POLLING_INTERVAL_MS);
 
     } catch (error) {
+        // Manejo de errores críticos durante la carga inicial.
         console.error('Error crítico durante la inicialización de la página de trading:', error);
         Swal.fire({
-            icon: 'error', title: 'Error de Conexión',
+            icon: 'error',
+            title: 'Error de Conexión',
             text: 'No se pudieron cargar los datos esenciales. Por favor, recarga la página.',
-            background: '#212529', color: '#f8f9fa',
-            confirmButtonColor: '#0d6efd'
+            background: '#212529',
+            color: '#f8f9fa',
+            confirmButtonColor: '#0d6efd',
         });
     }
 }
@@ -101,4 +97,4 @@ async function initialize() {
  * una vez que el contenido del DOM está completamente cargado y listo.
  * @event DOMContentLoaded
  */
-document.addEventListener('DOMContentLoaded', initialize);
+document.addEventListener('DOMContentLoaded', initialize);  
