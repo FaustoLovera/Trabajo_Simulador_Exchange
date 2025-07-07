@@ -17,6 +17,7 @@ import requests
 import json
 from typing import Any, Dict, List
 
+from backend.utils.utilidades_numericas import a_decimal
 from backend.acceso_datos.datos_cotizaciones import guardar_datos_cotizaciones
 import config
 
@@ -69,13 +70,13 @@ def obtener_datos_criptos_coingecko() -> List[Dict[str, Any]]:
                 "nombre": dato.get("name"),
                 "ticker": dato.get('symbol', '').upper(),
                 "logo": dato.get("image"),
-                "precio_usd": str(Decimal(str(dato.get("current_price", 0)))),
-                "1h_%": str(Decimal(str(dato.get("price_change_percentage_1h_in_currency", 0)))),
-                "24h_%": str(Decimal(str(dato.get("price_change_percentage_24h_in_currency", 0)))),
-                "7d_%": str(Decimal(str(dato.get("price_change_percentage_7d_in_currency", 0)))),
-                "market_cap": str(Decimal(str(dato.get("market_cap", 0)))),
-                "volumen_24h": str(Decimal(str(dato.get("total_volume", 0)))),
-                "circulating_supply": str(Decimal(str(dato.get("circulating_supply", 0)))),
+                "precio_usd": str(a_decimal(dato.get("current_price"))),
+                "1h_%": str(a_decimal(dato.get("price_change_percentage_1h_in_currency"))),
+                "24h_%": str(a_decimal(dato.get("price_change_percentage_24h_in_currency"))),
+                "7d_%": str(a_decimal(dato.get("price_change_percentage_7d_in_currency"))),
+                "market_cap": str(a_decimal(dato.get("market_cap"))),
+                "volumen_24h": str(a_decimal(dato.get("total_volume"))),
+                "circulating_supply": str(a_decimal(dato.get("circulating_supply"))),
             })
     except (KeyError, TypeError, ValueError, json.JSONDecodeError) as e:
         print(f"❌ Error al procesar los datos de CoinGecko: {str(e)}")

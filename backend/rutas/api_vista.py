@@ -11,8 +11,7 @@ Responsabilidades:
 """
 
 from flask import Blueprint, jsonify
-from backend.servicios.estado_billetera import estado_actual_completo, obtener_historial_formateado
-from backend.acceso_datos.datos_comisiones import cargar_comisiones
+from backend.servicios.estado_billetera import estado_actual_completo, obtener_historial_formateado, obtener_comisiones_formateadas
 from backend.acceso_datos.datos_ordenes import cargar_ordenes_pendientes
 from backend.servicios.trading.gestor import cancelar_orden_pendiente
 import config
@@ -38,7 +37,7 @@ def get_historial_transacciones():
 @bp.route("/comisiones")
 def get_historial_comisiones():
     """API Endpoint: Devuelve el historial de comisiones cobradas."""
-    return jsonify(cargar_comisiones())
+    return jsonify(obtener_comisiones_formateadas())
 
 
 @bp.route("/ordenes-abiertas")

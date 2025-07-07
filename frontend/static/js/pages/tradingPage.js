@@ -17,7 +17,7 @@ import { fetchVelas, triggerActualizacionDatos } from '../services/apiService.js
  * @private
  * @const {number}
  */
-const POLLING_INTERVAL_MS = 20000; // 20 segundos
+const POLLING_INTERVAL_MS = 15000; // 15 segundos
 
 /**
  * @private
@@ -54,8 +54,17 @@ async function initialize() {
             ordenesAbiertas
         });
         
+        // Inicializa la UI, el gráfico (vacío) y los listeners INMEDIATAMENTE
+        UIManager.initialize({
+            ticker: initialTicker,
+            interval: initialInterval,
+            historial,
+            ordenesAbiertas
+        });
+        
+        UIManager.applyFormStateFromStorage(); // Aplicar el estado guardado al formulario
+
         initializeChart([]); // <-- Inicializa el gráfico vacío para que no falle.
-        UIManager.setupEventListeners(); // Esto hace que la página sea interactiva.
         
         // 3. Carga los datos pesados del gráfico de forma asíncrona SIN bloquear
         fetchVelas(initialTicker, initialInterval)

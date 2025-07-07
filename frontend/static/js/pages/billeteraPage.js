@@ -90,17 +90,15 @@ async function renderBilletera() {
  * @returns {string} Una cadena de texto con el HTML de la fila.
  */
 function createComisionRowHTML(comision) {
-    const fecha = new Date(comision.timestamp).toLocaleString('es-AR', {
-        day: '2-digit', month: '2-digit', year: 'numeric',
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
-    });
-
     return `
         <tr>
-            <td>${fecha}</td>
-            <td>${comision.ticker}</td>
-            <td>${parseFloat(comision.cantidad).toFixed(8)}</td>
-            <td>$${parseFloat(comision.valor_usd).toFixed(2)}</td>
+            <td>${comision.timestamp_formatted}</td>
+            <td class="text-center">
+                <img src="${comision.logo}" width="20" class="me-2" style="vertical-align: middle;" alt="${comision.ticker} logo">
+                <span>${comision.ticker}</span>
+            </td>
+            <td>${comision.cantidad_formatted}</td>
+            <td>${comision.valor_usd_formatted}</td>
         </tr>
     `;
 }

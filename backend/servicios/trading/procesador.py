@@ -74,7 +74,7 @@ def _calcular_detalles_intercambio(
             cantidad_origen_bruta = monto_form
             valor_usd = cantidad_origen_bruta * precio_origen_usdt
         elif modo_ingreso == "total":
-            valor_usd = monto_form
+            valor_usd = monto_form * precio_destino_usdt 
             cantidad_origen_bruta = valor_usd / precio_origen_usdt
         else:
             return False, f"Modo de ingreso '{modo_ingreso}' no válido para una venta."
@@ -194,7 +194,7 @@ def procesar_operacion_trading(formulario: Dict[str, Any]) -> Dict[str, Any]:
     if monto_form <= Decimal("0"):
         return crear_respuesta_error("❌ El monto debe ser un número positivo.")
 
-    # --- LÓGICA DE ASIGNACIÓN DE MONEDAS (CORREGIDA) ---
+    # --- LÓGICA DE ASIGNACIÓN DE MONEDAS ---
     if accion == config.ACCION_COMPRAR:
         moneda_origen = formulario.get("moneda-pago", config.MONEDA_FIAT_DEFAULT)
         moneda_destino = ticker_principal
@@ -260,7 +260,10 @@ def procesar_operacion_trading(formulario: Dict[str, Any]) -> Dict[str, Any]:
         billetera[moneda_origen]['saldos']['reservado'] += cantidad_a_reservar
 
         # Creación de la orden usando la fábrica centralizada
-        par_trading = f"{ticker_principal}/{config.MONEDA_FIAT_DEFAULT}"
+        if accion == config.ACCION_COMPRAR:
+            par_trading = f"{moneda_destino}/{moneda_origen}"
+        else: # Venta
+            par_trading = f"{moneda_origen}/{moneda_destino}"
         
         nueva_orden = _crear_nueva_orden(
             par=par_trading,

@@ -70,7 +70,7 @@ BINANCE_URL = "https://api.binance.com/api/v3/klines"
 CANTIDAD_CRIPTOMONEDAS = 100
 CANTIDAD_VELAS = 250
 
-# --- CONFIGURACIÓN NUMÉRICA GLOBAL --- ### NUEVO ###
+# --- CONFIGURACIÓN NUMÉRICA GLOBAL ---
 # Precisión para los cálculos intermedios de la librería Decimal
 getcontext().prec = 28
 getcontext().rounding = ROUND_HALF_DOWN
@@ -108,5 +108,4 @@ FLASH_DANGER = "danger"
 
 
 # --- Endpoints de la Aplicación ---
-# Nombres de endpoints para usar con url_for(), evitando strings hardcodeados.
 ENDPOINT_TRADING_PAGE = "trading.mostrar_trading_page"

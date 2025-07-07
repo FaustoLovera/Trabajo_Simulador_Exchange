@@ -18,6 +18,7 @@ from decimal import Decimal
 from typing import Any, Dict, List
 
 from backend.acceso_datos.datos_billetera import cargar_billetera
+from backend.acceso_datos.datos_comisiones import cargar_comisiones
 from backend.acceso_datos.datos_cotizaciones import cargar_datos_cotizaciones
 from backend.acceso_datos.datos_historial import cargar_historial
 from backend.utils.formatters import format_datetime
@@ -50,7 +51,7 @@ def _preparar_datos_compra(
         if config.ACCION_COMPRAR in operacion.get("tipo", "").lower():
             destino = operacion.get("destino", {})
             ticker = destino.get("ticker")
-            if not ticker or ticker == "USDT":
+            if not ticker or ticker == config.MONEDA_FIAT_DEFAULT:
                 continue
             if ticker not in datos_compra_por_ticker:
                 datos_compra_por_ticker[ticker] = {
@@ -157,64 +158,35 @@ def estado_actual_completo(
     ruta_historial: str = config.HISTORIAL_PATH,
     ruta_cotizaciones: str = config.COTIZACIONES_PATH,
 ) -> List[Dict[str, Any]]:
-    """Orquesta la creación del estado completo y formateado de la billetera.
-
-    Este es el punto de entrada principal del servicio. Ejecuta el pipeline completo:
-    1.  **Carga de Datos**: Lee billetera, historial y cotizaciones desde archivos.
-    2.  **Pre-procesamiento**: Extrae precios y datos estáticos, y normaliza USDT.
-    3.  **Cálculo de Costo Base**: Llama a `_preparar_datos_compra`.
-    4.  **Iteración y Cálculo de Métricas**: Para cada activo en la billetera,
-        calcula su rendimiento con `_calcular_metricas_activo`.
-    5.  **Cálculo de Totales**: Suma los valores de todos los activos.
-    6.  **Formateo Final**: Para cada activo, llama a `_formatear_activo_para_presentacion`.
-    7.  **Filtrado y Ordenación**: Elimina activos 'polvo' y ordena el resultado.
-
-    Args:
-        ruta_billetera: Ruta al archivo de la billetera.
-        ruta_historial: Ruta al archivo de historial.
-        ruta_cotizaciones: Ruta al archivo de cotizaciones.
-
-    Returns:
-        Una lista de activos, formateada y lista para la UI.
-    """
+    """Orquesta la creación del estado completo y formateado de la billetera."""
     billetera = cargar_billetera(ruta_archivo=ruta_billetera)
     historial = cargar_historial(ruta_archivo=ruta_historial)
     cotizaciones_raw = cargar_datos_cotizaciones(ruta_archivo=ruta_cotizaciones)
     
-    info_criptos = {}
-    for c in cotizaciones_raw:
-        if c.get('ticker'):
-            info_criptos[c['ticker']] = c
-    precios_locales = {}
-    for c in cotizaciones_raw:
-        if c.get('ticker'):
-            precios_locales[c['ticker']] = utilidades_numericas.a_decimal(c.get('precio_usd', '0'))
+    # Crear un diccionario para búsqueda rápida de información y precios
+    info_criptos = {c.get('ticker'): c for c in cotizaciones_raw if c.get('ticker')}
+    precios_locales = {ticker: utilidades_numericas.a_decimal(info.get('precio_usd', '0')) for ticker, info in info_criptos.items()}
     
-    # Paso 3: Forzar datos canónicos para USDT.
-    # Esto asegura consistencia en la UI, evitando que variantes de USDT de
-    # diferentes redes (ej. "Polygon Bridged USDT") rompan la lógica o la visualización.
-    info_criptos['USDT'] = {
+    # Forzar datos canónicos para USDT para asegurar consistencia
+    info_criptos[config.MONEDA_FIAT_DEFAULT] = {
         'nombre': 'Tether', 
         'logo': 'https://assets.coingecko.com/coins/images/325/large/Tether.png?1696501661',
-        'ticker': 'USDT'
+        'ticker': config.MONEDA_FIAT_DEFAULT
     }
 
     datos_compra_por_ticker = _preparar_datos_compra(historial)
     activos_calculados = []
     
-    # Paso 5: Calcular métricas para cada activo en la billetera.
     for ticker, activo_data in billetera.items():
         saldos = activo_data.get("saldos", {})
         cantidad_total = utilidades_numericas.a_decimal(saldos.get("disponible", 0)) + utilidades_numericas.a_decimal(saldos.get("reservado", 0))
 
-        # Solo procesamos activos que no se consideran 'polvo' (cantidad muy pequeña).
         if cantidad_total >= config.UMBRAL_CASI_CERO:
-            # Usamos el diccionario 'curado' para obtener la info de la cripto.
             cripto_info_actual = info_criptos.get(ticker, {"nombre": ticker, "logo": ""})
 
-            if ticker == "USDT":
+            if ticker == config.MONEDA_FIAT_DEFAULT:
                 metricas = {
-                    "ticker": "USDT", "cantidad": cantidad_total, "precio_actual": utilidades_numericas.a_decimal(1),
+                    "ticker": ticker, "cantidad": cantidad_total, "precio_actual": utilidades_numericas.a_decimal(1),
                     "valor_usdt": cantidad_total, "ganancia_perdida": utilidades_numericas.a_decimal(0),
                     "porcentaje_ganancia": utilidades_numericas.a_decimal(0),
                 }
@@ -227,57 +199,35 @@ def estado_actual_completo(
             metricas['saldos'] = saldos
             activos_calculados.append(metricas)
 
-    # Paso 6: Ordenar activos por valor y calcular el total del portafolio.
     activos_calculados.sort(key=lambda x: x["valor_usdt"], reverse=True)
-    total_billetera_usd = utilidades_numericas.a_decimal(0)
-    for activo in activos_calculados:
-        total_billetera_usd += activo["valor_usdt"]
+    total_billetera_usd = sum(activo["valor_usdt"] for activo in activos_calculados)
 
-    # Paso 7: Formatear cada activo para la presentación final.
-    activos_para_presentacion = []
-    for activo in activos_calculados:
-        activo_formateado = _formatear_activo_para_presentacion(
-            activo, activo["cripto_info"], activo["saldos"], total_billetera_usd
-        )
-        activos_para_presentacion.append(activo_formateado)
+    activos_para_presentacion = [
+        _formatear_activo_para_presentacion(activo, activo["cripto_info"], activo["saldos"], total_billetera_usd)
+        for activo in activos_calculados
+    ]
     return activos_para_presentacion
 
 def obtener_historial_formateado(
     ruta_historial: str = config.HISTORIAL_PATH,
 ) -> List[Dict[str, Any]]:
-    """Carga y formatea el historial de transacciones para el frontend.
-
-    Transforma el historial crudo en una lista de registros listos para ser
-    mostrados en la tabla de historial de la UI.
-
-    Args:
-        ruta_historial: Ruta al archivo de historial.
-
-    Returns:
-        Una lista de diccionarios, donde cada uno es una transacción formateada.
-    """
-    # Carga el historial de transacciones desde el archivo JSON.
+    """Carga y formatea el historial de transacciones para el frontend."""
     historial_crudo = cargar_historial(ruta_archivo=ruta_historial)
-
-    # Lista para almacenar las transacciones con formato para la UI.
     historial_formateado = []
 
-    # Itera sobre cada transacción para extraer y formatear los datos.
     for item in historial_crudo:
-        # Extrae los datos básicos de la transacción.
         tipo_op = item.get('tipo', '')
-        par_origen = item.get('origen', {}).get('ticker', '?')
-        par_destino = item.get('destino', {}).get('ticker', '?')
+        origen = item.get('origen', {})
+        destino = item.get('destino', {})
+        par_origen = origen.get('ticker', '?')
+        par_destino = destino.get('ticker', '?')
+        
+        # Lógica simplificada para determinar la cantidad principal de la operación
+        if config.ACCION_COMPRAR in tipo_op.lower():
+            cantidad = utilidades_numericas.a_decimal(destino.get('cantidad'))
+        else: # Venta
+            cantidad = utilidades_numericas.a_decimal(origen.get('cantidad'))
 
-        # Determina la cantidad de la transacción.
-        # Si es una compra, la cantidad es del activo de destino.
-        # Si es una venta, es la del activo de origen.
-        if tipo_op.endswith('compra'):
-            cantidad = utilidades_numericas.a_decimal(item.get('destino', {}).get('cantidad'))
-        else:
-            cantidad = utilidades_numericas.a_decimal(item.get('origen', {}).get('cantidad'))
-
-        # Construye el diccionario con los datos formateados para la presentación.
         item_formateado = {
             "id": item.get("id"),
             "tipo": tipo_op,
@@ -290,3 +240,41 @@ def obtener_historial_formateado(
         historial_formateado.append(item_formateado)
 
     return historial_formateado
+
+
+def obtener_comisiones_formateadas(
+    ruta_comisiones: str = config.COMISIONES_PATH,
+    ruta_cotizaciones: str = config.COTIZACIONES_PATH,
+) -> List[Dict[str, Any]]:
+    """
+    Carga el historial de comisiones y lo enriquece con datos de presentación
+    como logos y valores formateados.
+    """
+    comisiones_crudas = cargar_comisiones(ruta_archivo=ruta_comisiones)
+    cotizaciones_crudas = cargar_datos_cotizaciones(ruta_archivo=ruta_cotizaciones)
+
+    # Crear un diccionario para búsqueda rápida de logos para mayor eficiencia
+    info_criptos = {c.get('ticker'): c for c in cotizaciones_crudas if c.get('ticker')}
+    
+    # Añadir info de USDT por si no viene en las cotizaciones
+    if config.MONEDA_FIAT_DEFAULT not in info_criptos:
+        info_criptos[config.MONEDA_FIAT_DEFAULT] = {
+            'logo': 'https://assets.coingecko.com/coins/images/325/large/Tether.png?1696501661'
+        }
+
+    comisiones_formateadas = []
+    for comision in comisiones_crudas:
+        ticker = comision.get('ticker')
+        cripto_info = info_criptos.get(ticker, {})
+
+        item_formateado = {
+            "id": comision.get("id"),
+            "timestamp_formatted": format_datetime(comision.get('timestamp')),
+            "ticker": ticker,
+            "logo": cripto_info.get('logo', ''),  # Usar un string vacío como fallback seguro
+            "cantidad_formatted": utilidades_numericas.formato_cantidad_cripto(utilidades_numericas.a_decimal(comision.get('cantidad'))),
+            "valor_usd_formatted": utilidades_numericas.formato_cantidad_usd(utilidades_numericas.a_decimal(comision.get('valor_usd')))
+        }
+        comisiones_formateadas.append(item_formateado)
+    
+    return comisiones_formateadas

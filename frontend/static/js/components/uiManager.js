@@ -69,6 +69,7 @@ export const UIManager = {
      * Centraliza la configuración de todos los listeners de eventos de la aplicación.
      */
     setupEventListeners() {
+        DOMElements.form.on('submit', () => this.saveFormStateToStorage());
         DOMElements.botonComprar.on('click', () => this.handleTradeModeChange('compra'));
         DOMElements.botonVender.on('click', () => this.handleTradeModeChange('venta'));
         DOMElements.selectorPrincipal.on('change', () => this.handleSelectorPrincipalChange());
@@ -239,7 +240,6 @@ export const UIManager = {
                     <td>${tipoOrdenFormatted}</td>
                     <td class="${tipoOrdenClase}">${orden.accion.charAt(0).toUpperCase() + orden.accion.slice(1)}</td>
                     <td>${orden.precio_disparo}</td>
-                    <td>${cantidad} ${tickerCantidad}</td>
                     <td><button class="btn btn-sm btn-outline-danger btn-cancelar-orden" data-id-orden="${orden.id_orden}">Cancelar</button></td>
                 </tr>`;
         };
@@ -287,5 +287,61 @@ export const UIManager = {
             value = parts[0] + '.' + parts[1].substring(0, maxDecimales);
         }
         input.value = value;
-    }
+    },
+      /**
+     * @private
+     * Guarda el estado actual completo del formulario de trading en localStorage.
+     * Se ejecuta justo antes de que el formulario se envíe.
+     */
+      saveFormStateToStorage() {
+        const state = {
+            accion: $('#accion').val(),
+            ticker: $('#cripto').val(),
+            monedaRecibir: $('#moneda-recibir').val(),
+            monedaPagar: $('#moneda-pago').val(),
+            tipoOrden: $('input[name="tipo-orden"]:checked').val(),
+            precioDisparo: $('#precio_disparo').val(),
+            precioLimite: $('#precio_limite').val(),
+            modoIngreso: $('input[name="modo-ingreso"]:checked').val(),
+            monto: $('#monto').val(),
+        };
+        // Convertimos el objeto a un string JSON y lo guardamos
+        localStorage.setItem('tradingFormState', JSON.stringify(state));
+        console.log("💾 Estado del formulario guardado en localStorage.", state);
+    },
+
+    /**
+     * @private
+     * Carga el estado del formulario desde localStorage y lo aplica a la UI.
+     * Esto restaura las selecciones del usuario después de una recarga de página.
+     */
+    applyFormStateFromStorage() {
+        const savedStateJSON = localStorage.getItem('tradingFormState');
+        if (!savedStateJSON) return; // No hay estado guardado, no hacer nada
+
+        console.log("🔄 Aplicando estado del formulario desde localStorage...");
+        const state = JSON.parse(savedStateJSON);
+
+        // Aplicar el estado a cada elemento del formulario
+        this.setTradeMode(state.accion);
+        $('#cripto').val(state.ticker).trigger('change.select2');
+        $('#moneda-recibir').val(state.monedaRecibir);
+        $('#moneda-pago').val(state.monedaPagar);
+        
+        // Seleccionar el radio button correcto
+        $(`input[name="tipo-orden"][value="${state.tipoOrden}"]`).prop('checked', true).trigger('change');
+        $(`input[name="modo-ingreso"][value="${state.modoIngreso}"]`).prop('checked', true);
+
+        // Rellenar los campos de texto
+        $('#precio_disparo').val(state.precioDisparo);
+        $('#precio_limite').val(state.precioLimite);
+        $('#monto').val(state.monto);
+
+        // ¡MUY IMPORTANTE! Limpiar el estado para que no se aplique de nuevo en una recarga normal.
+        localStorage.removeItem('tradingFormState');
+        console.log("✅ Estado aplicado y localStorage limpiado.");
+        
+        // Forzar una actualización de todas las etiquetas y saldos después de restaurar
+        this.actualizarFormularioCompleto();
+    },
 };
